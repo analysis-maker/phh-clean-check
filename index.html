@@ -20,6 +20,7 @@
   --font:"Raleway", "Helvetica Neue", Arial, sans-serif;
 }
 *{box-sizing:border-box}
+[hidden]{display:none !important}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.5;font-weight:500;font-variant-numeric:lining-nums;padding-inline:16px;padding-block:0 120px}
 .wrap{max-width:640px;margin:0 auto}
 .nav{margin-inline:-16px;padding:14px 16px;background:#fff;border-bottom:1px solid var(--divider)}
@@ -76,16 +77,42 @@ li.na .nabtn{color:var(--ink);background:var(--offset)}
 .donecard{margin-top:32px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 24px;display:grid;gap:10px}
 .donecard .big{font-family:var(--font);font-size:2rem;font-weight:800;letter-spacing:-.02em;color:var(--teal)}
 .err{color:var(--warn);font-weight:700}
+.pickrow .txt{flex:1}
+.pickrow .sub{display:block;font-size:.8rem;color:var(--muted);font-weight:500}
+.tag{flex:none;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);background:var(--teal-hl);border-radius:9999px;padding:4px 10px}
+.chev{flex:none;color:var(--faint);font-weight:700}
+.go{margin-top:12px;width:100%}
+.back{display:inline-block;margin-top:14px;color:var(--primary);font-weight:700;font-size:.92rem;text-decoration:none}
 @media (prefers-reduced-motion: reduce){.bar>i{transition:none}}
 </style>
 
 <nav class="nav"><div class="wrap"><img src="logo.png" alt="Professional Holiday Homes" width="183" height="34"></div></nav>
+
+<div class="wrap" id="pick" hidden>
+  <header class="top">
+    <span class="badge">Departure clean check</span>
+    <h1>Today's cleans</h1>
+    <div class="meta">Pick the property you are cleaning.</div>
+  </header>
+  <div class="who" id="codebox" hidden>
+    <label class="lbl" for="code">Code from PHH</label>
+    <input type="text" id="code" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="4-digit code">
+    <button class="submit go" id="codego" type="button">Show today's cleans</button>
+  </div>
+  <div class="who" id="searchbox" hidden>
+    <label class="lbl" for="q">Find property</label>
+    <input type="text" id="q" autocomplete="off" placeholder="Start typing the property name">
+  </div>
+  <section class="sec"><ul class="items" id="picklist" hidden></ul></section>
+  <p class="note" id="pickmsg"></p>
+</div>
 
 <div class="wrap" id="app">
   <header class="top">
     <span class="badge">Departure clean check</span>
     <h1 id="prop">Loading clean...</h1>
     <div class="meta"><span id="cdate"></span><span id="cres"></span></div>
+    <a class="back" id="back" href="./" hidden>Back to today's cleans</a>
   </header>
   <div class="prog">
     <div class="bar" aria-hidden="true"><i id="barfill"></i></div>
@@ -129,6 +156,8 @@ window.PHH_API = window.PHH_API || "";
   var RES = params.get("res");
   var TOKEN = params.get("t") || "";
   var LIVE = !!(API && RES);
+  var PICK = !!(API && !RES && params.get("demo") !== "1");
+  var FROM_LIST = params.get("from") === "list";
   var state = { items:{}, photos:{}, cleaner:"", startedAt:new Date().toISOString() };
   var clean = null;
   var $ = function(id){ return document.getElementById(id); };
@@ -299,7 +328,7 @@ window.PHH_API = window.PHH_API || "";
     };
     var done = function(){
       try{ localStorage.removeItem(key); }catch(e){}
-      document.getElementById("app").innerHTML = '<div class="donecard"><div class="big">Clean submitted</div><p></p><p class="note">You can close this page. Thank you.</p></div>';
+      document.getElementById("app").innerHTML = '<div class="donecard"><div class="big">Clean submitted</div><p></p><p class="note">You can close this page. Thank you.</p>' + (FROM_LIST ? '<a class="back" href="./">Back to today\'s cleans</a>' : '') + '</div>';
       document.querySelector(".donecard p").textContent = (clean ? clean.property + ", " : "") + fmt(new Date()) + ". " + payload.items.length + " items and " + payload.photos.length + " photos recorded.";
       $("foot").hidden = true; window.scrollTo(0,0);
     };
@@ -316,9 +345,55 @@ window.PHH_API = window.PHH_API || "";
     render();
   }
 
+  /* Pilot picker: no booking in the link, so list today's cleans after the PHH code. */
+  function pick(){
+    $("app").hidden = true; $("foot").hidden = true; $("pick").hidden = false;
+    var KEY = "phh-pilot-code", all = [];
+    function msg(t, err){ $("pickmsg").textContent = t || ""; $("pickmsg").className = err ? "note err" : "note"; }
+    function show(list){
+      var ul = $("picklist"); ul.innerHTML = "";
+      list.forEach(function(c){
+        var li = document.createElement("li"); li.className = "item" + (c.submitted ? " done" : "");
+        var b = document.createElement("button"); b.type = "button"; b.className = "tick pickrow";
+        b.innerHTML = '<span class="txt"></span><span class="chev" aria-hidden="true">&rsaquo;</span>';
+        b.querySelector(".txt").textContent = c.property;
+        if(c.submitted){ var tg = document.createElement("span"); tg.className = "tag"; tg.textContent = "Done"; b.insertBefore(tg, b.querySelector(".chev")); }
+        b.addEventListener("click", function(){ location.href = "?res=" + encodeURIComponent(c.res) + "&from=list"; });
+        li.appendChild(b); ul.appendChild(li);
+      });
+      ul.hidden = !list.length;
+      msg(list.length ? "" : "No property matches. If your clean is missing, call the PHH office.");
+    }
+    function loadList(code){
+      msg("Loading today's cleans...");
+      fetch(API + "/today", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
+        .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })
+        .then(function(j){
+          try{ localStorage.setItem(KEY, code); }catch(e){}
+          $("codebox").hidden = true; $("searchbox").hidden = false;
+          all = j.cleans || [];
+          if(!all.length){ msg("No cleans found for today. If this looks wrong, call the PHH office."); return; }
+          show(all);
+        })
+        .catch(function(e){
+          try{ localStorage.removeItem(KEY); }catch(x){}
+          $("codebox").hidden = false; $("searchbox").hidden = true; $("picklist").hidden = true;
+          msg(e.message, true);
+        });
+    }
+    $("codego").addEventListener("click", function(){ var v = $("code").value.trim(); if(v) loadList(v); });
+    $("code").addEventListener("keydown", function(e){ if(e.key === "Enter"){ var v = this.value.trim(); if(v) loadList(v); } });
+    $("q").addEventListener("input", function(){ var q = this.value.trim().toLowerCase(); show(all.filter(function(c){ return String(c.property).toLowerCase().indexOf(q) >= 0; })); });
+    var saved = ""; try{ saved = localStorage.getItem(KEY) || ""; }catch(e){}
+    if(saved) loadList(saved); else { $("codebox").hidden = false; }
+  }
+
   load();
-  if(LIVE){
-    api("/clean", {}).then(start).catch(function(e){ $("prop").textContent = "This link is not valid"; $("sections").innerHTML = '<p class="err"></p>'; $("sections").firstChild.textContent = e.message + " Please call the PHH office."; $("photosec").hidden = true; $("foot").hidden = true; });
+  if(FROM_LIST) $("back").hidden = false;
+  if(PICK){
+    pick();
+  } else if(LIVE){
+    api("/clean", {}).then(start).catch(function(e){ $("prop").textContent = "Clean check not available"; $("sections").innerHTML = '<p class="err"></p>'; $("sections").firstChild.textContent = e.message + " If this looks wrong, call the PHH office."; $("photosec").hidden = true; $("foot").hidden = true; });
   } else {
     $("demobanner").hidden = false;
     start({ res: "264471", property: "Callala Beach Demo House", cleanDate: new Date().toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"}), cleaner: "" });

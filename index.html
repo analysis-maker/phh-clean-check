@@ -5,39 +5,40 @@
 </head><body>
 <title>PHH Clean Check</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;700;800&display=swap">
 <style>
+/* Theme matched to the PHH website builds (phh-landing-pages v27): Raleway, pacific blue, brand teal. */
 :root{
-  --bg:#eef3f2; --surface:#ffffff; --ink:#15252b; --muted:#56666c; --line:#d3dedd;
-  --accent:#0d6b67; --accent-ink:#ffffff; --accent-soft:#d8ecea;
-  --done:#2c7a4b; --done-soft:#dcefe3; --na:#6b6f8a; --na-soft:#e6e7f0;
+  --bg:#f4f8fb; --surface:#ffffff; --ink:#1a3a4a; --muted:#4f5c6b; --line:#c9d5df;
+  --accent:#2275b0; --accent-ink:#ffffff; --accent-soft:#d6edf4;
+  --done:#0e7c8f; --done-soft:#d7ebef; --na:#5a6b85; --na-soft:#e8f0f6;
   --warn:#9a5212; --warn-soft:#f6e6d6;
   --radius:12px;
-  --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --display:"Bricolage Grotesque", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --body:"Raleway", "Helvetica Neue", Arial, sans-serif;
+  --display:"Raleway", "Helvetica Neue", Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     color-scheme:dark;
-    --bg:#0f1719; --surface:#172326; --ink:#e6eeee; --muted:#9aabad; --line:#2a3a3d;
-    --accent:#4fb3ac; --accent-ink:#06201f; --accent-soft:#1d3a39;
-    --done:#6cc591; --done-soft:#1b3326; --na:#a9acc8; --na-soft:#262838;
+    --bg:#0d1520; --surface:#141f30; --ink:#e2e8f4; --muted:#a0afc8; --line:#2c3e5c;
+    --accent:#21a6c7; --accent-ink:#0d1520; --accent-soft:#162f3a;
+    --done:#0e7c8f; --done-soft:#07343b; --na:#93a4c0; --na-soft:#1e2e48;
     --warn:#e3a266; --warn-soft:#3a2a1b;
   }
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --bg:#0f1719; --surface:#172326; --ink:#e6eeee; --muted:#9aabad; --line:#2a3a3d;
-  --accent:#4fb3ac; --accent-ink:#06201f; --accent-soft:#1d3a39;
-  --done:#6cc591; --done-soft:#1b3326; --na:#a9acc8; --na-soft:#262838;
+  --bg:#0d1520; --surface:#141f30; --ink:#e2e8f4; --muted:#a0afc8; --line:#2c3e5c;
+  --accent:#21a6c7; --accent-ink:#0d1520; --accent-soft:#162f3a;
+  --done:#0e7c8f; --done-soft:#07343b; --na:#93a4c0; --na-soft:#1e2e48;
   --warn:#e3a266; --warn-soft:#3a2a1b;
 }
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45;padding-inline:16px;padding-block:0 120px}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45;font-variant-numeric:lining-nums;font-weight:500;padding-inline:16px;padding-block:0 120px}
 .wrap{max-width:640px;margin:0 auto}
 h1,h2{font-family:var(--display);text-wrap:balance;margin:0}
 h1{font-size:1.55rem;font-weight:800;letter-spacing:-.01em}
-h2{font-size:1.15rem;font-weight:600}
+h2{font-size:1.15rem;font-weight:700}
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 10px;border-bottom:1px solid var(--line)}
 .eyebrow{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .meta{display:flex;flex-wrap:wrap;gap:4px 14px;color:var(--muted);font-size:.9rem;margin-top:2px}
@@ -88,7 +89,7 @@ li.na .nabtn{color:var(--ink)}
 
 <div class="wrap" id="app">
   <header class="top">
-    <div class="eyebrow">PHH departure clean</div>
+    <div class="eyebrow">Professional Holiday Homes</div>
     <h1 id="prop">Loading clean...</h1>
     <div class="meta"><span id="cdate"></span><span id="cres"></span></div>
     <div class="bar" aria-hidden="true"><i id="barfill"></i></div>

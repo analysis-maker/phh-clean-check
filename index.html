@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<script>window.PHH_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/clean-api";</script>
+</head><body>
+<title>PHH Clean Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>
+:root{
+  --bg:#eef3f2; --surface:#ffffff; --ink:#15252b; --muted:#56666c; --line:#d3dedd;
+  --accent:#0d6b67; --accent-ink:#ffffff; --accent-soft:#d8ecea;
+  --done:#2c7a4b; --done-soft:#dcefe3; --na:#6b6f8a; --na-soft:#e6e7f0;
+  --warn:#9a5212; --warn-soft:#f6e6d6;
+  --radius:12px;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display:"Bricolage Grotesque", "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0f1719; --surface:#172326; --ink:#e6eeee; --muted:#9aabad; --line:#2a3a3d;
+    --accent:#4fb3ac; --accent-ink:#06201f; --accent-soft:#1d3a39;
+    --done:#6cc591; --done-soft:#1b3326; --na:#a9acc8; --na-soft:#262838;
+    --warn:#e3a266; --warn-soft:#3a2a1b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f1719; --surface:#172326; --ink:#e6eeee; --muted:#9aabad; --line:#2a3a3d;
+  --accent:#4fb3ac; --accent-ink:#06201f; --accent-soft:#1d3a39;
+  --done:#6cc591; --done-soft:#1b3326; --na:#a9acc8; --na-soft:#262838;
+  --warn:#e3a266; --warn-soft:#3a2a1b;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45;padding-inline:16px;padding-block:0 120px}
+.wrap{max-width:640px;margin:0 auto}
+h1,h2{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:1.55rem;font-weight:800;letter-spacing:-.01em}
+h2{font-size:1.15rem;font-weight:600}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 10px;border-bottom:1px solid var(--line)}
+.eyebrow{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;color:var(--muted);font-size:.9rem;margin-top:2px}
+.bar{height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:10px}
+.bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.count{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);margin-top:4px;font-variant-numeric:tabular-nums}
+.banner{margin-top:14px;padding:10px 12px;border-radius:var(--radius);background:var(--warn-soft);color:var(--warn);font-size:.9rem}
+.who{margin-top:16px;display:grid;gap:6px}
+label.lbl{font-weight:700;font-size:.95rem}
+input[type=text]{font:inherit;padding:12px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+input[type=text]:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+section.sec{margin-top:22px}
+.sechead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.secount{font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.secount.ok{color:var(--done);font-weight:700}
+ul.items{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+li.item{display:flex;align-items:stretch;border-top:1px solid var(--line)}
+li.item:first-child{border-top:0}
+.tick{flex:1;display:flex;gap:12px;align-items:center;text-align:left;font:inherit;color:inherit;background:none;border:0;padding:14px 12px;min-height:58px;cursor:pointer}
+.box{flex:none;width:30px;height:30px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;font-weight:700;background:var(--surface)}
+li.done .box{background:var(--done);border-color:var(--done);color:#fff}
+li.done{background:var(--done-soft)}
+li.na{background:var(--na-soft)}
+li.na .box{border-color:var(--na);color:var(--na);font-size:.7rem}
+li.na .txt{color:var(--muted);text-decoration:line-through}
+.nabtn{flex:none;font:inherit;font-size:.8rem;font-weight:700;border:0;border-left:1px solid var(--line);background:none;color:var(--na);padding:0 14px;cursor:pointer;min-width:58px}
+li.na .nabtn{color:var(--ink)}
+.photos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ph{position:relative;display:flex;flex-direction:column;border:1.5px dashed var(--line);border-radius:var(--radius);background:var(--surface);overflow:hidden;min-height:150px;cursor:pointer}
+.ph input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.ph .shot{flex:1;display:grid;place-items:center;color:var(--accent);font-weight:700;padding:18px 8px;text-align:center;font-size:.95rem}
+.ph img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;max-width:100%}
+.ph .cap{padding:8px 10px;font-size:.88rem;font-weight:700;border-top:1px solid var(--line)}
+.ph .stamp{display:block;font-weight:400;color:var(--muted);font-size:.78rem;font-variant-numeric:tabular-nums}
+.ph.has{border-style:solid;border-color:var(--done)}
+.ph .flag{display:block;color:var(--warn);font-size:.78rem}
+.note{margin-top:8px;color:var(--muted);font-size:.88rem}
+.foot{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.foot .wrap{display:flex;gap:12px;align-items:center}
+.foot .left{flex:1;font-size:.85rem;color:var(--muted)}
+.submit{font:inherit;font-weight:700;font-size:1.05rem;border:0;border-radius:12px;padding:14px 22px;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.submit:disabled{background:var(--line);color:var(--muted);cursor:not-allowed}
+.donecard{margin-top:40px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px;display:grid;gap:10px}
+.donecard .big{font-family:var(--display);font-size:2rem;font-weight:800;color:var(--done)}
+.err{color:var(--warn);font-weight:700}
+@media (prefers-reduced-motion: reduce){.bar>i{transition:none}}
+</style>
+
+<div class="wrap" id="app">
+  <header class="top">
+    <div class="eyebrow">PHH departure clean</div>
+    <h1 id="prop">Loading clean...</h1>
+    <div class="meta"><span id="cdate"></span><span id="cres"></span></div>
+    <div class="bar" aria-hidden="true"><i id="barfill"></i></div>
+    <div class="count"><span id="counttxt">0 of 0 ticked</span><span id="phototxt">0 of 6 photos</span></div>
+  </header>
+
+  <div class="banner" id="demobanner" hidden>Demo clean with example data. Nothing you tick or photograph here is saved to PHH.</div>
+
+  <div class="who">
+    <label class="lbl" for="cleaner">Your name</label>
+    <input type="text" id="cleaner" autocomplete="name" placeholder="e.g. Seabreeze Cleaning">
+  </div>
+
+  <div id="sections"></div>
+
+  <section class="sec" id="photosec">
+    <div class="sechead"><h2>Photos</h2><span class="secount" id="phcount">0 / 6</span></div>
+    <div class="photos" id="photos"></div>
+    <p class="note">Take each photo at the end of the clean. The time and property are stamped on every photo. No photos, no payment.</p>
+  </section>
+</div>
+
+<footer class="foot" id="foot">
+  <div class="wrap">
+    <div class="left" id="footmsg">Tick every item or mark it N/A, then add all 6 photos.</div>
+    <button class="submit" id="submit" disabled>Submit clean</button>
+  </div>
+</footer>
+
+<script>
+/* Config. In production set window.PHH_API to the Supabase Edge Function URL. */
+window.PHH_API = window.PHH_API || "";
+</script>
+<script src="checklist.js"></script>
+<script>
+(function(){
+  "use strict";
+  var CL = window.PHH_CHECKLIST;
+  var API = window.PHH_API;
+  var params = new URLSearchParams(location.search);
+  var RES = params.get("res");
+  var TOKEN = params.get("t") || "";
+  var LIVE = !!(API && RES);
+  var state = { items:{}, photos:{}, cleaner:"", startedAt:new Date().toISOString() };
+  var clean = null;
+  var $ = function(id){ return document.getElementById(id); };
+  var key = "phh-clean-" + (RES || "demo");
+
+  function save(){ try{ localStorage.setItem(key, JSON.stringify({items:state.items, cleaner:state.cleaner, startedAt:state.startedAt})); }catch(e){} }
+  function load(){ try{ var s = JSON.parse(localStorage.getItem(key) || "null"); if(s){ state.items = s.items || {}; state.cleaner = s.cleaner || ""; state.startedAt = s.startedAt || state.startedAt; } }catch(e){} }
+
+  function fmt(d){ return d.toLocaleString("en-AU",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}); }
+
+  function allItems(){ var a=[]; CL.sections.forEach(function(s){ s.items.forEach(function(i){ a.push(i); }); }); return a; }
+
+  function render(){
+    var host = $("sections"); host.innerHTML = "";
+    CL.sections.forEach(function(sec){
+      var el = document.createElement("section"); el.className = "sec";
+      el.innerHTML = '<div class="sechead"><h2>'+sec.title+'</h2><span class="secount" data-sec="'+sec.id+'"></span></div>';
+      var ul = document.createElement("ul"); ul.className = "items";
+      sec.items.forEach(function(it){
+        var li = document.createElement("li"); li.className = "item"; li.dataset.id = it.id;
+        var b = document.createElement("button"); b.type = "button"; b.className = "tick"; b.id = "t_"+it.id;
+        b.innerHTML = '<span class="box" aria-hidden="true"></span><span class="txt"></span>';
+        b.querySelector(".txt").textContent = it.text;
+        b.addEventListener("click", function(){ state.items[it.id] = state.items[it.id] === "done" ? undefined : "done"; if(!state.items[it.id]) delete state.items[it.id]; save(); update(); });
+        li.appendChild(b);
+        if(it.na){
+          var n = document.createElement("button"); n.type = "button"; n.className = "nabtn"; n.textContent = "N/A"; n.id = "n_"+it.id;
+          n.setAttribute("aria-label", "Not applicable: " + it.text);
+          n.addEventListener("click", function(){ state.items[it.id] = state.items[it.id] === "na" ? undefined : "na"; if(!state.items[it.id]) delete state.items[it.id]; save(); update(); });
+          li.appendChild(n);
+        }
+        ul.appendChild(li);
+      });
+      el.appendChild(ul); host.appendChild(el);
+    });
+
+    var ph = $("photos"); ph.innerHTML = "";
+    CL.photos.forEach(function(p){
+      var d = document.createElement("label"); d.className = "ph"; d.dataset.id = p.id; d.htmlFor = "f_"+p.id;
+      d.innerHTML = '<div class="shot">Tap to take photo</div><div class="cap"></div><input type="file" accept="image/*" capture="environment" id="f_'+p.id+'">';
+      d.querySelector(".cap").textContent = p.label;
+      d.querySelector("input").addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; if(f) addPhoto(p, f, d); e.target.value = ""; });
+      ph.appendChild(d);
+    });
+    $("cleaner").value = state.cleaner;
+    update();
+  }
+
+  function update(){
+    var items = allItems(), done = 0;
+    items.forEach(function(it){
+      var v = state.items[it.id], li = document.querySelector('li[data-id="'+it.id+'"]');
+      li.classList.toggle("done", v === "done"); li.classList.toggle("na", v === "na");
+      li.querySelector(".box").textContent = v === "done" ? "✓" : (v === "na" ? "N/A" : "");
+      $("t_"+it.id).setAttribute("aria-pressed", v === "done" ? "true" : "false");
+      if(v) done++;
+    });
+    CL.sections.forEach(function(sec){
+      var n = sec.items.filter(function(i){ return state.items[i.id]; }).length;
+      var c = document.querySelector('[data-sec="'+sec.id+'"]');
+      c.textContent = n + " / " + sec.items.length; c.classList.toggle("ok", n === sec.items.length);
+    });
+    var pc = CL.photos.filter(function(p){ return state.photos[p.id]; }).length;
+    var total = items.length + CL.photos.length;
+    $("barfill").style.width = Math.round((done + pc) / total * 100) + "%";
+    $("counttxt").textContent = done + " of " + items.length + " ticked";
+    $("phototxt").textContent = pc + " of " + CL.photos.length + " photos";
+    $("phcount").textContent = pc + " / " + CL.photos.length; $("phcount").classList.toggle("ok", pc === CL.photos.length);
+    var name = $("cleaner").value.trim();
+    var ready = done === items.length && pc === CL.photos.length && name.length > 1 && !pending;
+    $("submit").disabled = !ready;
+    var left = items.length - done, lp = CL.photos.length - pc, bits = [];
+    if(!name) bits.push("add your name");
+    if(left) bits.push(left + " item" + (left>1?"s":"") + " to tick");
+    if(lp) bits.push(lp + " photo" + (lp>1?"s":"") + " to add");
+    if(pending) bits.push("uploading " + pending + " photo" + (pending>1?"s":""));
+    $("footmsg").textContent = bits.length ? "Still to do: " + bits.join(", ") + "." : "All done. Submit the clean.";
+  }
+
+  /* Minimal EXIF DateTimeOriginal reader (JPEG only). Returns Date or null. */
+  function exifDate(buf){
+    try{
+      var v = new DataView(buf); if(v.getUint16(0) !== 0xFFD8) return null;
+      var off = 2;
+      while(off < v.byteLength){
+        var m = v.getUint16(off); off += 2;
+        if(m === 0xFFE1){
+          var start = off + 2; if(v.getUint32(start) !== 0x45786966) return null;
+          var t = start + 6, le = v.getUint16(t) === 0x4949;
+          var g16 = function(o){ return v.getUint16(o, le); }, g32 = function(o){ return v.getUint32(o, le); };
+          var ifd = t + g32(t+4), exifPtr = 0, n = g16(ifd);
+          for(var i=0;i<n;i++){ var e = ifd+2+i*12; if(g16(e) === 0x8769) exifPtr = t + g32(e+8); }
+          if(!exifPtr) return null;
+          n = g16(exifPtr);
+          for(var j=0;j<n;j++){
+            var e2 = exifPtr+2+j*12;
+            if(g16(e2) === 0x9003){ var so = t + g32(e2+8), s = "";
+              for(var k=0;k<19;k++) s += String.fromCharCode(v.getUint8(so+k));
+              var p = s.split(/[: ]/).map(Number); return new Date(p[0], p[1]-1, p[2], p[3], p[4], p[5]); }
+          }
+          return null;
+        }
+        off += v.getUint16(off);
+      }
+    }catch(e){}
+    return null;
+  }
+
+  var pending = 0;
+  function addPhoto(p, file, tile){
+    var takenAt = null;
+    file.slice(0, 131072).arrayBuffer().then(function(buf){ takenAt = exifDate(buf); }).catch(function(){}).then(function(){
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function(){
+        var max = 1600, s = Math.min(1, max / Math.max(img.width, img.height));
+        var w = Math.round(img.width*s), h = Math.round(img.height*s);
+        var c = document.createElement("canvas"); c.width = w; c.height = h;
+        var g = c.getContext("2d"); g.drawImage(img, 0, 0, w, h);
+        var now = new Date(), band = Math.max(40, Math.round(h*0.07));
+        g.fillStyle = "rgba(0,0,0,.62)"; g.fillRect(0, h-band, w, band);
+        g.fillStyle = "#fff"; g.font = "bold " + Math.round(band*0.38) + "px sans-serif"; g.textBaseline = "middle";
+        g.fillText((clean ? clean.property : "") + "  |  " + p.label + "  |  " + fmt(now), Math.round(band*0.3), h - band/2);
+        URL.revokeObjectURL(url);
+        c.toBlob(function(blob){
+          var old = takenAt && (now - takenAt) > 12*3600*1000;
+          state.photos[p.id] = { blob:blob, stampedAt: now.toISOString(), takenAt: takenAt ? takenAt.toISOString() : null, oldPhoto: !!old, path:null };
+          tile.classList.add("has");
+          var shot = tile.querySelector(".shot"); if(shot) shot.remove();
+          var im = tile.querySelector("img"); if(!im){ im = document.createElement("img"); im.alt = p.label + " photo"; tile.insertBefore(im, tile.firstChild); }
+          im.src = URL.createObjectURL(blob);
+          var cap = tile.querySelector(".cap");
+          cap.innerHTML = ""; cap.appendChild(document.createTextNode(p.label));
+          var st = document.createElement("span"); st.className = "stamp"; st.textContent = fmt(now) + "  (tap to retake)"; cap.appendChild(st);
+          if(old){ var fl = document.createElement("span"); fl.className = "flag"; fl.textContent = "This photo looks older than today. Retake it now if you can."; cap.appendChild(fl); }
+          if(LIVE){ upload(p.id); } update();
+        }, "image/jpeg", 0.72);
+      };
+      img.src = url;
+    });
+  }
+
+  function api(path, body){
+    return fetch(API + path, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(Object.assign({ res:RES, t:TOKEN }, body || {})) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+
+  function upload(pid){
+    pending++; update();
+    api("/upload-url", { photo: pid }).then(function(j){
+      return fetch(j.signedUrl, { method:"PUT", headers:{ "content-type":"image/jpeg" }, body: state.photos[pid].blob }).then(function(r){
+        if(!r.ok) throw new Error("Photo upload failed. Check your signal and tap the photo to retake it.");
+        state.photos[pid].path = j.path;
+      });
+    }).catch(function(e){ delete state.photos[pid]; $("footmsg").innerHTML = '<span class="err"></span>'; $("footmsg").firstChild.textContent = e.message; })
+      .then(function(){ pending--; update(); });
+  }
+
+  $("cleaner").addEventListener("input", function(){ state.cleaner = this.value; save(); update(); });
+
+  $("submit").addEventListener("click", function(){
+    var btn = this; btn.disabled = true; btn.textContent = "Submitting...";
+    var payload = {
+      cleaner: $("cleaner").value.trim(),
+      checklistVersion: CL.version,
+      startedAt: state.startedAt,
+      items: allItems().map(function(i){ return { id:i.id, text:i.text, status: state.items[i.id] }; }),
+      photos: CL.photos.map(function(p){ var x = state.photos[p.id]; return { id:p.id, label:p.label, path:x.path, stampedAt:x.stampedAt, takenAt:x.takenAt, oldPhoto:x.oldPhoto }; })
+    };
+    var done = function(){
+      try{ localStorage.removeItem(key); }catch(e){}
+      document.getElementById("app").innerHTML = '<div class="donecard"><div class="big">Clean submitted</div><p></p><p class="note">You can close this page. Thank you.</p></div>';
+      document.querySelector(".donecard p").textContent = (clean ? clean.property + ", " : "") + fmt(new Date()) + ". " + payload.items.length + " items and " + payload.photos.length + " photos recorded.";
+      $("foot").hidden = true; window.scrollTo(0,0);
+    };
+    if(!LIVE){ setTimeout(done, 400); return; }
+    api("/submit", payload).then(done).catch(function(e){ btn.disabled = false; btn.textContent = "Submit clean"; $("footmsg").innerHTML = '<span class="err"></span>'; $("footmsg").firstChild.textContent = e.message; });
+  });
+
+  function start(c){
+    clean = c;
+    $("prop").textContent = c.property;
+    $("cdate").textContent = "Clean " + c.cleanDate;
+    $("cres").textContent = "Booking " + c.res;
+    if(!state.cleaner && c.cleaner) state.cleaner = c.cleaner;
+    render();
+  }
+
+  load();
+  if(LIVE){
+    api("/clean", {}).then(start).catch(function(e){ $("prop").textContent = "This link is not valid"; $("sections").innerHTML = '<p class="err"></p>'; $("sections").firstChild.textContent = e.message + " Please call the PHH office."; $("photosec").hidden = true; $("foot").hidden = true; });
+  } else {
+    $("demobanner").hidden = false;
+    start({ res: "264471", property: "Callala Beach Demo House", cleanDate: new Date().toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"}), cleaner: "" });
+  }
+})();
+</script>
+
+</body></html>

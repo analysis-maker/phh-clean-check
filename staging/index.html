@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<link rel="preload" href="../raleway-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preconnect" href="https://rxhpnowszmetjxbwylil.supabase.co" crossorigin>
+<script>window.PHH_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/clean-api-v11";</script>
+</head><body>
+<title>PHH Clean Check</title>
+<style>
+@font-face{font-family:"Raleway";font-style:normal;font-weight:100 900;font-display:swap;src:url("../raleway-latin.woff2") format("woff2")}
+/* Matches the PHH website (PHH Landing Page v24): light only, Raleway, white nav with logo,
+   pill badge, navy 800 headings, teal CTA buttons, rounded bordered cards with soft blue shadow. */
+:root{
+  color-scheme:light;
+  --bg:#ffffff; --surface:#ffffff; --surface-2:#f4f8fb; --offset:#e8f0f6;
+  --ink:#1a3a4a; --muted:#4f5c6b; --faint:#8a9bb0; --line:#c9d5df; --divider:#dce5ec;
+  --primary:#2275b0; --accent:#21a6c7; --accent-hl:#d6edf4;
+  --teal:#0e7c8f; --teal-hover:#0a6273; --teal-hl:#d7ebef;
+  --warn:#b4541a; --warn-soft:#fbeee4;
+  --radius:1rem; --radius-md:.5rem;
+  --shadow:0 4px 12px rgba(34,117,176,.08), 0 2px 4px rgba(34,117,176,.05);
+  --font:"Raleway", "Helvetica Neue", Arial, sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.5;font-weight:500;font-variant-numeric:lining-nums;padding-inline:16px;padding-block:0 120px}
+.wrap{max-width:640px;margin:0 auto}
+.nav{margin-inline:-16px;padding:14px 16px;background:#fff;border-bottom:1px solid var(--divider)}
+.nav img{display:block;height:34px;width:auto}
+h1,h2{font-family:var(--font);text-wrap:balance;margin:0;color:var(--ink)}
+h1{font-size:1.9rem;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-top:12px}
+h2{font-size:1.2rem;font-weight:800;letter-spacing:-.01em}
+.top{padding-block:20px 4px}
+.prog{position:sticky;top:0;z-index:5;background:var(--bg);padding-block:10px 10px;border-bottom:1px solid var(--divider)}
+.badge{display:inline-flex;align-items:center;gap:8px;background:var(--accent-hl);border:1px solid rgba(33,166,199,.35);color:var(--primary);padding:6px 12px;border-radius:9999px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--primary)}
+.meta{display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--muted);font-size:.92rem;margin-top:4px}
+.bar{height:8px;border-radius:9999px;background:var(--offset);overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.count{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+.banner{margin-top:16px;padding:14px 16px;border-radius:var(--radius-md);background:rgba(33,166,199,.10);border:1px solid rgba(33,166,199,.35);color:var(--ink);font-size:.92rem}
+.who{margin-top:20px;display:grid;gap:8px}
+.lbl,.kicker{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+input[type=text]{font:inherit;padding:14px 16px;border-radius:var(--radius-md);border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+input[type=text]::placeholder{color:var(--faint)}
+input[type=text]:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+section.sec{margin-top:28px}
+.sechead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}
+.secount{font-size:.85rem;color:var(--faint);font-weight:700;font-variant-numeric:tabular-nums}
+.secount.ok{color:var(--teal)}
+ul.items{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+li.item{display:flex;align-items:stretch;border-top:1px solid var(--divider)}
+li.item:first-child{border-top:0}
+.tick{flex:1;display:flex;gap:14px;align-items:center;text-align:left;font:inherit;color:inherit;background:none;border:0;padding:14px 16px;min-height:58px;cursor:pointer}
+.box{flex:none;width:28px;height:28px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-weight:800;font-size:.9rem;background:var(--surface);color:transparent}
+li.done .box{background:var(--teal);border-color:var(--teal);color:#fff}
+li.done{background:var(--teal-hl)}
+li.na{background:var(--surface-2)}
+li.na .box{border-color:var(--faint);color:var(--muted);font-size:.6rem}
+li.na .txt{color:var(--faint);text-decoration:line-through}
+.nabtn{flex:none;font:inherit;font-size:.78rem;font-weight:700;letter-spacing:.06em;border:0;border-left:1px solid var(--divider);background:none;color:var(--primary);padding:0 16px;cursor:pointer;min-width:62px}
+li.na .nabtn{color:var(--ink);background:var(--offset)}
+.photos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ph{position:relative;display:flex;flex-direction:column;border:1.5px dashed var(--line);border-radius:var(--radius);background:var(--surface-2);overflow:hidden;min-height:150px;cursor:pointer}
+.ph input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.ph .shot{flex:1;display:grid;place-items:center;color:var(--primary);font-weight:700;padding:18px 8px;text-align:center;font-size:.95rem}
+.ph img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;max-width:100%}
+.ph .cap{padding:10px 12px;font-size:.88rem;font-weight:700;border-top:1px solid var(--divider);background:var(--surface)}
+.ph .stamp{display:block;font-weight:500;color:var(--muted);font-size:.78rem;font-variant-numeric:tabular-nums}
+.ph.has{border-style:solid;border-color:var(--teal);box-shadow:var(--shadow)}
+.ph .flag{display:block;color:var(--warn);font-size:.78rem}
+.note{margin-top:10px;color:var(--muted);font-size:.9rem}
+.foot{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#fff;border-top:1px solid var(--divider);box-shadow:0 -4px 12px rgba(34,117,176,.06);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.foot .wrap{display:flex;gap:12px;align-items:center}
+.foot .left{flex:1;font-size:.85rem;color:var(--muted)}
+.submit{font:inherit;font-weight:600;font-size:1rem;border:2px solid var(--teal);border-radius:var(--radius-md);padding:14px 24px;background:var(--teal);color:#fff;cursor:pointer;white-space:nowrap}
+.submit:hover:not(:disabled){background:var(--teal-hover);border-color:var(--teal-hover)}
+.submit:disabled{background:var(--offset);border-color:var(--offset);color:var(--faint);cursor:not-allowed}
+.donecard{margin-top:32px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 24px;display:grid;gap:10px}
+.donecard .big{font-family:var(--font);font-size:2rem;font-weight:800;letter-spacing:-.02em;color:var(--teal)}
+.err{color:var(--warn);font-weight:700}
+.pickrow .txt{flex:1}
+.pickrow .sub{display:block;font-size:.8rem;color:var(--muted);font-weight:500}
+.tag{flex:none;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);background:var(--teal-hl);border-radius:9999px;padding:4px 10px}
+.chev{flex:none;color:var(--faint);font-weight:700}
+.go{margin-top:12px;width:100%}
+.back{display:inline-block;margin-top:14px;color:var(--primary);font-weight:700;font-size:.92rem;text-decoration:none}
+.due{margin-top:14px;padding:10px 14px;border-radius:var(--radius-md);background:var(--warn-soft);border:1px solid rgba(180,84,26,.35);color:var(--ink);font-size:.92rem;font-weight:700}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.segbtn{font:inherit;font-weight:700;padding:14px;border:2px solid var(--line);border-radius:var(--radius-md);background:var(--surface);color:var(--ink);cursor:pointer;min-height:54px}
+.segbtn[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:#fff}
+a.linkbtn{display:block;text-align:center;text-decoration:none;margin-top:12px}
+.rooms{display:grid;gap:10px;margin-bottom:14px}
+.room{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:var(--radius-md);padding:8px 12px;background:var(--surface)}
+.room .sub{display:block;font-size:.78rem;color:var(--muted);font-weight:500}
+.step{display:flex;align-items:center;gap:12px}
+.step button{width:42px;height:42px;border-radius:50%;border:2px solid var(--line);background:var(--surface);font:inherit;font-weight:800;font-size:1.25rem;line-height:1;color:var(--primary);cursor:pointer}
+.step b{min-width:1.5em;text-align:center;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.phgroup{margin-top:4px;margin-bottom:6px;font-size:.8rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);grid-column:1/-1}
+.ph.done-up .shot{color:var(--teal)}
+@media (prefers-reduced-motion: reduce){.bar>i{transition:none}}
+</style>
+
+<nav class="nav"><div class="wrap"><img src="../logo.png" alt="Professional Holiday Homes" width="183" height="34" fetchpriority="high"></div></nav>
+
+<div class="wrap" id="pick" hidden>
+  <header class="top">
+    <span class="badge">Clean check</span>
+    <h1 id="pickh1">Today's cleans</h1>
+    <div class="meta" id="pickmeta">Enter your code to see your cleans for today.</div>
+    <div class="due">Complete and submit each clean check by 3pm.</div>
+  </header>
+  <div class="who" id="codebox" hidden>
+    <label class="lbl" for="code">Your code from PHH</label>
+    <input type="text" id="code" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Your code">
+    <button class="submit go" id="codego" type="button">Show my cleans</button>
+  </div>
+  <div class="who" id="searchbox" hidden>
+    <label class="lbl" for="q">Find property</label>
+    <input type="text" id="q" autocomplete="off" placeholder="Start typing the property name">
+  </div>
+  <section class="sec"><ul class="items" id="picklist" hidden></ul></section>
+  <p class="note" id="pickmsg"></p>
+  <p class="note" id="notme" hidden><a class="back" href="#" id="switchcode">Not you? Enter a different code</a></p>
+</div>
+
+<div class="wrap" id="app">
+  <header class="top">
+    <span class="badge">Clean check</span>
+    <h1 id="prop">Loading clean...</h1>
+    <div class="meta"><span id="cdate"></span><span id="cres"></span></div>
+    <div class="due">Complete and submit by 3pm.</div>
+    <a class="back" id="back" href="./" hidden>Back to my cleans</a>
+  </header>
+  <div class="prog">
+    <div class="bar" aria-hidden="true"><i id="barfill"></i></div>
+    <div class="count"><span id="counttxt">0 of 0 ticked</span><span id="phototxt">0 photos</span></div>
+  </div>
+
+  <div class="banner" id="demobanner" hidden>Demo clean with example data. Nothing you tick or photograph here is saved to PHH.</div>
+
+  <div class="who" id="namebox">
+    <label class="lbl" for="cleaner">Your name</label>
+    <input type="text" id="cleaner" autocomplete="name" placeholder="e.g. Seabreeze Cleaning">
+  </div>
+
+  <div id="sections"></div>
+
+  <section class="sec" id="photosec">
+    <div class="sechead"><h2>Photos</h2><span class="secount" id="phcount">0 / 0</span></div>
+    <div class="rooms" id="rooms"></div>
+    <div class="photos" id="photos"></div>
+    <p class="note">Take each photo at the end of the clean. The time and property are stamped on every photo. No photos, no payment.</p>
+  </section>
+</div>
+
+<footer class="foot" id="foot">
+  <div class="wrap">
+    <div class="left" id="footmsg">Tick every item, answer consumables, then add every photo.</div>
+    <button class="submit" id="submit" disabled>Submit clean</button>
+  </div>
+</footer>
+
+<script>
+/* Config. In production set window.PHH_API to the Supabase Edge Function URL. */
+window.PHH_API = window.PHH_API || "";
+</script>
+<script>
+// PHH standard clean checklist v1.1.
+// Source: Craig Reid's revised Housekeeping Checklist (Trello, 30 Sep 2026). Wording kept from Craig.
+// "na: true" = item says "if applicable / if required", so the cleaner may mark it N/A instead of ticking.
+// "bbq: true" = marked N/A automatically when the cleaner says the property has no BBQ.
+// Consumables is a separate Yes/No question in the app (Yes opens the Process Street order form).
+window.PHH_CHECKLIST = {
+  version: "2026-09-30-craig-v11",
+  consumablesUrl: "https://app.process.st/workflows/Consumables-Ordering-uYciaTu565lWPqE3m1dEPg/run-link",
+  sections: [
+    { id: "entry", title: "Entry", items: [
+      { id: "ent_cobwebs", text: "Check entryway for cobwebs/dust and clean" },
+      { id: "ent_light", text: "Check security light is working" },
+      { id: "ent_keys", text: "Check guest keys are in the lockbox" }
+    ]},
+    { id: "all", title: "All areas", items: [
+      { id: "all_vacuum", text: "Vacuum (including under couches and beds)" },
+      { id: "all_mop", text: "Mop floors" },
+      { id: "all_cornices", text: "Dust cornices and remove cobwebs and insects" },
+      { id: "all_walls", text: "Check walls for marks and clean" },
+      { id: "all_sills", text: "Dust window sills and wipe down door and window tracks" },
+      { id: "all_screens", text: "Check window and door fly screens for holes and report via maintenance" }
+    ]},
+    { id: "kitchen", title: "Kitchen & dining", items: [
+      { id: "kit_benches", text: "Clean benches and cupboard doors" },
+      { id: "kit_dw_filter", text: "Clean the dishwasher filter" },
+      { id: "kit_oven", text: "Clean the stovetop and inside the oven" },
+      { id: "kit_micro", text: "Clean inside the microwave" },
+      { id: "kit_fridge", text: "Clean the fridge and freezer inside and out, and dispose of any guest food" },
+      { id: "kit_sink", text: "Clean the sink" },
+      { id: "kit_bin", text: "Clean the bin area" },
+      { id: "kit_plates", text: "Check plates, glasses, mugs and cutlery are clean" }
+    ]},
+    { id: "living", title: "Living room", items: [
+      { id: "liv_vac_couch", text: "Vacuum couch" },
+      { id: "liv_couch", text: "Check couches for stains and clean if required" },
+      { id: "liv_chairs", text: "Check chairs for stains and clean if required" },
+      { id: "liv_cushions", text: "Tidy and plump cushions" },
+      { id: "liv_fireplace", text: "Clean and tidy the fireplace area, and restock wood, kindling and firelighters, if applicable", na: true },
+      { id: "liv_dust", text: "Dust and clean the TV, TV unit, coffee tables and other furniture" },
+      { id: "liv_places", text: "Ensure the TV unit, tables and coffee tables are in their correct places" }
+    ]},
+    { id: "bedrooms", title: "Bedrooms", items: [
+      { id: "bed_cabinets", text: "Wipe and dust bedside cabinets, including tops and shelves" },
+      { id: "bed_lamps", text: "Dust bedside lamps" },
+      { id: "bed_bedhead", text: "Dust and clean bedheads" },
+      { id: "bed_wardrobe", text: "Clean wardrobe doors" },
+      { id: "bed_pictures", text: "Dust pictures and wall hangings" },
+      { id: "bed_doona", text: "Check doona covers are clean and change as required" },
+      { id: "bed_pillows", text: "Plump and arrange pillows, including display pillows" }
+    ]},
+    { id: "bathrooms", title: "Bathrooms", items: [
+      { id: "bath_toilet", text: "Clean toilets" },
+      { id: "bath_sink", text: "Clean sinks" },
+      { id: "bath_tiles", text: "Clean tiles" },
+      { id: "bath_mirrors", text: "Clean mirrors" },
+      { id: "bath_shower", text: "Clean showers, ensuring no mould or soap scum remains" },
+      { id: "bath_restock", text: "Restock soap, shampoo and conditioner" }
+    ]},
+    { id: "laundry", title: "Laundry", items: [
+      { id: "lau_appliances", text: "Wipe down appliances" },
+      { id: "lau_empty", text: "Check washing machine and tumble dryer are empty" },
+      { id: "lau_lint", text: "Remove lint from tumble dryer if required / empty water container (heat pump dryer)", na: true },
+      { id: "lau_brushes", text: "Ensure brushes and mops are tidy" },
+      { id: "lau_powder", text: "Restock washing powder/pods" }
+    ]},
+    { id: "outdoor", title: "Outdoor areas", items: [
+      { id: "out_sweep", text: "Sweep/blow outdoor areas" },
+      { id: "out_cobwebs", text: "Remove cobwebs" },
+      { id: "out_mop", text: "Mop deck/tiles if required", na: true },
+      { id: "out_bbq", text: "Clean BBQ hotplates and wipe down the exterior (internal cleaning excluded)", bbq: true },
+      { id: "out_gas", text: "Check two BBQ gas bottles are present", bbq: true },
+      { id: "out_gas_empty", text: "Take empty BBQ gas bottles to the office (N/A if none are empty)", na: true, bbq: true }
+    ]},
+    { id: "damage", title: "Damage & repairs", items: [
+      { id: "dmg_inspect", text: "Inspect for damage" },
+      { id: "dmg_globes", text: "Check for blown light globes" }
+    ]},
+    { id: "exit", title: "Upon exit", items: [
+      { id: "exit_lock", text: "Close and lock all windows and doors" },
+      { id: "exit_aircon", text: "Switch off air conditioning, if applicable", na: true },
+      { id: "exit_keys", text: "Return housekeeper keys to lockbox" }
+    ]}
+  ],
+  // Photos. "per" = one photo per bedroom or per bathroom (count from HomHero, cleaner can adjust).
+  // "bbq" = skipped when the cleaner says the property has no BBQ (flagged in the daily report).
+  photos: [
+    { id: "ph_keys", label: "Guest keys in lockbox" },
+    { id: "ph_living", label: "Living room (including couch)" },
+    { id: "ph_dining", label: "Dining area" },
+    { id: "ph_benches", label: "Kitchen benches" },
+    { id: "ph_oven", label: "Inside of oven" },
+    { id: "ph_micro", label: "Inside of microwave" },
+    { id: "ph_fridge", label: "Inside of fridge/freezer" },
+    { id: "ph_bedroom", label: "Bedroom", per: "bedrooms" },
+    { id: "ph_toilet", label: "Toilet", per: "bathrooms" },
+    { id: "ph_vanity", label: "Bathroom vanity and sink", per: "bathrooms" },
+    { id: "ph_shower", label: "Shower (including shower floor)", per: "bathrooms" },
+    { id: "ph_patio", label: "Patio/deck" },
+    { id: "ph_bbq", label: "Barbecue", bbq: true }
+  ]
+};
+
+</script>
+<script>
+(function(){
+  "use strict";
+  var CL = window.PHH_CHECKLIST;
+  var API = window.PHH_API;
+  var params = new URLSearchParams(location.search);
+  var RES = params.get("res");
+  var TOKEN = params.get("t") || "";
+  var LIVE = !!(API && RES);
+  var PICK = !!(API && !RES && params.get("demo") !== "1");
+  var FROM_LIST = params.get("from") === "list";
+  var state = { items:{}, photos:{}, cleaner:"", startedAt:new Date().toISOString(), consumables:"", noBbq:false, rooms:null, roomsEdited:false };
+  var clean = null;
+  var $ = function(id){ return document.getElementById(id); };
+  var key = "phh-clean-v11-" + (RES || "demo");
+  var pending = 0;
+
+  function save(){
+    var ph = {};
+    Object.keys(state.photos).forEach(function(k){ var x = state.photos[k]; if(x.path) ph[k] = { path:x.path, stampedAt:x.stampedAt, takenAt:x.takenAt, oldPhoto:x.oldPhoto, label:x.label }; });
+    try{ localStorage.setItem(key, JSON.stringify({ items:state.items, cleaner:state.cleaner, startedAt:state.startedAt, consumables:state.consumables, noBbq:state.noBbq, rooms:state.rooms, roomsEdited:state.roomsEdited, photos: LIVE ? ph : {} })); }catch(e){}
+  }
+  function load(){
+    try{ var s = JSON.parse(localStorage.getItem(key) || "null");
+      if(s){ state.items = s.items || {}; state.cleaner = s.cleaner || ""; state.startedAt = s.startedAt || state.startedAt;
+        state.consumables = s.consumables || ""; state.noBbq = !!s.noBbq; state.rooms = s.rooms || null; state.roomsEdited = !!s.roomsEdited; state.photos = s.photos || {}; }
+    }catch(e){}
+  }
+
+  function fmt(d){ return d.toLocaleString("en-AU",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}); }
+  function allItems(){ var a=[]; CL.sections.forEach(function(s){ s.items.forEach(function(i){ a.push(i); }); }); return a; }
+  function status(it){ return (it.bbq && state.noBbq) ? "na" : state.items[it.id]; }
+  function rooms(){ return state.rooms || { bedrooms:1, bathrooms:1 }; }
+
+  /* Photo slots: one per photo, or one per bedroom / bathroom for "per" photos. */
+  function slots(){
+    var r = rooms(), out = [];
+    CL.photos.forEach(function(p){
+      if(p.bbq && state.noBbq) return;
+      if(p.per){
+        var n = r[p.per];
+        for(var i=1;i<=n;i++){
+          var tag = p.per === "bedrooms" ? "" : (n > 1 ? " (bathroom " + i + ")" : "");
+          out.push({ key:p.id + "_" + i, label: p.per === "bedrooms" ? "Bedroom " + i : p.label + tag, group:p.per });
+        }
+      } else out.push({ key:p.id, label:p.label, group:"" });
+    });
+    return out;
+  }
+
+  function itemRow(it){
+    var li = document.createElement("li"); li.className = "item"; li.dataset.id = it.id;
+    var b = document.createElement("button"); b.type = "button"; b.className = "tick"; b.id = "t_"+it.id;
+    b.innerHTML = '<span class="box" aria-hidden="true"></span><span class="txt"></span>';
+    b.querySelector(".txt").textContent = it.text;
+    b.addEventListener("click", function(){ if(it.bbq && state.noBbq) return; state.items[it.id] = state.items[it.id] === "done" ? undefined : "done"; if(!state.items[it.id]) delete state.items[it.id]; save(); update(); });
+    li.appendChild(b);
+    if(it.na){
+      var n = document.createElement("button"); n.type = "button"; n.className = "nabtn"; n.textContent = "N/A"; n.id = "n_"+it.id;
+      n.setAttribute("aria-label", "Not applicable: " + it.text);
+      n.addEventListener("click", function(){ if(it.bbq && state.noBbq) return; state.items[it.id] = state.items[it.id] === "na" ? undefined : "na"; if(!state.items[it.id]) delete state.items[it.id]; save(); update(); });
+      li.appendChild(n);
+    }
+    return li;
+  }
+
+  function consumablesSection(){
+    var el = document.createElement("section"); el.className = "sec"; el.id = "consec";
+    el.innerHTML = '<div class="sechead"><h2>Consumables</h2><span class="secount" id="concount"></span></div>' +
+      '<p class="note" style="margin-top:0">Are consumables required at this property?</p>' +
+      '<div class="seg"><button type="button" class="segbtn" id="con_yes">Yes</button><button type="button" class="segbtn" id="con_no">No</button></div>' +
+      '<a class="submit linkbtn" id="con_link" target="_blank" rel="noopener" hidden>Open consumables order form</a>' +
+      '<p class="note" id="con_note" hidden>The order form opens in a new tab. Come back here to finish the clean check.</p>';
+    el.querySelector("#con_link").href = CL.consumablesUrl;
+    el.querySelector("#con_yes").addEventListener("click", function(){ state.consumables = "yes"; save(); update(); });
+    el.querySelector("#con_no").addEventListener("click", function(){ state.consumables = "no"; save(); update(); });
+    return el;
+  }
+
+  function render(){
+    var host = $("sections"); host.innerHTML = "";
+    CL.sections.forEach(function(sec){
+      if(sec.id === "exit") host.appendChild(consumablesSection());
+      var el = document.createElement("section"); el.className = "sec";
+      el.innerHTML = '<div class="sechead"><h2></h2><span class="secount" data-sec="'+sec.id+'"></span></div>';
+      el.querySelector("h2").textContent = sec.title;
+      var ul = document.createElement("ul"); ul.className = "items";
+      if(sec.items.some(function(i){ return i.bbq; })){
+        var li = document.createElement("li"); li.className = "item"; li.id = "nobbq";
+        var b = document.createElement("button"); b.type = "button"; b.className = "tick";
+        b.innerHTML = '<span class="box" aria-hidden="true"></span><span class="txt">This property has no BBQ</span>';
+        b.addEventListener("click", function(){ state.noBbq = !state.noBbq; save(); renderPhotos(); update(); });
+        li.appendChild(b); ul.appendChild(li);
+      }
+      sec.items.forEach(function(it){ ul.appendChild(itemRow(it)); });
+      el.appendChild(ul); host.appendChild(el);
+    });
+    $("cleaner").value = state.cleaner;
+    renderPhotos();
+    update();
+  }
+
+  function renderRooms(){
+    var r = rooms(), host = $("rooms"); host.innerHTML = "";
+    var src = clean && clean.hhRooms ? "From HomHero. Change only if it is wrong." : "Set the number of rooms at this property.";
+    [["bedrooms","Bedrooms"],["bathrooms","Bathrooms"]].forEach(function(x){
+      var d = document.createElement("div"); d.className = "room";
+      d.innerHTML = '<span><span class="txt"></span><span class="sub"></span></span><span class="step"><button type="button" aria-label="One less">&minus;</button><b></b><button type="button" aria-label="One more">+</button></span>';
+      d.querySelector(".txt").textContent = x[1]; d.querySelector(".sub").textContent = src; d.querySelector("b").textContent = r[x[0]];
+      var bs = d.querySelectorAll("button");
+      bs[0].addEventListener("click", function(){ setRoom(x[0], r[x[0]] - 1); });
+      bs[1].addEventListener("click", function(){ setRoom(x[0], r[x[0]] + 1); });
+      host.appendChild(d);
+    });
+  }
+  function setRoom(k, n){
+    n = Math.max(1, Math.min(10, n)); var r = rooms(); if(r[k] === n) return;
+    r[k] = n; state.rooms = r; state.roomsEdited = true; save(); renderPhotos(); update();
+  }
+
+  function renderPhotos(){
+    renderRooms();
+    var ph = $("photos"); ph.innerHTML = "";
+    var lastGroup = null;
+    slots().forEach(function(s){
+      if(s.group && s.group !== lastGroup){ var g = document.createElement("div"); g.className = "phgroup"; g.textContent = s.group === "bedrooms" ? "One photo per bedroom" : "Per bathroom"; ph.appendChild(g); }
+      if(!s.group && lastGroup){ var g2 = document.createElement("div"); g2.className = "phgroup"; g2.textContent = "Outside"; ph.appendChild(g2); }
+      lastGroup = s.group;
+      var d = document.createElement("label"); d.className = "ph"; d.dataset.id = s.key; d.htmlFor = "f_"+s.key;
+      d.innerHTML = '<div class="shot">Tap to take photo</div><div class="cap"></div><input type="file" accept="image/*" capture="environment" id="f_'+s.key+'">';
+      d.querySelector(".cap").textContent = s.label;
+      d.querySelector("input").addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; if(f) addPhoto(s, f, d); e.target.value = ""; });
+      ph.appendChild(d);
+      var x = state.photos[s.key];
+      if(x && (x.path || x.blob)) showPhoto(s, d, x);
+    });
+  }
+
+  function showPhoto(s, tile, x){
+    tile.classList.add("has");
+    var shot = tile.querySelector(".shot");
+    if(x.thumb){ if(shot) shot.remove(); var im = tile.querySelector("img"); if(!im){ im = document.createElement("img"); im.alt = s.label + " photo"; tile.insertBefore(im, tile.firstChild); } im.src = x.thumb; }
+    else if(shot){ shot.textContent = "✓ Photo saved"; tile.classList.add("done-up"); }
+    var cap = tile.querySelector(".cap"); cap.innerHTML = ""; cap.appendChild(document.createTextNode(s.label));
+    var st = document.createElement("span"); st.className = "stamp"; st.textContent = fmt(new Date(x.stampedAt)) + "  (tap to retake)"; cap.appendChild(st);
+    if(x.oldPhoto){ var fl = document.createElement("span"); fl.className = "flag"; fl.textContent = "This photo looks older than today. Retake it now if you can."; cap.appendChild(fl); }
+  }
+
+  function update(){
+    var items = allItems(), done = 0;
+    items.forEach(function(it){
+      var v = status(it), li = document.querySelector('li[data-id="'+it.id+'"]');
+      li.classList.toggle("done", v === "done"); li.classList.toggle("na", v === "na");
+      li.querySelector(".box").textContent = v === "done" ? "✓" : (v === "na" ? "N/A" : "");
+      $("t_"+it.id).setAttribute("aria-pressed", v === "done" ? "true" : "false");
+      if(v) done++;
+    });
+    var nb = $("nobbq"); if(nb){ nb.classList.toggle("done", state.noBbq); nb.querySelector(".box").textContent = state.noBbq ? "✓" : ""; }
+    CL.sections.forEach(function(sec){
+      var n = sec.items.filter(function(i){ return status(i); }).length;
+      var c = document.querySelector('[data-sec="'+sec.id+'"]');
+      c.textContent = n + " / " + sec.items.length; c.classList.toggle("ok", n === sec.items.length);
+    });
+    $("con_yes").setAttribute("aria-pressed", state.consumables === "yes" ? "true" : "false");
+    $("con_no").setAttribute("aria-pressed", state.consumables === "no" ? "true" : "false");
+    $("con_link").hidden = state.consumables !== "yes"; $("con_note").hidden = state.consumables !== "yes";
+    $("concount").textContent = state.consumables ? "1 / 1" : "0 / 1"; $("concount").classList.toggle("ok", !!state.consumables);
+    var sl = slots(), pc = sl.filter(function(s){ var x = state.photos[s.key]; return x && (LIVE ? x.path : x.blob); }).length;
+    var total = items.length + 1 + sl.length, got = done + (state.consumables ? 1 : 0) + pc;
+    $("barfill").style.width = Math.round(got / total * 100) + "%";
+    $("counttxt").textContent = done + " of " + items.length + " ticked";
+    $("phototxt").textContent = pc + " of " + sl.length + " photos";
+    $("phcount").textContent = pc + " / " + sl.length; $("phcount").classList.toggle("ok", pc === sl.length);
+    var name = $("cleaner").value.trim();
+    var ready = done === items.length && state.consumables && pc === sl.length && name.length > 1 && !pending;
+    $("submit").disabled = !ready;
+    var left = items.length - done, lp = sl.length - pc, bits = [];
+    if(!name) bits.push("add your name");
+    if(left) bits.push(left + " item" + (left>1?"s":"") + " to tick");
+    if(!state.consumables) bits.push("answer consumables");
+    if(lp) bits.push(lp + " photo" + (lp>1?"s":"") + " to add");
+    if(pending) bits.push("uploading " + pending + " photo" + (pending>1?"s":""));
+    $("footmsg").textContent = bits.length ? "Still to do: " + bits.join(", ") + "." : "All done. Submit the clean.";
+  }
+
+  /* Minimal EXIF DateTimeOriginal reader (JPEG only). Returns Date or null. */
+  function exifDate(buf){
+    try{
+      var v = new DataView(buf); if(v.getUint16(0) !== 0xFFD8) return null;
+      var off = 2;
+      while(off < v.byteLength){
+        var m = v.getUint16(off); off += 2;
+        if(m === 0xFFE1){
+          var start = off + 2; if(v.getUint32(start) !== 0x45786966) return null;
+          var t = start + 6, le = v.getUint16(t) === 0x4949;
+          var g16 = function(o){ return v.getUint16(o, le); }, g32 = function(o){ return v.getUint32(o, le); };
+          var ifd = t + g32(t+4), exifPtr = 0, n = g16(ifd);
+          for(var i=0;i<n;i++){ var e = ifd+2+i*12; if(g16(e) === 0x8769) exifPtr = t + g32(e+8); }
+          if(!exifPtr) return null;
+          n = g16(exifPtr);
+          for(var j=0;j<n;j++){
+            var e2 = exifPtr+2+j*12;
+            if(g16(e2) === 0x9003){ var so = t + g32(e2+8), s = "";
+              for(var k=0;k<19;k++) s += String.fromCharCode(v.getUint8(so+k));
+              var p = s.split(/[: ]/).map(Number); return new Date(p[0], p[1]-1, p[2], p[3], p[4], p[5]); }
+          }
+          return null;
+        }
+        off += v.getUint16(off);
+      }
+    }catch(e){}
+    return null;
+  }
+
+  function addPhoto(s, file, tile){
+    var takenAt = null;
+    file.slice(0, 131072).arrayBuffer().then(function(buf){ takenAt = exifDate(buf); }).catch(function(){}).then(function(){
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function(){
+        var max = 1280, sc = Math.min(1, max / Math.max(img.width, img.height));
+        var w = Math.round(img.width*sc), h = Math.round(img.height*sc);
+        var c = document.createElement("canvas"); c.width = w; c.height = h;
+        var g = c.getContext("2d"); g.drawImage(img, 0, 0, w, h);
+        var now = new Date(), band = Math.max(36, Math.round(h*0.07));
+        g.fillStyle = "rgba(0,0,0,.62)"; g.fillRect(0, h-band, w, band);
+        g.fillStyle = "#fff"; g.font = "bold " + Math.round(band*0.38) + "px sans-serif"; g.textBaseline = "middle";
+        g.fillText((clean ? clean.property : "") + "  |  " + s.label + "  |  " + fmt(now), Math.round(band*0.3), h - band/2);
+        URL.revokeObjectURL(url);
+        c.toBlob(function(blob){
+          var old = takenAt && (now - takenAt) > 12*3600*1000;
+          state.photos[s.key] = { blob:blob, thumb:URL.createObjectURL(blob), label:s.label, stampedAt: now.toISOString(), takenAt: takenAt ? takenAt.toISOString() : null, oldPhoto: !!old, path:null };
+          showPhoto(s, tile, state.photos[s.key]);
+          if(LIVE){ upload(s.key); } update();
+        }, "image/jpeg", 0.72);
+      };
+      img.src = url;
+    });
+  }
+
+  function api(path, body){
+    return fetch(API + path, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(Object.assign({ res:RES, t:TOKEN }, body || {})) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+
+  function upload(k){
+    pending++; update();
+    var x = state.photos[k];
+    api("/upload-url", { photo: k }).then(function(j){
+      return fetch(j.signedUrl, { method:"PUT", headers:{ "content-type":"image/jpeg" }, body: x.blob }).then(function(r){
+        if(!r.ok) throw new Error("Photo upload failed. Check your signal and tap the photo to retake it.");
+        if(state.photos[k] === x){ x.path = j.path; save(); }
+      });
+    }).catch(function(e){ if(state.photos[k] === x){ delete state.photos[k]; renderPhotos(); } $("footmsg").innerHTML = '<span class="err"></span>'; $("footmsg").firstChild.textContent = e.message; })
+      .then(function(){ pending--; update(); });
+  }
+
+  $("cleaner").addEventListener("input", function(){ state.cleaner = this.value; save(); update(); });
+
+  $("submit").addEventListener("click", function(){
+    var btn = this; btn.disabled = true; btn.textContent = "Submitting...";
+    var sl = slots();
+    var payload = {
+      cleaner: $("cleaner").value.trim(),
+      checklistVersion: CL.version,
+      startedAt: state.startedAt,
+      consumables: state.consumables,
+      noBbq: state.noBbq,
+      rooms: rooms(),
+      items: allItems().map(function(i){ return { id:i.id, text:i.text, status: status(i) }; }),
+      photos: sl.map(function(s){ var x = state.photos[s.key]; return { id:s.key, label:s.label, path:x.path, stampedAt:x.stampedAt, takenAt:x.takenAt, oldPhoto:x.oldPhoto }; })
+    };
+    var done = function(){
+      try{ localStorage.removeItem(key); }catch(e){}
+      document.getElementById("app").innerHTML = '<div class="donecard"><div class="big">Clean submitted</div><p></p><p class="note">You can close this page. Thank you.</p>' + (FROM_LIST ? '<a class="back" href="./">Back to my cleans</a>' : '') + '</div>';
+      document.querySelector(".donecard p").textContent = (clean ? clean.property + ", " : "") + fmt(new Date()) + ". " + payload.items.length + " items and " + payload.photos.length + " photos recorded.";
+      $("foot").hidden = true; window.scrollTo(0,0);
+    };
+    if(!LIVE){ setTimeout(done, 400); return; }
+    api("/submit", payload).then(done).catch(function(e){ btn.disabled = false; btn.textContent = "Submit clean"; $("footmsg").innerHTML = '<span class="err"></span>'; $("footmsg").firstChild.textContent = e.message; });
+  });
+
+  function start(c){
+    clean = c;
+    $("prop").textContent = c.property;
+    $("cdate").textContent = "Clean " + c.cleanDate;
+    $("cres").textContent = "Booking " + c.res;
+    if(!state.cleaner && c.cleaner){ state.cleaner = c.cleaner; $("cleaner").value = c.cleaner; }
+    var hb = Number(c.bedrooms), ht = Number(c.bathrooms);
+    c.hhRooms = hb >= 1 || ht >= 1;
+    if(!state.roomsEdited && c.hhRooms){ state.rooms = { bedrooms: Math.max(1, Math.min(10, Math.round(hb) || 1)), bathrooms: Math.max(1, Math.min(10, Math.floor(ht) || 1)) }; }
+    save(); renderPhotos(); update();
+  }
+
+  /* Cleaner's list: no booking in the link, so list today's cleans for the cleaner's own code. */
+  function pick(){
+    $("app").hidden = true; $("foot").hidden = true; $("pick").hidden = false;
+    var KEY = "phh-cleaner-code", all = [], office = false;
+    function msg(t, err){ $("pickmsg").textContent = t || ""; $("pickmsg").className = err ? "note err" : "note"; }
+    function show(list){
+      var ul = $("picklist"); ul.innerHTML = "";
+      list.forEach(function(c){
+        var li = document.createElement("li"); li.className = "item" + (c.submitted ? " done" : "");
+        var b = document.createElement("button"); b.type = "button"; b.className = "tick pickrow";
+        b.innerHTML = '<span class="txt"></span><span class="chev" aria-hidden="true">&rsaquo;</span>';
+        b.querySelector(".txt").textContent = c.property;
+        if(office && c.cleaner){ var sub = document.createElement("span"); sub.className = "sub"; sub.textContent = c.cleaner; b.querySelector(".txt").appendChild(sub); }
+        if(c.submitted){ var tg = document.createElement("span"); tg.className = "tag"; tg.textContent = "Done"; b.insertBefore(tg, b.querySelector(".chev")); }
+        b.addEventListener("click", function(){ location.href = "?res=" + encodeURIComponent(c.res) + "&from=list"; });
+        li.appendChild(b); ul.appendChild(li);
+      });
+      ul.hidden = !list.length;
+      msg(list.length ? "" : "No property matches. If your clean is missing, call the PHH office.");
+    }
+    function reset(t, err){
+      try{ localStorage.removeItem(KEY); }catch(x){}
+      $("codebox").hidden = false; $("searchbox").hidden = true; $("picklist").hidden = true; $("notme").hidden = true;
+      $("pickh1").textContent = "Today's cleans"; $("pickmeta").textContent = "Enter your code to see your cleans for today.";
+      msg(t, err);
+    }
+    function loadList(code){
+      $("codebox").hidden = true;
+      msg("Loading your cleans...");
+      fetch(API + "/today", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
+        .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })
+        .then(function(j){
+          try{ localStorage.setItem(KEY, code); }catch(e){}
+          office = !!j.office; all = j.cleans || [];
+          $("pickh1").textContent = office ? "All cleans today" : "Hi " + String(j.cleaner || "").split(" ")[0];
+          $("pickmeta").textContent = office ? "Office view. Every clean with a PHH housekeeper." : "Your cleans for today. Pick the property you are cleaning.";
+          $("notme").hidden = false;
+          $("searchbox").hidden = all.length < 6;
+          if(!all.length){ $("picklist").hidden = true; msg("No cleans for you today. If this looks wrong, call the PHH office."); return; }
+          show(all);
+        })
+        .catch(function(e){ reset(e.message, true); });
+    }
+    $("codego").addEventListener("click", function(){ var v = $("code").value.trim(); if(v) loadList(v); });
+    $("code").addEventListener("keydown", function(e){ if(e.key === "Enter"){ var v = this.value.trim(); if(v) loadList(v); } });
+    $("q").addEventListener("input", function(){ var q = this.value.trim().toLowerCase(); show(all.filter(function(c){ return String(c.property).toLowerCase().indexOf(q) >= 0; })); });
+    $("switchcode").addEventListener("click", function(e){ e.preventDefault(); $("code").value = ""; reset(""); });
+    var saved = ""; try{ saved = localStorage.getItem(KEY) || ""; }catch(e){}
+    if(saved) loadList(saved); else { $("codebox").hidden = false; }
+  }
+
+  load();
+  if(FROM_LIST) $("back").hidden = false;
+  if(PICK){
+    pick();
+  } else if(LIVE){
+    render(); /* show the checklist straight away; property name and room counts fill in when they arrive */
+    api("/clean", {}).then(start).catch(function(e){ $("prop").textContent = "Clean check not available"; $("sections").innerHTML = '<p class="err"></p>'; $("sections").firstChild.textContent = e.message + " If this looks wrong, call the PHH office."; $("photosec").hidden = true; $("foot").hidden = true; document.querySelector(".prog").hidden = true; $("namebox").hidden = true; });
+  } else {
+    $("demobanner").hidden = false;
+    render();
+    start({ res: "264471", property: "Callala Beach Demo House", cleanDate: new Date().toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"}), cleaner: "", bedrooms: 3, bathrooms: 2 });
+  }
+})();
+</script>
+
+</body></html>

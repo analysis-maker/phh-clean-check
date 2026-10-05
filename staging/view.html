@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<script>window.PHH_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/clean-api-v11";</script>
+</head><body>
+<title>PHH Clean Check - Submitted clean</title>
+<style>
+@font-face{font-family:"Raleway";font-style:normal;font-weight:100 900;font-display:swap;src:url("../raleway-latin.woff2") format("woff2")}
+/* Matches the PHH website (PHH Landing Page v24): light only, Raleway, white nav with logo,
+   pill badge, navy 800 headings, teal CTA buttons, rounded bordered cards with soft blue shadow. */
+:root{
+  color-scheme:light;
+  --bg:#ffffff; --surface:#ffffff; --surface-2:#f4f8fb; --offset:#e8f0f6;
+  --ink:#1a3a4a; --muted:#4f5c6b; --faint:#8a9bb0; --line:#c9d5df; --divider:#dce5ec;
+  --primary:#2275b0; --accent:#21a6c7; --accent-hl:#d6edf4;
+  --teal:#0e7c8f; --teal-hover:#0a6273; --teal-hl:#d7ebef;
+  --warn:#b4541a; --warn-soft:#fbeee4;
+  --radius:1rem; --radius-md:.5rem;
+  --shadow:0 4px 12px rgba(34,117,176,.08), 0 2px 4px rgba(34,117,176,.05);
+  --font:"Raleway", "Helvetica Neue", Arial, sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.5;font-weight:500;font-variant-numeric:lining-nums;padding-inline:16px;padding-block:0 120px}
+.wrap{max-width:640px;margin:0 auto}
+.nav{margin-inline:-16px;padding:14px 16px;background:#fff;border-bottom:1px solid var(--divider)}
+.nav img{display:block;height:34px;width:auto}
+h1,h2{font-family:var(--font);text-wrap:balance;margin:0;color:var(--ink)}
+h1{font-size:1.9rem;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-top:12px}
+h2{font-size:1.2rem;font-weight:800;letter-spacing:-.01em}
+.top{padding-block:20px 4px}
+.prog{position:sticky;top:0;z-index:5;background:var(--bg);padding-block:10px 10px;border-bottom:1px solid var(--divider)}
+.badge{display:inline-flex;align-items:center;gap:8px;background:var(--accent-hl);border:1px solid rgba(33,166,199,.35);color:var(--primary);padding:6px 12px;border-radius:9999px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--primary)}
+.meta{display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--muted);font-size:.92rem;margin-top:4px}
+.bar{height:8px;border-radius:9999px;background:var(--offset);overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.count{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+.banner{margin-top:16px;padding:14px 16px;border-radius:var(--radius-md);background:rgba(33,166,199,.10);border:1px solid rgba(33,166,199,.35);color:var(--ink);font-size:.92rem}
+.who{margin-top:20px;display:grid;gap:8px}
+.lbl,.kicker{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+input[type=text]{font:inherit;padding:14px 16px;border-radius:var(--radius-md);border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+input[type=text]::placeholder{color:var(--faint)}
+input[type=text]:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+section.sec{margin-top:28px}
+.sechead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}
+.secount{font-size:.85rem;color:var(--faint);font-weight:700;font-variant-numeric:tabular-nums}
+.secount.ok{color:var(--teal)}
+ul.items{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+li.item{display:flex;align-items:stretch;border-top:1px solid var(--divider)}
+li.item:first-child{border-top:0}
+.tick{flex:1;display:flex;gap:14px;align-items:center;text-align:left;font:inherit;color:inherit;background:none;border:0;padding:14px 16px;min-height:58px;cursor:pointer}
+.box{flex:none;width:28px;height:28px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-weight:800;font-size:.9rem;background:var(--surface);color:transparent}
+li.done .box{background:var(--teal);border-color:var(--teal);color:#fff}
+li.done{background:var(--teal-hl)}
+li.na{background:var(--surface-2)}
+li.na .box{border-color:var(--faint);color:var(--muted);font-size:.6rem}
+li.na .txt{color:var(--faint);text-decoration:line-through}
+.nabtn{flex:none;font:inherit;font-size:.78rem;font-weight:700;letter-spacing:.06em;border:0;border-left:1px solid var(--divider);background:none;color:var(--primary);padding:0 16px;cursor:pointer;min-width:62px}
+li.na .nabtn{color:var(--ink);background:var(--offset)}
+.photos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ph{position:relative;display:flex;flex-direction:column;border:1.5px dashed var(--line);border-radius:var(--radius);background:var(--surface-2);overflow:hidden;min-height:150px;cursor:pointer}
+.ph input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.ph .shot{flex:1;display:grid;place-items:center;color:var(--primary);font-weight:700;padding:18px 8px;text-align:center;font-size:.95rem}
+.ph img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;max-width:100%}
+.ph .cap{padding:10px 12px;font-size:.88rem;font-weight:700;border-top:1px solid var(--divider);background:var(--surface)}
+.ph .stamp{display:block;font-weight:500;color:var(--muted);font-size:.78rem;font-variant-numeric:tabular-nums}
+.ph.has{border-style:solid;border-color:var(--teal);box-shadow:var(--shadow)}
+.ph .flag{display:block;color:var(--warn);font-size:.78rem}
+.note{margin-top:10px;color:var(--muted);font-size:.9rem}
+.foot{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#fff;border-top:1px solid var(--divider);box-shadow:0 -4px 12px rgba(34,117,176,.06);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.foot .wrap{display:flex;gap:12px;align-items:center}
+.foot .left{flex:1;font-size:.85rem;color:var(--muted)}
+.submit{font:inherit;font-weight:600;font-size:1rem;border:2px solid var(--teal);border-radius:var(--radius-md);padding:14px 24px;background:var(--teal);color:#fff;cursor:pointer;white-space:nowrap}
+.submit:hover:not(:disabled){background:var(--teal-hover);border-color:var(--teal-hover)}
+.submit:disabled{background:var(--offset);border-color:var(--offset);color:var(--faint);cursor:not-allowed}
+.donecard{margin-top:32px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 24px;display:grid;gap:10px}
+.donecard .big{font-family:var(--font);font-size:2rem;font-weight:800;letter-spacing:-.02em;color:var(--teal)}
+.err{color:var(--warn);font-weight:700}
+.pickrow .txt{flex:1}
+.pickrow .sub{display:block;font-size:.8rem;color:var(--muted);font-weight:500}
+.tag{flex:none;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);background:var(--teal-hl);border-radius:9999px;padding:4px 10px}
+.chev{flex:none;color:var(--faint);font-weight:700}
+.go{margin-top:12px;width:100%}
+.back{display:inline-block;margin-top:14px;color:var(--primary);font-weight:700;font-size:.92rem;text-decoration:none}
+.due{margin-top:14px;padding:10px 14px;border-radius:var(--radius-md);background:var(--warn-soft);border:1px solid rgba(180,84,26,.35);color:var(--ink);font-size:.92rem;font-weight:700}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.segbtn{font:inherit;font-weight:700;padding:14px;border:2px solid var(--line);border-radius:var(--radius-md);background:var(--surface);color:var(--ink);cursor:pointer;min-height:54px}
+.segbtn[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:#fff}
+a.linkbtn{display:block;text-align:center;text-decoration:none;margin-top:12px}
+.rooms{display:grid;gap:10px;margin-bottom:14px}
+.room{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:var(--radius-md);padding:8px 12px;background:var(--surface)}
+.room .sub{display:block;font-size:.78rem;color:var(--muted);font-weight:500}
+.step{display:flex;align-items:center;gap:12px}
+.step button{width:42px;height:42px;border-radius:50%;border:2px solid var(--line);background:var(--surface);font:inherit;font-weight:800;font-size:1.25rem;line-height:1;color:var(--primary);cursor:pointer}
+.step b{min-width:1.5em;text-align:center;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.phgroup{margin-top:4px;margin-bottom:6px;font-size:.8rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);grid-column:1/-1}
+.ph.done-up .shot{color:var(--teal)}
+@media (prefers-reduced-motion: reduce){.bar>i{transition:none}}
+
+.sum{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{font-size:.82rem;font-weight:700;border-radius:9999px;padding:6px 12px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink)}
+.chip.warn{background:var(--warn-soft);border-color:rgba(180,84,26,.35);color:var(--warn)}
+li.item.ro{padding:12px 16px;gap:14px;align-items:center}
+li.item.ro .txt{flex:1}
+a.ph{text-decoration:none;color:inherit;cursor:zoom-in;min-height:0}
+body{padding-block:0 48px}
+</style>
+
+<nav class="nav"><div class="wrap"><img src="../logo.png" alt="Professional Holiday Homes" width="183" height="34"></div></nav>
+<div class="wrap">
+  <header class="top">
+    <span class="badge">Clean check record</span>
+    <h1 id="prop">Loading...</h1>
+    <div class="meta"><span id="when"></span><span id="who"></span><span id="res"></span></div>
+    <div class="sum" id="sum"></div>
+  </header>
+  <p class="note err" id="err" hidden></p>
+  <section class="sec" id="photosec" hidden>
+    <div class="sechead"><h2>Photos</h2><span class="secount ok" id="phcount"></span></div>
+    <div class="photos" id="photos"></div>
+    <p class="note">Tap a photo to open it full size. Photo links last one hour. Reload this page for fresh links.</p>
+  </section>
+  <div id="sections"></div>
+</div>
+<script>
+window.PHH_API = window.PHH_API || "";
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var id = new URLSearchParams(location.search).get("id") || "";
+  function fmt(ts){ return ts ? new Date(ts).toLocaleString("en-AU",{timeZone:"Australia/Sydney",weekday:"short",day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"}) : ""; }
+  function chip(t, warn){ var c = document.createElement("span"); c.className = "chip" + (warn ? " warn" : ""); c.textContent = t; $("sum").appendChild(c); }
+  function fail(m){ $("prop").textContent = "Clean check not found"; $("err").hidden = false; $("err").textContent = m; }
+  if(!window.PHH_API || !id){ fail("This link is incomplete."); return; }
+  fetch(window.PHH_API + "/view", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ id:id }) })
+    .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })
+    .then(function(j){
+      document.title = "Clean check - " + j.property;
+      $("prop").textContent = j.property || "Clean check";
+      $("when").textContent = "Submitted " + fmt(j.submittedAt) + " (Sydney)";
+      $("who").textContent = "By " + j.cleaner;
+      $("res").textContent = "Booking " + j.res;
+      var n = 0; j.sections.forEach(function(s){ n += s.items.length; });
+      chip(n + " items" + (j.naCount ? " (" + j.naCount + " N/A)" : ""));
+      chip(j.photos.length + " photos");
+      if(j.consumables) chip("Consumables needed: " + (j.consumables === "yes" ? "Yes" : "No"), j.consumables === "yes");
+      if(j.noBbq) chip("Marked as no BBQ", true);
+      if(j.oldPhotoCount) chip(j.oldPhotoCount + " photo" + (j.oldPhotoCount > 1 ? "s" : "") + " older than 12 hours", true);
+      var rm = j.rooms || {};
+      if(rm.bedrooms) chip(rm.bedrooms + " bed, " + rm.bathrooms + " bath photographed", (rm.hhBedrooms && rm.bedrooms < rm.hhBedrooms) || (rm.hhBathrooms && rm.bathrooms < rm.hhBathrooms));
+      $("photosec").hidden = false; $("phcount").textContent = String(j.photos.length);
+      j.photos.forEach(function(p){
+        var a = document.createElement("a"); a.className = "ph has"; a.target = "_blank"; a.rel = "noopener";
+        if(p.url){ a.href = p.url; var im = document.createElement("img"); im.loading = "lazy"; im.alt = p.label; im.src = p.url; a.appendChild(im); }
+        var cap = document.createElement("div"); cap.className = "cap"; cap.textContent = p.label;
+        var st = document.createElement("span"); st.className = "stamp"; st.textContent = fmt(p.stampedAt); cap.appendChild(st);
+        if(p.oldPhoto){ var fl = document.createElement("span"); fl.className = "flag"; fl.textContent = "Photo file is older than 12 hours"; cap.appendChild(fl); }
+        if(!p.url){ var f2 = document.createElement("span"); f2.className = "flag"; f2.textContent = "Photo file not found"; cap.appendChild(f2); }
+        a.appendChild(cap); $("photos").appendChild(a);
+      });
+      j.sections.forEach(function(sec){
+        var el = document.createElement("section"); el.className = "sec";
+        el.innerHTML = '<div class="sechead"><h2></h2><span class="secount ok"></span></div>';
+        el.querySelector("h2").textContent = sec.title; el.querySelector(".secount").textContent = String(sec.items.length);
+        var ul = document.createElement("ul"); ul.className = "items";
+        sec.items.forEach(function(it){
+          var li = document.createElement("li"); li.className = "item ro " + (it.status === "na" ? "na" : "done");
+          li.innerHTML = '<span class="box" aria-hidden="true"></span><span class="txt"></span>';
+          li.querySelector(".box").textContent = it.status === "na" ? "N/A" : "\u2713";
+          li.querySelector(".txt").textContent = it.text; ul.appendChild(li);
+        });
+        el.appendChild(ul); $("sections").appendChild(el);
+      });
+    })
+    .catch(function(e){ fail(e.message); });
+})();
+</script>
+
+</body></html>

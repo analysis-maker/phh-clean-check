@@ -41,9 +41,9 @@ h2{font-size:1.2rem;font-weight:800;letter-spacing:-.01em}
 .banner{margin-top:16px;padding:14px 16px;border-radius:var(--radius-md);background:rgba(33,166,199,.10);border:1px solid rgba(33,166,199,.35);color:var(--ink);font-size:.92rem}
 .who{margin-top:20px;display:grid;gap:8px}
 .lbl,.kicker{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
-input[type=text]{font:inherit;padding:14px 16px;border-radius:var(--radius-md);border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+input[type=text],select{font:inherit;padding:14px 16px;border-radius:var(--radius-md);border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
 input[type=text]::placeholder{color:var(--faint)}
-input[type=text]:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+input[type=text]:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 section.sec{margin-top:28px}
 .sechead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}
 .secount{font-size:.85rem;color:var(--faint);font-weight:700;font-variant-numeric:tabular-nums}
@@ -98,6 +98,11 @@ a.linkbtn{display:block;text-align:center;text-decoration:none;margin-top:12px}
 .step b{min-width:1.5em;text-align:center;font-size:1.1rem;font-variant-numeric:tabular-nums}
 .phgroup{margin-top:4px;margin-bottom:6px;font-size:.8rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);grid-column:1/-1}
 .ph.done-up .shot{color:var(--teal)}
+select{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--primary) 50%),linear-gradient(135deg,var(--primary) 50%,transparent 50%);background-position:calc(100% - 22px) 50%,calc(100% - 16px) 50%;background-size:6px 6px;background-repeat:no-repeat;padding-right:44px}
+.secphotos{margin-top:12px}
+.roominfo{margin:0 0 10px;color:var(--muted);font-size:.9rem}
+.ph .opt{display:block;font-weight:500;color:var(--faint);font-size:.78rem}
+.maint{margin-top:12px}
 @media (prefers-reduced-motion: reduce){.bar>i{transition:none}}
 </style>
 
@@ -129,7 +134,8 @@ a.linkbtn{display:block;text-align:center;text-decoration:none;margin-top:12px}
     <span class="badge">Clean check</span>
     <h1 id="prop">Loading clean...</h1>
     <div class="meta"><span id="cdate"></span><span id="cres"></span></div>
-    <div class="due">Complete and submit by 3pm.</div>
+    <div class="due">Complete by 3pm.</div>
+    <div class="banner" id="howto">Take the first photo (guest keys) when you arrive. Then tick each section and take its photos as you go. Photos are time-stamped. No photos, no payment.</div>
     <a class="back" id="back" href="./" hidden>Back to my cleans</a>
   </header>
   <div class="prog">
@@ -140,24 +146,19 @@ a.linkbtn{display:block;text-align:center;text-decoration:none;margin-top:12px}
   <div class="banner" id="demobanner" hidden>Demo clean with example data. Nothing you tick or photograph here is saved to PHH.</div>
 
   <div class="who" id="namebox">
-    <label class="lbl" for="cleaner">Your name</label>
-    <input type="text" id="cleaner" autocomplete="name" placeholder="e.g. Seabreeze Cleaning">
+    <label class="lbl" for="cleanersel">Your name</label>
+    <select id="cleanersel"><option value="">Choose your name</option><option value="__other">Other (type your name)</option></select>
+    <input type="text" id="cleaner" autocomplete="name" placeholder="Type your full name" hidden>
   </div>
 
   <div id="sections"></div>
 
-  <section class="sec" id="photosec">
-    <div class="sechead"><h2>Photos</h2><span class="secount" id="phcount">0 / 0</span></div>
-    <div class="rooms" id="rooms"></div>
-    <div class="photos" id="photos"></div>
-    <p class="note">Take each photo at the end of the clean. The time and property are stamped on every photo. No photos, no payment.</p>
-  </section>
 </div>
 
 <footer class="foot" id="foot">
   <div class="wrap">
-    <div class="left" id="footmsg">Tick every item, answer consumables, then add every photo.</div>
-    <button class="submit" id="submit" disabled>Submit clean</button>
+    <div class="left" id="footmsg">Tick every item, take every photo and answer consumables.</div>
+    <button class="submit" id="submit" disabled>Complete clean</button>
   </div>
 </footer>
 
@@ -166,14 +167,18 @@ a.linkbtn{display:block;text-align:center;text-decoration:none;margin-top:12px}
 window.PHH_API = window.PHH_API || "";
 </script>
 <script>
-// PHH standard clean checklist v1.1.
+// PHH standard clean checklist v1.2 (Craig Geekout 14 Oct 2026: photos inside each section, optional garden photos,
+// room counts locked to HomHero, consumables reworded, maintenance link).
+// Earlier: v1.1.
 // Source: Craig Reid's revised Housekeeping Checklist (Trello, 30 Sep 2026). Wording kept from Craig.
 // "na: true" = item says "if applicable / if required", so the cleaner may mark it N/A instead of ticking.
 // "bbq: true" = marked N/A automatically when the cleaner says the property has no BBQ.
 // Consumables is a separate Yes/No question in the app (Yes opens the Process Street order form).
 window.PHH_CHECKLIST = {
-  version: "2026-09-30-craig-v11",
+  version: "2026-10-14-craig-v12",
   consumablesUrl: "https://app.process.st/workflows/Consumables-Ordering-uYciaTu565lWPqE3m1dEPg/run-link",
+  // Link for "Please log any maintenance via HomHero". Empty = the button is hidden and only the text shows.
+  maintenanceUrl: "https://app.homhero.com.au/#maintenance",
   sections: [
     { id: "entry", title: "Entry", items: [
       { id: "ent_cobwebs", text: "Check entryway for cobwebs/dust and clean" },
@@ -249,22 +254,26 @@ window.PHH_CHECKLIST = {
       { id: "exit_keys", text: "Return housekeeper keys to lockbox" }
     ]}
   ],
-  // Photos. "per" = one photo per bedroom or per bathroom (count from HomHero, cleaner can adjust).
-  // "bbq" = skipped when the cleaner says the property has no BBQ (flagged in the daily report).
+  // Photos, shown inside their section ("sec") in this order. The first one (guest keys) is taken on arrival,
+  // so first photo to Complete = how long the clean took.
+  // "per" = one photo per bedroom or per bathroom (count locked to HomHero).
+  // "bbq" = skipped when the cleaner says the property has no BBQ. "optional" = not needed to complete.
   photos: [
-    { id: "ph_keys", label: "Guest keys in lockbox" },
-    { id: "ph_living", label: "Living room (including couch)" },
-    { id: "ph_dining", label: "Dining area" },
-    { id: "ph_benches", label: "Kitchen benches" },
-    { id: "ph_oven", label: "Inside of oven" },
-    { id: "ph_micro", label: "Inside of microwave" },
-    { id: "ph_fridge", label: "Inside of fridge/freezer" },
-    { id: "ph_bedroom", label: "Bedroom", per: "bedrooms" },
-    { id: "ph_toilet", label: "Toilet", per: "bathrooms" },
-    { id: "ph_vanity", label: "Bathroom vanity and sink", per: "bathrooms" },
-    { id: "ph_shower", label: "Shower (including shower floor)", per: "bathrooms" },
-    { id: "ph_patio", label: "Patio/deck" },
-    { id: "ph_bbq", label: "Barbecue", bbq: true }
+    { id: "ph_keys", sec: "entry", label: "Guest keys in lockbox" },
+    { id: "ph_benches", sec: "kitchen", label: "Kitchen benches" },
+    { id: "ph_oven", sec: "kitchen", label: "Inside of oven" },
+    { id: "ph_micro", sec: "kitchen", label: "Inside of microwave" },
+    { id: "ph_fridge", sec: "kitchen", label: "Inside of fridge/freezer" },
+    { id: "ph_dining", sec: "kitchen", label: "Dining area" },
+    { id: "ph_living", sec: "living", label: "Living room (including couch)" },
+    { id: "ph_bedroom", sec: "bedrooms", label: "Bedroom", per: "bedrooms" },
+    { id: "ph_toilet", sec: "bathrooms", label: "Toilet", per: "bathrooms" },
+    { id: "ph_vanity", sec: "bathrooms", label: "Vanity and sink", per: "bathrooms" },
+    { id: "ph_shower", sec: "bathrooms", label: "Shower and shower floor", per: "bathrooms" },
+    { id: "ph_patio", sec: "outdoor", label: "Patio/deck" },
+    { id: "ph_bbq", sec: "outdoor", label: "Barbecue", bbq: true },
+    { id: "ph_frontgarden", sec: "outdoor", label: "Front garden", optional: true },
+    { id: "ph_backgarden", sec: "outdoor", label: "Back garden", optional: true }
   ]
 };
 
@@ -280,20 +289,21 @@ window.PHH_CHECKLIST = {
   var LIVE = !!(API && RES);
   var PICK = !!(API && !RES && params.get("demo") !== "1");
   var FROM_LIST = params.get("from") === "list";
-  var state = { items:{}, photos:{}, cleaner:"", startedAt:new Date().toISOString(), consumables:"", noBbq:false, rooms:null, roomsEdited:false };
+  var state = { items:{}, photos:{}, cleaner:"", cleanerSel:"", startedAt:new Date().toISOString(), consumables:"", noBbq:false, rooms:null, roomsEdited:false };
   var clean = null;
   var $ = function(id){ return document.getElementById(id); };
-  var key = "phh-clean-v11-" + (RES || "demo");
+  var key = "phh-clean-v12-" + (RES || "demo");
+  var MAX_PHOTO_AGE_MIN = 15; /* live photos only: refuse photos taken more than 15 minutes ago */
   var pending = 0;
 
   function save(){
     var ph = {};
     Object.keys(state.photos).forEach(function(k){ var x = state.photos[k]; if(x.path) ph[k] = { path:x.path, stampedAt:x.stampedAt, takenAt:x.takenAt, oldPhoto:x.oldPhoto, label:x.label }; });
-    try{ localStorage.setItem(key, JSON.stringify({ items:state.items, cleaner:state.cleaner, startedAt:state.startedAt, consumables:state.consumables, noBbq:state.noBbq, rooms:state.rooms, roomsEdited:state.roomsEdited, photos: LIVE ? ph : {} })); }catch(e){}
+    try{ localStorage.setItem(key, JSON.stringify({ items:state.items, cleaner:state.cleaner, cleanerSel:state.cleanerSel, startedAt:state.startedAt, consumables:state.consumables, noBbq:state.noBbq, rooms:state.rooms, roomsEdited:state.roomsEdited, photos: LIVE ? ph : {} })); }catch(e){}
   }
   function load(){
     try{ var s = JSON.parse(localStorage.getItem(key) || "null");
-      if(s){ state.items = s.items || {}; state.cleaner = s.cleaner || ""; state.startedAt = s.startedAt || state.startedAt;
+      if(s){ state.items = s.items || {}; state.cleaner = s.cleaner || ""; state.cleanerSel = s.cleanerSel || ""; state.startedAt = s.startedAt || state.startedAt;
         state.consumables = s.consumables || ""; state.noBbq = !!s.noBbq; state.rooms = s.rooms || null; state.roomsEdited = !!s.roomsEdited; state.photos = s.photos || {}; }
     }catch(e){}
   }
@@ -303,21 +313,28 @@ window.PHH_CHECKLIST = {
   function status(it){ return (it.bbq && state.noBbq) ? "na" : state.items[it.id]; }
   function rooms(){ return state.rooms || { bedrooms:1, bathrooms:1 }; }
 
-  /* Photo slots: one per photo, or one per bedroom / bathroom for "per" photos. */
+  /* Photo slots, in section order. Bathrooms go bathroom by bathroom (toilet, vanity, shower). */
   function slots(){
     var r = rooms(), out = [];
-    CL.photos.forEach(function(p){
-      if(p.bbq && state.noBbq) return;
-      if(p.per){
-        var n = r[p.per];
+    CL.sections.forEach(function(sec){
+      var defs = CL.photos.filter(function(p){ return p.sec === sec.id && !(p.bbq && state.noBbq); });
+      var per = defs.filter(function(p){ return p.per; }), single = defs.filter(function(p){ return !p.per; });
+      if(per.length){
+        var n = r[per[0].per];
         for(var i=1;i<=n;i++){
-          var tag = p.per === "bedrooms" ? "" : (n > 1 ? " (bathroom " + i + ")" : "");
-          out.push({ key:p.id + "_" + i, label: p.per === "bedrooms" ? "Bedroom " + i : p.label + tag, group:p.per });
+          per.forEach(function(p){
+            var lab = p.per === "bedrooms" ? "Bedroom " + i : p.label + (n > 1 ? " (bathroom " + i + ")" : "");
+            out.push({ key:p.id + "_" + i, label:lab, sec:sec.id, group: (p.per === "bathrooms" && n > 1) ? "Bathroom " + i : "", optional:false });
+          });
         }
-      } else out.push({ key:p.id, label:p.label, group:"" });
+      }
+      single.forEach(function(p){ out.push({ key:p.id, label:p.label, sec:sec.id, group:"", optional:!!p.optional }); });
     });
     return out;
   }
+  function required(sl){ return sl.filter(function(s){ return !s.optional; }); }
+  function hasPhoto(s){ var x = state.photos[s.key]; return !!(x && (LIVE ? x.path : x.blob)); }
+  function cleanerName(){ return state.cleanerSel === "__other" ? String(state.cleaner || "").trim() : (state.cleanerSel || ""); }
 
   function itemRow(it){
     var li = document.createElement("li"); li.className = "item"; li.dataset.id = it.id;
@@ -338,7 +355,7 @@ window.PHH_CHECKLIST = {
   function consumablesSection(){
     var el = document.createElement("section"); el.className = "sec"; el.id = "consec";
     el.innerHTML = '<div class="sechead"><h2>Consumables</h2><span class="secount" id="concount"></span></div>' +
-      '<p class="note" style="margin-top:0">Are consumables required at this property?</p>' +
+      '<p class="note" style="margin-top:0">Do consumables need to be ordered?</p>' +
       '<div class="seg"><button type="button" class="segbtn" id="con_yes">Yes</button><button type="button" class="segbtn" id="con_no">No</button></div>' +
       '<a class="submit linkbtn" id="con_link" target="_blank" rel="noopener" hidden>Open consumables order form</a>' +
       '<p class="note" id="con_note" hidden>The order form opens in a new tab. Come back here to finish the clean check.</p>';
@@ -364,20 +381,49 @@ window.PHH_CHECKLIST = {
         li.appendChild(b); ul.appendChild(li);
       }
       sec.items.forEach(function(it){ ul.appendChild(itemRow(it)); });
-      el.appendChild(ul); host.appendChild(el);
+      el.appendChild(ul);
+      if(sec.id === "bedrooms" || sec.id === "bathrooms"){ var ri = document.createElement("div"); ri.className = "rooms secphotos"; ri.id = "rooms_" + sec.id; el.appendChild(ri); }
+      if(CL.photos.some(function(p){ return p.sec === sec.id; })){ var pg = document.createElement("div"); pg.className = "photos secphotos"; pg.id = "photos_" + sec.id; el.appendChild(pg); }
+      if(sec.id === "damage"){
+        var m = document.createElement("div"); m.className = "maint";
+        m.innerHTML = '<p class="note" style="margin-top:0">Please log any maintenance via HomHero.</p>';
+        if(CL.maintenanceUrl){ var a = document.createElement("a"); a.className = "submit linkbtn"; a.target = "_blank"; a.rel = "noopener"; a.href = CL.maintenanceUrl; a.textContent = "Log maintenance in HomHero"; m.appendChild(a); }
+        el.appendChild(m);
+      }
+      host.appendChild(el);
     });
-    $("cleaner").value = state.cleaner;
+    fillNames();
     renderPhotos();
     update();
   }
 
+  /* "Your name": housekeepers with a code plus whoever HomHero has on this clean, then Other (typed name required). */
+  function fillNames(){
+    var sel = $("cleanersel"), names = ((clean && clean.cleaners) || []).slice();
+    if(state.cleanerSel && state.cleanerSel !== "__other" && names.indexOf(state.cleanerSel) < 0) names.push(state.cleanerSel);
+    sel.innerHTML = "";
+    sel.appendChild(new Option("Choose your name", ""));
+    names.forEach(function(n){ sel.appendChild(new Option(n, n)); });
+    sel.appendChild(new Option("Other (type your name)", "__other"));
+    sel.value = state.cleanerSel || "";
+    $("cleaner").hidden = state.cleanerSel !== "__other";
+    $("cleaner").value = state.cleaner || "";
+  }
+
+  /* Room counts come from HomHero and are locked. Only when HomHero has none can the cleaner set them. */
   function renderRooms(){
-    var r = rooms(), host = $("rooms"); host.innerHTML = "";
-    var src = clean && clean.hhRooms ? "From HomHero. Change only if it is wrong." : "Set the number of rooms at this property.";
-    [["bedrooms","Bedrooms"],["bathrooms","Bathrooms"]].forEach(function(x){
+    var r = rooms(), locked = !!(clean && clean.roomsLocked);
+    [["bedrooms","Bedrooms","bedroom"],["bathrooms","Bathrooms","bathroom"]].forEach(function(x){
+      var host = $("rooms_" + x[0]); if(!host) return; host.innerHTML = "";
+      if(!clean) return;
+      if(locked){
+        var p = document.createElement("p"); p.className = "roominfo";
+        p.textContent = r[x[0]] + " " + x[2] + (r[x[0]] > 1 ? "s" : "") + " at this property (from HomHero). " + (x[0] === "bedrooms" ? "One photo per bedroom." : "Toilet, vanity and shower photos for each bathroom.");
+        host.appendChild(p); return;
+      }
       var d = document.createElement("div"); d.className = "room";
       d.innerHTML = '<span><span class="txt"></span><span class="sub"></span></span><span class="step"><button type="button" aria-label="One less">&minus;</button><b></b><button type="button" aria-label="One more">+</button></span>';
-      d.querySelector(".txt").textContent = x[1]; d.querySelector(".sub").textContent = src; d.querySelector("b").textContent = r[x[0]];
+      d.querySelector(".txt").textContent = x[1]; d.querySelector(".sub").textContent = "HomHero has no room count for this property. Set it here."; d.querySelector("b").textContent = r[x[0]];
       var bs = d.querySelectorAll("button");
       bs[0].addEventListener("click", function(){ setRoom(x[0], r[x[0]] - 1); });
       bs[1].addEventListener("click", function(){ setRoom(x[0], r[x[0]] + 1); });
@@ -385,26 +431,31 @@ window.PHH_CHECKLIST = {
     });
   }
   function setRoom(k, n){
+    if(clean && clean.roomsLocked) return;
     n = Math.max(1, Math.min(10, n)); var r = rooms(); if(r[k] === n) return;
     r[k] = n; state.rooms = r; state.roomsEdited = true; save(); renderPhotos(); update();
   }
 
   function renderPhotos(){
     renderRooms();
-    var ph = $("photos"); ph.innerHTML = "";
-    var lastGroup = null;
+    CL.sections.forEach(function(sec){ var h = $("photos_" + sec.id); if(h) h.innerHTML = ""; });
+    var lastGroup = {};
     slots().forEach(function(s){
-      if(s.group && s.group !== lastGroup){ var g = document.createElement("div"); g.className = "phgroup"; g.textContent = s.group === "bedrooms" ? "One photo per bedroom" : "Per bathroom"; ph.appendChild(g); }
-      if(!s.group && lastGroup){ var g2 = document.createElement("div"); g2.className = "phgroup"; g2.textContent = "Outside"; ph.appendChild(g2); }
-      lastGroup = s.group;
+      var ph = $("photos_" + s.sec); if(!ph) return;
+      if(s.group && s.group !== lastGroup[s.sec]){ var g = document.createElement("div"); g.className = "phgroup"; g.textContent = s.group; ph.appendChild(g); }
+      lastGroup[s.sec] = s.group;
       var d = document.createElement("label"); d.className = "ph"; d.dataset.id = s.key; d.htmlFor = "f_"+s.key;
       d.innerHTML = '<div class="shot">Tap to take photo</div><div class="cap"></div><input type="file" accept="image/*" capture="environment" id="f_'+s.key+'">';
-      d.querySelector(".cap").textContent = s.label;
+      capText(d.querySelector(".cap"), s);
       d.querySelector("input").addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; if(f) addPhoto(s, f, d); e.target.value = ""; });
       ph.appendChild(d);
       var x = state.photos[s.key];
       if(x && (x.path || x.blob)) showPhoto(s, d, x);
     });
+  }
+  function capText(cap, s){
+    cap.innerHTML = ""; cap.appendChild(document.createTextNode(s.label));
+    if(s.optional){ var o = document.createElement("span"); o.className = "opt"; o.textContent = "Optional"; cap.appendChild(o); }
   }
 
   function showPhoto(s, tile, x){
@@ -412,9 +463,14 @@ window.PHH_CHECKLIST = {
     var shot = tile.querySelector(".shot");
     if(x.thumb){ if(shot) shot.remove(); var im = tile.querySelector("img"); if(!im){ im = document.createElement("img"); im.alt = s.label + " photo"; tile.insertBefore(im, tile.firstChild); } im.src = x.thumb; }
     else if(shot){ shot.textContent = "✓ Photo saved"; tile.classList.add("done-up"); }
-    var cap = tile.querySelector(".cap"); cap.innerHTML = ""; cap.appendChild(document.createTextNode(s.label));
+    var cap = tile.querySelector(".cap"); capText(cap, s);
     var st = document.createElement("span"); st.className = "stamp"; st.textContent = fmt(new Date(x.stampedAt)) + "  (tap to retake)"; cap.appendChild(st);
-    if(x.oldPhoto){ var fl = document.createElement("span"); fl.className = "flag"; fl.textContent = "This photo looks older than today. Retake it now if you can."; cap.appendChild(fl); }
+  }
+  function photoError(tile, m){
+    var cap = tile.querySelector(".cap"), f = cap.querySelector(".flag");
+    if(!f){ f = document.createElement("span"); f.className = "flag"; cap.appendChild(f); }
+    f.textContent = m;
+    $("footmsg").innerHTML = '<span class="err"></span>'; $("footmsg").firstChild.textContent = m;
   }
 
   function update(){
@@ -427,31 +483,32 @@ window.PHH_CHECKLIST = {
       if(v) done++;
     });
     var nb = $("nobbq"); if(nb){ nb.classList.toggle("done", state.noBbq); nb.querySelector(".box").textContent = state.noBbq ? "✓" : ""; }
+    var req = required(slots());
     CL.sections.forEach(function(sec){
-      var n = sec.items.filter(function(i){ return status(i); }).length;
+      var rs = req.filter(function(s){ return s.sec === sec.id; });
+      var n = sec.items.filter(function(i){ return status(i); }).length + rs.filter(hasPhoto).length, tot = sec.items.length + rs.length;
       var c = document.querySelector('[data-sec="'+sec.id+'"]');
-      c.textContent = n + " / " + sec.items.length; c.classList.toggle("ok", n === sec.items.length);
+      c.textContent = n + " / " + tot; c.classList.toggle("ok", n === tot);
     });
     $("con_yes").setAttribute("aria-pressed", state.consumables === "yes" ? "true" : "false");
     $("con_no").setAttribute("aria-pressed", state.consumables === "no" ? "true" : "false");
     $("con_link").hidden = state.consumables !== "yes"; $("con_note").hidden = state.consumables !== "yes";
     $("concount").textContent = state.consumables ? "1 / 1" : "0 / 1"; $("concount").classList.toggle("ok", !!state.consumables);
-    var sl = slots(), pc = sl.filter(function(s){ var x = state.photos[s.key]; return x && (LIVE ? x.path : x.blob); }).length;
-    var total = items.length + 1 + sl.length, got = done + (state.consumables ? 1 : 0) + pc;
+    var pc = req.filter(hasPhoto).length;
+    var total = items.length + 1 + req.length, got = done + (state.consumables ? 1 : 0) + pc;
     $("barfill").style.width = Math.round(got / total * 100) + "%";
     $("counttxt").textContent = done + " of " + items.length + " ticked";
-    $("phototxt").textContent = pc + " of " + sl.length + " photos";
-    $("phcount").textContent = pc + " / " + sl.length; $("phcount").classList.toggle("ok", pc === sl.length);
-    var name = $("cleaner").value.trim();
-    var ready = done === items.length && state.consumables && pc === sl.length && name.length > 1 && !pending;
+    $("phototxt").textContent = pc + " of " + req.length + " photos";
+    var name = cleanerName();
+    var ready = done === items.length && state.consumables && pc === req.length && name.length > 1 && !pending;
     $("submit").disabled = !ready;
-    var left = items.length - done, lp = sl.length - pc, bits = [];
-    if(!name) bits.push("add your name");
+    var left = items.length - done, lp = req.length - pc, bits = [];
+    if(name.length < 2) bits.push(state.cleanerSel === "__other" ? "type your name" : "choose your name");
     if(left) bits.push(left + " item" + (left>1?"s":"") + " to tick");
+    if(lp) bits.push(lp + " photo" + (lp>1?"s":"") + " to take");
     if(!state.consumables) bits.push("answer consumables");
-    if(lp) bits.push(lp + " photo" + (lp>1?"s":"") + " to add");
     if(pending) bits.push("uploading " + pending + " photo" + (pending>1?"s":""));
-    $("footmsg").textContent = bits.length ? "Still to do: " + bits.join(", ") + "." : "All done. Submit the clean.";
+    $("footmsg").textContent = bits.length ? "Still to do: " + bits.join(", ") + "." : "All done. Tap Complete clean.";
   }
 
   /* Minimal EXIF DateTimeOriginal reader (JPEG only). Returns Date or null. */
@@ -486,6 +543,10 @@ window.PHH_CHECKLIST = {
   function addPhoto(s, file, tile){
     var takenAt = null;
     file.slice(0, 131072).arrayBuffer().then(function(buf){ takenAt = exifDate(buf); }).catch(function(){}).then(function(){
+      /* Live photos only: the camera time (or, without it, the file time) must be within the last 15 minutes. */
+      var nowCheck = new Date();
+      var when = takenAt || (file.lastModified > 1577836800000 ? new Date(file.lastModified) : null);
+      if(when && (nowCheck - when) > MAX_PHOTO_AGE_MIN*60000){ photoError(tile, "This photo was taken more than " + MAX_PHOTO_AGE_MIN + " minutes ago. Take a new photo now with the camera."); return; }
       var url = URL.createObjectURL(file), img = new Image();
       img.onload = function(){
         var max = 1280, sc = Math.min(1, max / Math.max(img.width, img.height));
@@ -495,11 +556,10 @@ window.PHH_CHECKLIST = {
         var now = new Date(), band = Math.max(36, Math.round(h*0.07));
         g.fillStyle = "rgba(0,0,0,.62)"; g.fillRect(0, h-band, w, band);
         g.fillStyle = "#fff"; g.font = "bold " + Math.round(band*0.38) + "px sans-serif"; g.textBaseline = "middle";
-        g.fillText((clean ? clean.property : "") + "  |  " + s.label + "  |  " + fmt(now), Math.round(band*0.3), h - band/2);
+        g.fillText(s.label + "  |  " + fmt(now), Math.round(band*0.3), h - band/2);
         URL.revokeObjectURL(url);
         c.toBlob(function(blob){
-          var old = takenAt && (now - takenAt) > 12*3600*1000;
-          state.photos[s.key] = { blob:blob, thumb:URL.createObjectURL(blob), label:s.label, stampedAt: now.toISOString(), takenAt: takenAt ? takenAt.toISOString() : null, oldPhoto: !!old, path:null };
+          state.photos[s.key] = { blob:blob, thumb:URL.createObjectURL(blob), label:s.label, stampedAt: now.toISOString(), takenAt: takenAt ? takenAt.toISOString() : null, oldPhoto: false, path:null };
           showPhoto(s, tile, state.photos[s.key]);
           if(LIVE){ upload(s.key); } update();
         }, "image/jpeg", 0.72);
@@ -526,12 +586,17 @@ window.PHH_CHECKLIST = {
   }
 
   $("cleaner").addEventListener("input", function(){ state.cleaner = this.value; save(); update(); });
+  $("cleanersel").addEventListener("change", function(){
+    state.cleanerSel = this.value; $("cleaner").hidden = this.value !== "__other";
+    if(this.value === "__other") $("cleaner").focus();
+    save(); update();
+  });
 
   $("submit").addEventListener("click", function(){
-    var btn = this; btn.disabled = true; btn.textContent = "Submitting...";
-    var sl = slots();
+    var btn = this; btn.disabled = true; btn.textContent = "Completing...";
+    var sl = slots().filter(hasPhoto);
     var payload = {
-      cleaner: $("cleaner").value.trim(),
+      cleaner: cleanerName(),
       checklistVersion: CL.version,
       startedAt: state.startedAt,
       consumables: state.consumables,
@@ -542,12 +607,12 @@ window.PHH_CHECKLIST = {
     };
     var done = function(){
       try{ localStorage.removeItem(key); }catch(e){}
-      document.getElementById("app").innerHTML = '<div class="donecard"><div class="big">Clean submitted</div><p></p><p class="note">You can close this page. Thank you.</p>' + (FROM_LIST ? '<a class="back" href="./">Back to my cleans</a>' : '') + '</div>';
+      document.getElementById("app").innerHTML = '<div class="donecard"><div class="big">Clean complete</div><p></p><p class="note">You can close this page. Thank you.</p>' + (FROM_LIST ? '<a class="back" href="./">Back to my cleans</a>' : '') + '</div>';
       document.querySelector(".donecard p").textContent = (clean ? clean.property + ", " : "") + fmt(new Date()) + ". " + payload.items.length + " items and " + payload.photos.length + " photos recorded.";
       $("foot").hidden = true; window.scrollTo(0,0);
     };
     if(!LIVE){ setTimeout(done, 400); return; }
-    api("/submit", payload).then(done).catch(function(e){ btn.disabled = false; btn.textContent = "Submit clean"; $("footmsg").innerHTML = '<span class="err"></span>'; $("footmsg").firstChild.textContent = e.message; });
+    api("/submit", payload).then(done).catch(function(e){ btn.disabled = false; btn.textContent = "Complete clean"; $("footmsg").innerHTML = '<span class="err"></span>'; $("footmsg").firstChild.textContent = e.message; });
   });
 
   function start(c){
@@ -555,11 +620,16 @@ window.PHH_CHECKLIST = {
     $("prop").textContent = c.property;
     $("cdate").textContent = "Clean " + c.cleanDate;
     $("cres").textContent = "Booking " + c.res;
-    if(!state.cleaner && c.cleaner){ state.cleaner = c.cleaner; $("cleaner").value = c.cleaner; }
+    var list = c.cleaners || [];
+    if(!state.cleanerSel){
+      var pref = ""; try{ pref = localStorage.getItem("phh-cleaner-name") || ""; }catch(e){}
+      if(pref && list.indexOf(pref) >= 0) state.cleanerSel = pref;
+      else if(c.cleaner && list.indexOf(c.cleaner) >= 0) state.cleanerSel = c.cleaner;
+    }
     var hb = Number(c.bedrooms), ht = Number(c.bathrooms);
-    c.hhRooms = hb >= 1 || ht >= 1;
-    if(!state.roomsEdited && c.hhRooms){ state.rooms = { bedrooms: Math.max(1, Math.min(10, Math.round(hb) || 1)), bathrooms: Math.max(1, Math.min(10, Math.floor(ht) || 1)) }; }
-    save(); renderPhotos(); update();
+    if(c.roomsLocked){ state.rooms = { bedrooms: Math.max(1, Math.min(10, Math.round(hb) || 1)), bathrooms: Math.max(1, Math.min(10, Math.floor(ht) || 1)) }; state.roomsEdited = false; }
+    else if(!state.roomsEdited && (hb >= 1 || ht >= 1)){ state.rooms = { bedrooms: Math.max(1, Math.min(10, Math.round(hb) || 1)), bathrooms: Math.max(1, Math.min(10, Math.floor(ht) || 1)) }; }
+    fillNames(); save(); renderPhotos(); update();
   }
 
   /* Cleaner's list: no booking in the link, so list today's cleans for the cleaner's own code. */
@@ -596,6 +666,7 @@ window.PHH_CHECKLIST = {
         .then(function(j){
           try{ localStorage.setItem(KEY, code); }catch(e){}
           office = !!j.office; all = j.cleans || [];
+          try{ if(office) localStorage.removeItem("phh-cleaner-name"); else localStorage.setItem("phh-cleaner-name", String(j.cleaner || "")); }catch(e){}
           $("pickh1").textContent = office ? "All cleans today" : "Hi " + String(j.cleaner || "").split(" ")[0];
           $("pickmeta").textContent = office ? "Office view. Every clean with a PHH housekeeper." : "Your cleans for today. Pick the property you are cleaning.";
           $("notme").hidden = false;
@@ -619,11 +690,11 @@ window.PHH_CHECKLIST = {
     pick();
   } else if(LIVE){
     render(); /* show the checklist straight away; property name and room counts fill in when they arrive */
-    api("/clean", {}).then(start).catch(function(e){ $("prop").textContent = "Clean check not available"; $("sections").innerHTML = '<p class="err"></p>'; $("sections").firstChild.textContent = e.message + " If this looks wrong, call the PHH office."; $("photosec").hidden = true; $("foot").hidden = true; document.querySelector(".prog").hidden = true; $("namebox").hidden = true; });
+    api("/clean", {}).then(start).catch(function(e){ $("prop").textContent = "Clean check not available"; $("sections").innerHTML = '<p class="err"></p>'; $("sections").firstChild.textContent = e.message + " If this looks wrong, call the PHH office."; $("foot").hidden = true; document.querySelector(".prog").hidden = true; $("namebox").hidden = true; });
   } else {
     $("demobanner").hidden = false;
     render();
-    start({ res: "264471", property: "Callala Beach Demo House", cleanDate: new Date().toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"}), cleaner: "", bedrooms: 3, bathrooms: 2 });
+    start({ res: "264471", property: "Callala Beach Demo House", cleanDate: new Date().toLocaleDateString("en-AU",{weekday:"short",day:"numeric",month:"short"}), cleaner: "Rebecca Penno", bedrooms: 3, bathrooms: 2, roomsLocked: true, cleaners: ["Cassie Leatheam", "Rebecca Penno", "Sharon Kubinyi"] });
   }
 })();
 </script>

@@ -139,12 +139,17 @@ window.PHH_API = window.PHH_API || "";
     .then(function(j){
       document.title = "Clean check - " + j.property;
       $("prop").textContent = j.property || "Clean check";
-      $("when").textContent = "Submitted " + fmt(j.submittedAt) + " (Sydney)";
+      $("when").textContent = "Completed " + fmt(j.submittedAt) + " (Sydney)";
       $("who").textContent = "By " + j.cleaner;
       $("res").textContent = "Booking " + j.res;
       var n = 0; j.sections.forEach(function(s){ n += s.items.length; });
       chip(n + " items" + (j.naCount ? " (" + j.naCount + " N/A)" : ""));
       chip(j.photos.length + " photos");
+      if(j.firstPhotoAt && j.submittedAt){
+        var mins = Math.round((new Date(j.submittedAt) - new Date(j.firstPhotoAt)) / 60000);
+        if(mins >= 0){ var t = mins >= 60 ? Math.floor(mins/60) + " h " + (mins % 60) + " min" : mins + " min";
+          chip("Clean time " + t + " (first photo " + new Date(j.firstPhotoAt).toLocaleTimeString("en-AU",{timeZone:"Australia/Sydney",hour:"numeric",minute:"2-digit"}) + " to Complete)"); }
+      }
       if(j.consumables) chip("Consumables needed: " + (j.consumables === "yes" ? "Yes" : "No"), j.consumables === "yes");
       if(j.noBbq) chip("Marked as no BBQ", true);
       if(j.oldPhotoCount) chip(j.oldPhotoCount + " photo" + (j.oldPhotoCount > 1 ? "s" : "") + " older than 12 hours", true);

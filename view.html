@@ -106,6 +106,10 @@ li.item.ro{padding:12px 16px;gap:14px;align-items:center}
 li.item.ro .txt{flex:1}
 a.ph{text-decoration:none;color:inherit;cursor:zoom-in;min-height:0}
 body{padding-block:0 48px}
+.issue{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
+.issue .ihead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-weight:800}
+.issue .itext{margin:8px 0 0;white-space:pre-wrap}
+.issue .photos{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
 </style>
 
 <nav class="nav"><div class="wrap"><img src="logo.png" alt="Professional Holiday Homes" width="183" height="34"></div></nav>
@@ -117,6 +121,10 @@ body{padding-block:0 48px}
     <div class="sum" id="sum"></div>
   </header>
   <p class="note err" id="err" hidden></p>
+  <section class="sec" id="maintsec" hidden>
+    <div class="sechead"><h2>Maintenance logged</h2><span class="secount" id="mtcount"></span></div>
+    <div id="issues"></div>
+  </section>
   <section class="sec" id="photosec" hidden>
     <div class="sechead"><h2>Photos</h2><span class="secount ok" id="phcount"></span></div>
     <div class="photos" id="photos"></div>
@@ -152,9 +160,31 @@ window.PHH_API = window.PHH_API || "";
       }
       if(j.consumables) chip("Consumables needed: " + (j.consumables === "yes" ? "Yes" : "No"), j.consumables === "yes");
       if(j.noBbq) chip("Marked as no BBQ", true);
+      var mt = j.maintenance || [];
+      if(mt.length) chip(mt.length + " maintenance issue" + (mt.length > 1 ? "s" : ""), true);
       if(j.oldPhotoCount) chip(j.oldPhotoCount + " photo" + (j.oldPhotoCount > 1 ? "s" : "") + " older than 12 hours", true);
       var rm = j.rooms || {};
       if(rm.bedrooms) chip(rm.bedrooms + " bed, " + rm.bathrooms + " bath photographed", (rm.hhBedrooms && rm.bedrooms < rm.hhBedrooms) || (rm.hhBathrooms && rm.bathrooms < rm.hhBathrooms));
+      if(mt.length){
+        $("maintsec").hidden = false; $("mtcount").textContent = String(mt.length);
+        mt.forEach(function(m){
+          var d = document.createElement("div"); d.className = "issue";
+          d.innerHTML = '<div class="ihead"><span class="t"></span></div><p class="itext"></p><div class="photos"></div>';
+          d.querySelector(".t").textContent = "Issue " + m.n;
+          var h = d.querySelector(".ihead");
+          if(m.urgent){ var u = document.createElement("span"); u.className = "chip warn"; u.textContent = "Urgent"; h.appendChild(u); }
+          var hj = document.createElement("span"); hj.className = "chip"; hj.textContent = m.hhJob ? "HomHero job " + m.hhJob : "Waiting to go into HomHero"; h.appendChild(hj);
+          d.querySelector(".itext").textContent = m.text;
+          var ph = d.querySelector(".photos");
+          (m.photos || []).forEach(function(p, k){
+            var a = document.createElement("a"); a.className = "ph has"; a.target = "_blank"; a.rel = "noopener";
+            if(p.url){ a.href = p.url; var im = document.createElement("img"); im.loading = "lazy"; im.alt = "Maintenance photo " + (k + 1); im.src = p.url; a.appendChild(im); }
+            var cap = document.createElement("div"); cap.className = "cap"; cap.textContent = fmt(p.stampedAt); a.appendChild(cap); ph.appendChild(a);
+          });
+          if(!(m.photos || []).length) ph.remove();
+          $("issues").appendChild(d);
+        });
+      }
       $("photosec").hidden = false; $("phcount").textContent = String(j.photos.length);
       j.photos.forEach(function(p){
         var a = document.createElement("a"); a.className = "ph has"; a.target = "_blank"; a.rel = "noopener";

@@ -103,6 +103,21 @@ select{appearance:none;-webkit-appearance:none;background-image:linear-gradient(
 .roominfo{margin:0 0 10px;color:var(--muted);font-size:.9rem}
 .ph .opt{display:block;font-weight:500;color:var(--faint);font-size:.78rem}
 .maint{margin-top:12px}
+.issue{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;display:grid;gap:10px}
+.issuehead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.issuehead b{font-size:1rem}
+.rmbtn{font:inherit;font-size:.85rem;font-weight:700;border:0;background:none;color:var(--warn);padding:8px 4px;cursor:pointer}
+.issue textarea{width:100%;min-height:84px;font:inherit;font-size:1rem;padding:12px;border:1.5px solid var(--line);border-radius:var(--radius-md);background:var(--surface);color:var(--ink);resize:vertical;box-sizing:border-box}
+.issue textarea:focus{outline:2px solid var(--primary);outline-offset:1px}
+.issue .photos{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.issue .ph{min-height:110px}
+.issue .ph .shot{font-size:.85rem;padding:12px 6px}
+.issue .ph .cap{font-size:.78rem;padding:8px}
+.issue .ph .stamp{font-size:.7rem}
+.segbtn.urgent[aria-pressed="true"]{background:var(--warn);border-color:var(--warn)}
+.addissue{width:100%;margin-top:12px;color:var(--primary)}
+.addissue:disabled{color:var(--faint);cursor:not-allowed}
+a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight:700;font-size:.9rem}
 @media (prefers-reduced-motion: reduce){.bar>i{transition:none}}
 </style>
 
@@ -289,7 +304,8 @@ window.PHH_CHECKLIST = {
   var LIVE = !!(API && RES);
   var PICK = !!(API && !RES && params.get("demo") !== "1");
   var FROM_LIST = params.get("from") === "list";
-  var state = { items:{}, photos:{}, cleaner:"", cleanerSel:"", startedAt:new Date().toISOString(), consumables:"", noBbq:false, rooms:null, roomsEdited:false };
+  var state = { items:{}, photos:{}, cleaner:"", cleanerSel:"", startedAt:new Date().toISOString(), consumables:"", noBbq:false, rooms:null, roomsEdited:false, maint:[] };
+  var MAX_ISSUES = 5, MAX_ISSUE_PHOTOS = 3; /* maintenance: each issue keeps a fixed slot (1-5) for its photo keys mt{slot}_{1-3} */
   var clean = null;
   var $ = function(id){ return document.getElementById(id); };
   var key = "phh-clean-v12-" + (RES || "demo");
@@ -299,12 +315,12 @@ window.PHH_CHECKLIST = {
   function save(){
     var ph = {};
     Object.keys(state.photos).forEach(function(k){ var x = state.photos[k]; if(x.path) ph[k] = { path:x.path, stampedAt:x.stampedAt, takenAt:x.takenAt, oldPhoto:x.oldPhoto, label:x.label }; });
-    try{ localStorage.setItem(key, JSON.stringify({ items:state.items, cleaner:state.cleaner, cleanerSel:state.cleanerSel, startedAt:state.startedAt, consumables:state.consumables, noBbq:state.noBbq, rooms:state.rooms, roomsEdited:state.roomsEdited, photos: LIVE ? ph : {} })); }catch(e){}
+    try{ localStorage.setItem(key, JSON.stringify({ items:state.items, cleaner:state.cleaner, cleanerSel:state.cleanerSel, startedAt:state.startedAt, consumables:state.consumables, noBbq:state.noBbq, rooms:state.rooms, roomsEdited:state.roomsEdited, maint:state.maint, photos: LIVE ? ph : {} })); }catch(e){}
   }
   function load(){
     try{ var s = JSON.parse(localStorage.getItem(key) || "null");
       if(s){ state.items = s.items || {}; state.cleaner = s.cleaner || ""; state.cleanerSel = s.cleanerSel || ""; state.startedAt = s.startedAt || state.startedAt;
-        state.consumables = s.consumables || ""; state.noBbq = !!s.noBbq; state.rooms = s.rooms || null; state.roomsEdited = !!s.roomsEdited; state.photos = s.photos || {}; }
+        state.consumables = s.consumables || ""; state.noBbq = !!s.noBbq; state.rooms = s.rooms || null; state.roomsEdited = !!s.roomsEdited; state.photos = s.photos || {}; state.maint = Array.isArray(s.maint) ? s.maint : []; }
     }catch(e){}
   }
 
@@ -386,16 +402,69 @@ window.PHH_CHECKLIST = {
       if(CL.photos.some(function(p){ return p.sec === sec.id; })){ var pg = document.createElement("div"); pg.className = "photos secphotos"; pg.id = "photos_" + sec.id; el.appendChild(pg); }
       if(sec.id === "damage"){
         var m = document.createElement("div"); m.className = "maint";
-        m.innerHTML = '<p class="note" style="margin-top:0">Please log any maintenance via HomHero.</p>';
-        if(CL.maintenanceUrl){ var a = document.createElement("a"); a.className = "submit linkbtn"; a.target = "_blank"; a.rel = "noopener"; a.href = CL.maintenanceUrl; a.textContent = "Log maintenance in HomHero"; m.appendChild(a); }
+        m.innerHTML = '<p class="note" style="margin-top:0">Anything broken, damaged or needing repair? Add each issue here with a photo. It goes straight to the PHH maintenance team in HomHero, so there is no need to log it in HomHero as well.</p>' +
+          '<div id="issues"></div><button type="button" class="segbtn addissue" id="addissue">+ Add maintenance issue</button>';
+        if(CL.maintenanceUrl){ var a = document.createElement("a"); a.className = "textlink"; a.target = "_blank"; a.rel = "noopener"; a.href = CL.maintenanceUrl; a.textContent = "Or log it in HomHero yourself"; m.appendChild(a); }
+        m.querySelector("#addissue").addEventListener("click", addIssue);
         el.appendChild(m);
       }
       host.appendChild(el);
     });
     fillNames();
+    renderMaint();
     renderPhotos();
     update();
   }
+
+  /* Maintenance issues: description, Normal / Urgent, up to 3 photos. Each one becomes a HomHero maintenance job. */
+  function freeSlot(){ for(var i=1;i<=MAX_ISSUES;i++){ if(!state.maint.some(function(m){ return m.slot === i; })) return i; } return 0; }
+  function addIssue(){
+    var slot = freeSlot(); if(!slot) return;
+    state.maint.push({ slot:slot, text:"", urgent:false }); save(); renderMaint(); update();
+    var t = document.querySelector('.issue[data-slot="'+slot+'"] textarea'); if(t) t.focus();
+  }
+  function removeIssue(slot){
+    state.maint = state.maint.filter(function(m){ return m.slot !== slot; });
+    for(var k=1;k<=MAX_ISSUE_PHOTOS;k++) delete state.photos["mt"+slot+"_"+k];
+    save(); renderMaint(); update();
+  }
+  function issueSlots(m){ var out=[]; for(var k=1;k<=MAX_ISSUE_PHOTOS;k++) out.push({ key:"mt"+m.slot+"_"+k, label:"Photo " + k, stamp:"Maintenance photo " + k, sec:"maint", group:"", optional:false }); return out; }
+  function renderMaint(){
+    var host = $("issues"); if(!host) return; host.innerHTML = "";
+    state.maint.forEach(function(m, i){
+      var d = document.createElement("div"); d.className = "issue"; d.dataset.slot = m.slot;
+      d.innerHTML = '<div class="issuehead"><b></b><button type="button" class="rmbtn">Remove</button></div>' +
+        '<textarea maxlength="1000" placeholder="What needs fixing, and where? For example: bathroom 2 tap dripping."></textarea>' +
+        '<div class="seg"><button type="button" class="segbtn">Normal</button><button type="button" class="segbtn urgent">Urgent</button></div>' +
+        '<div class="photos"></div>';
+      d.querySelector("b").textContent = "Maintenance issue " + (i + 1);
+      d.querySelector(".rmbtn").setAttribute("aria-label", "Remove maintenance issue " + (i + 1));
+      d.querySelector(".rmbtn").addEventListener("click", function(){ removeIssue(m.slot); });
+      var ta = d.querySelector("textarea"); ta.value = m.text || ""; ta.setAttribute("aria-label", "Maintenance issue " + (i + 1) + " description");
+      ta.addEventListener("input", function(){ m.text = this.value; save(); update(); });
+      var b = d.querySelectorAll(".segbtn");
+      b[0].addEventListener("click", function(){ m.urgent = false; save(); update(); });
+      b[1].addEventListener("click", function(){ m.urgent = true; save(); update(); });
+      host.appendChild(d);
+    });
+    renderMaintPhotos();
+  }
+  function renderMaintPhotos(){
+    state.maint.forEach(function(m){
+      var card = document.querySelector('.issue[data-slot="'+m.slot+'"]'); if(!card) return;
+      var ph = card.querySelector(".photos"); ph.innerHTML = "";
+      issueSlots(m).forEach(function(s){
+        var d = document.createElement("label"); d.className = "ph"; d.dataset.id = s.key; d.htmlFor = "f_"+s.key;
+        d.innerHTML = '<div class="shot">Tap to add photo</div><div class="cap"></div><input type="file" accept="image/*" capture="environment" id="f_'+s.key+'">';
+        capText(d.querySelector(".cap"), s);
+        d.querySelector("input").addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; if(f) addPhoto(s, f, d); e.target.value = ""; });
+        ph.appendChild(d);
+        var x = state.photos[s.key];
+        if(x && (x.path || x.blob)) showPhoto(s, d, x);
+      });
+    });
+  }
+  function maintTodo(){ var n = 0; state.maint.forEach(function(m){ if(String(m.text || "").trim().length < 3) n++; }); return n; }
 
   /* "Your name": housekeepers with a code plus whoever HomHero has on this clean, then Other (typed name required). */
   function fillNames(){
@@ -452,6 +521,7 @@ window.PHH_CHECKLIST = {
       var x = state.photos[s.key];
       if(x && (x.path || x.blob)) showPhoto(s, d, x);
     });
+    renderMaintPhotos();
   }
   function capText(cap, s){
     cap.innerHTML = ""; cap.appendChild(document.createTextNode(s.label));
@@ -494,19 +564,26 @@ window.PHH_CHECKLIST = {
     $("con_no").setAttribute("aria-pressed", state.consumables === "no" ? "true" : "false");
     $("con_link").hidden = state.consumables !== "yes"; $("con_note").hidden = state.consumables !== "yes";
     $("concount").textContent = state.consumables ? "1 / 1" : "0 / 1"; $("concount").classList.toggle("ok", !!state.consumables);
+    state.maint.forEach(function(m){
+      var card = document.querySelector('.issue[data-slot="'+m.slot+'"]'); if(!card) return;
+      var b = card.querySelectorAll(".segbtn"); b[0].setAttribute("aria-pressed", m.urgent ? "false" : "true"); b[1].setAttribute("aria-pressed", m.urgent ? "true" : "false");
+    });
+    var ai = $("addissue"); if(ai){ ai.disabled = state.maint.length >= MAX_ISSUES; ai.textContent = state.maint.length >= MAX_ISSUES ? "Up to " + MAX_ISSUES + " issues. Add more detail to one of them." : (state.maint.length ? "+ Add another maintenance issue" : "+ Add maintenance issue"); }
+    var mt = maintTodo();
     var pc = req.filter(hasPhoto).length;
     var total = items.length + 1 + req.length, got = done + (state.consumables ? 1 : 0) + pc;
     $("barfill").style.width = Math.round(got / total * 100) + "%";
     $("counttxt").textContent = done + " of " + items.length + " ticked";
     $("phototxt").textContent = pc + " of " + req.length + " photos";
     var name = cleanerName();
-    var ready = done === items.length && state.consumables && pc === req.length && name.length > 1 && !pending;
+    var ready = done === items.length && state.consumables && pc === req.length && name.length > 1 && !pending && !mt;
     $("submit").disabled = !ready;
     var left = items.length - done, lp = req.length - pc, bits = [];
     if(name.length < 2) bits.push(state.cleanerSel === "__other" ? "type your name" : "choose your name");
     if(left) bits.push(left + " item" + (left>1?"s":"") + " to tick");
     if(lp) bits.push(lp + " photo" + (lp>1?"s":"") + " to take");
     if(!state.consumables) bits.push("answer consumables");
+    if(mt) bits.push(mt > 1 ? "describe " + mt + " maintenance issues (or remove them)" : "describe the maintenance issue (or remove it)");
     if(pending) bits.push("uploading " + pending + " photo" + (pending>1?"s":""));
     $("footmsg").textContent = bits.length ? "Still to do: " + bits.join(", ") + "." : "All done. Tap Complete clean.";
   }
@@ -556,7 +633,7 @@ window.PHH_CHECKLIST = {
         var now = new Date(), band = Math.max(36, Math.round(h*0.07));
         g.fillStyle = "rgba(0,0,0,.62)"; g.fillRect(0, h-band, w, band);
         g.fillStyle = "#fff"; g.font = "bold " + Math.round(band*0.38) + "px sans-serif"; g.textBaseline = "middle";
-        g.fillText(s.label + "  |  " + fmt(now), Math.round(band*0.3), h - band/2);
+        g.fillText((s.stamp || s.label) + "  |  " + fmt(now), Math.round(band*0.3), h - band/2);
         URL.revokeObjectURL(url);
         c.toBlob(function(blob){
           state.photos[s.key] = { blob:blob, thumb:URL.createObjectURL(blob), label:s.label, stampedAt: now.toISOString(), takenAt: takenAt ? takenAt.toISOString() : null, oldPhoto: false, path:null };
@@ -603,12 +680,16 @@ window.PHH_CHECKLIST = {
       noBbq: state.noBbq,
       rooms: rooms(),
       items: allItems().map(function(i){ return { id:i.id, text:i.text, status: status(i) }; }),
-      photos: sl.map(function(s){ var x = state.photos[s.key]; return { id:s.key, label:s.label, path:x.path, stampedAt:x.stampedAt, takenAt:x.takenAt, oldPhoto:x.oldPhoto }; })
+      photos: sl.map(function(s){ var x = state.photos[s.key]; return { id:s.key, label:s.label, path:x.path, stampedAt:x.stampedAt, takenAt:x.takenAt, oldPhoto:x.oldPhoto }; }),
+      maintenance: state.maint.map(function(m){
+        return { slot:m.slot, text:String(m.text || "").trim(), urgent:!!m.urgent,
+          photos: issueSlots(m).filter(hasPhoto).map(function(s){ var x = state.photos[s.key]; return { id:s.key, path:x.path, stampedAt:x.stampedAt }; }) };
+      })
     };
     var done = function(){
       try{ localStorage.removeItem(key); }catch(e){}
       document.getElementById("app").innerHTML = '<div class="donecard"><div class="big">Clean complete</div><p></p><p class="note">You can close this page. Thank you.</p>' + (FROM_LIST ? '<a class="back" href="./">Back to my cleans</a>' : '') + '</div>';
-      document.querySelector(".donecard p").textContent = (clean ? clean.property + ", " : "") + fmt(new Date()) + ". " + payload.items.length + " items and " + payload.photos.length + " photos recorded.";
+      document.querySelector(".donecard p").textContent = (clean ? clean.property + ", " : "") + fmt(new Date()) + ". " + payload.items.length + " items and " + payload.photos.length + " photos recorded." + (payload.maintenance.length ? " " + payload.maintenance.length + " maintenance issue" + (payload.maintenance.length > 1 ? "s" : "") + " sent to PHH." : "");
       $("foot").hidden = true; window.scrollTo(0,0);
     };
     if(!LIVE){ setTimeout(done, 400); return; }

@@ -215,14 +215,15 @@ a.row:hover{background:var(--surface-2)}
     } else if(k === "cleaned"){
       main.appendChild(el("span", "sub", "Done in HomHero at " + localTime(r.hhCleanedAt) + (r.hhPhotos !== null ? ", " + r.hhPhotos + " HomHero photos" : "") + ". Cleaner not on Clean Check yet"));
     } else {
-      main.appendChild(el("span", "sub", r.onCleanCheck ? "Not done yet" : "Not done yet. Cleaner not on Clean Check yet"));
+      var past = state.date < sydToday();
+      main.appendChild(el("span", "sub", (past ? "Not marked done in HomHero" : "Not done yet") + (r.onCleanCheck ? "" : ". Cleaner not on Clean Check yet")));
     }
     if(r.flags && r.flags.length){
       var c = el("div", "chips");
       r.flags.forEach(function(f){ c.appendChild(el("span", "chip " + f.tone, f.label)); });
       main.appendChild(c);
     }
-    if(r.homhero){
+    if(r.homhero && !r.test){
       var h = el("span", "hh"); h.appendChild(document.createTextNode("Sent to HomHero: "));
       [["note", "note"], ["photos", "photos"], ["done", "marked cleaned"], ["maint", "maintenance jobs"]].forEach(function(p, i){
         var v = r.homhero[p[0]]; if(v === null || v === undefined) return;
@@ -232,7 +233,7 @@ a.row:hover{background:var(--surface-2)}
       main.appendChild(h);
     }
     a.appendChild(main);
-    var tags = { checked:["ok","Checked"], missing:["warn","Missing"], cleaned:["plain","Done in HomHero"], waiting:["plain","Waiting"] };
+    var tags = { checked:["ok","Checked"], missing:["warn","Missing"], cleaned:["plain","Done in HomHero"], waiting:["plain", state.date < sydToday() ? "Not done" : "Waiting"] };
     a.appendChild(el("span", "tag " + tags[k][0], tags[k][1]));
     if(link){ var ch = el("span", "chev", "›"); ch.setAttribute("aria-hidden", "true"); a.appendChild(ch); }
     var li = document.createElement("li"); li.appendChild(a); return li;

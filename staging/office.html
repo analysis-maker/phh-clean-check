@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Clean Check">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preload" href="../raleway-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preconnect" href="https://rxhpnowszmetjxbwylil.supabase.co" crossorigin>
+<script>window.PHH_OFFICE_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/office-api";</script>
+<title>PHH Clean Check - Office</title>
+<style>
+@font-face{font-family:"Raleway";font-style:normal;font-weight:100 900;font-display:swap;src:url("../raleway-latin.woff2") format("woff2")}
+/* Office side of PHH Clean Check. Same look as the cleaner app and view.html (PHH Landing Page v24). */
+:root{
+  color-scheme:light;
+  --bg:#ffffff; --surface:#ffffff; --surface-2:#f4f8fb; --offset:#e8f0f6;
+  --ink:#1a3a4a; --muted:#4f5c6b; --faint:#8a9bb0; --line:#c9d5df; --divider:#dce5ec;
+  --primary:#2275b0; --accent:#21a6c7; --accent-hl:#d6edf4;
+  --teal:#0e7c8f; --teal-hover:#0a6273; --teal-hl:#d7ebef;
+  --warn:#b4541a; --warn-soft:#fbeee4;
+  --radius:1rem; --radius-md:.5rem;
+  --shadow:0 4px 12px rgba(34,117,176,.08), 0 2px 4px rgba(34,117,176,.05);
+  --font:"Raleway", "Helvetica Neue", Arial, sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.5;font-weight:500;font-variant-numeric:lining-nums;padding-inline:16px;padding-block:0 64px}
+.wrap{max-width:900px;margin:0 auto}
+.nav{margin-inline:-16px;padding:12px 16px;background:#fff;border-bottom:1px solid var(--divider);padding-top:calc(12px + env(safe-area-inset-top,0px))}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.nav img{display:block;height:32px;width:auto}
+.nav .me{font-size:.85rem;color:var(--muted);text-align:right}
+.nav .me a{color:var(--primary);font-weight:700;text-decoration:none;margin-left:8px}
+h1,h2{font-family:var(--font);text-wrap:balance;margin:0;color:var(--ink)}
+h1{font-size:1.9rem;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-top:12px}
+h2{font-size:1.1rem;font-weight:800;letter-spacing:-.01em}
+.top{padding-block:20px 4px}
+.badge{display:inline-flex;align-items:center;gap:8px;background:var(--accent-hl);border:1px solid rgba(33,166,199,.35);color:var(--primary);padding:6px 12px;border-radius:9999px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--primary)}
+.lbl{display:block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.controls{display:grid;grid-template-columns:1fr;gap:14px;margin-top:18px}
+@media (min-width:720px){.controls{grid-template-columns:auto 1fr 220px;align-items:end}}
+.daterow{display:flex;gap:8px;align-items:center}
+input,select{font:inherit;padding:11px 14px;border-radius:var(--radius-md);border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%;min-height:46px}
+input[type=date]{width:auto;min-width:0;flex:1}
+input::placeholder{color:var(--faint)}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.iconbtn{flex:none;width:46px;height:46px;border-radius:var(--radius-md);border:1px solid var(--line);background:var(--surface);font:inherit;font-weight:800;font-size:1.2rem;color:var(--primary);cursor:pointer}
+.textbtn{flex:none;font:inherit;font-weight:700;font-size:.9rem;height:46px;padding:0 14px;border-radius:var(--radius-md);border:1px solid var(--line);background:var(--surface);color:var(--primary);cursor:pointer}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.fbtn{font:inherit;font-size:.85rem;font-weight:700;padding:8px 14px;border-radius:9999px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.fbtn[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:#fff}
+.fbtn .n{font-variant-numeric:tabular-nums;opacity:.8;margin-left:4px}
+.sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}
+@media (min-width:720px){.sum{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.stat{border:1px solid var(--line);border-radius:var(--radius-md);padding:10px 12px;background:var(--surface-2)}
+.stat b{display:block;font-size:1.5rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat span{font-size:.8rem;color:var(--muted);font-weight:600}
+.stat.warn{background:var(--warn-soft);border-color:rgba(180,84,26,.35)}
+.stat.warn b{color:var(--warn)}
+.listhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:26px 0 10px}
+.listhead .count{font-size:.85rem;color:var(--faint);font-weight:700;font-variant-numeric:tabular-nums}
+ul.rows{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+ul.rows li{border-top:1px solid var(--divider)}
+ul.rows li:first-child{border-top:0}
+.row{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;color:inherit;text-decoration:none}
+a.row:hover{background:var(--surface-2)}
+.row .main{flex:1;min-width:0;display:grid;gap:3px}
+.row .prop{font-weight:800;font-size:1rem}
+.row .sub{font-size:.85rem;color:var(--muted)}
+.row .sub.warn{color:var(--warn);font-weight:700}
+.row .chev{flex:none;color:var(--faint);font-weight:700;font-size:1.3rem;line-height:1.2}
+.tag{flex:none;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:9999px;padding:4px 10px;margin-top:2px;white-space:nowrap}
+.tag.ok{color:var(--teal);background:var(--teal-hl)}
+.tag.warn{color:var(--warn);background:var(--warn-soft)}
+.tag.plain{color:var(--muted);background:var(--offset)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.chip{font-size:.78rem;font-weight:700;border-radius:9999px;padding:4px 10px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink)}
+.chip.warn{background:var(--warn-soft);border-color:rgba(180,84,26,.35);color:var(--warn)}
+.chip.info{background:var(--accent-hl);border-color:rgba(33,166,199,.35);color:var(--primary)}
+.hh{font-size:.78rem;color:var(--faint)}
+.hh .y{color:var(--teal);font-weight:700}
+.note{margin-top:12px;color:var(--muted);font-size:.9rem}
+.err{color:var(--warn);font-weight:700}
+.empty{padding:22px 16px;color:var(--muted)}
+.foot{margin-top:18px;font-size:.8rem;color:var(--faint)}
+</style>
+</head><body>
+<nav class="nav"><div class="wrap"><img src="../logo.png" alt="Professional Holiday Homes" width="172" height="32"><div class="me" id="me" hidden><span id="mename"></span><a href="#" id="signout">Sign out</a></div></div></nav>
+<div class="wrap">
+  <header class="top">
+    <span class="badge">Office view</span>
+    <h1>Clean checks</h1>
+  </header>
+
+  <div class="controls">
+    <div>
+      <label class="lbl" for="date">Date</label>
+      <div class="daterow">
+        <button class="iconbtn" id="prev" type="button" aria-label="Previous day">&lsaquo;</button>
+        <input type="date" id="date">
+        <button class="iconbtn" id="next" type="button" aria-label="Next day">&rsaquo;</button>
+        <button class="textbtn" id="today" type="button">Today</button>
+      </div>
+    </div>
+    <div>
+      <label class="lbl" for="q">Property</label>
+      <input type="search" id="q" autocomplete="off" placeholder="Search properties">
+    </div>
+    <div>
+      <label class="lbl" for="who">HomHero cleaner</label>
+      <select id="who"><option value="">All cleaners</option></select>
+    </div>
+  </div>
+
+  <div class="sum" id="sum" hidden></div>
+  <div class="filters" id="filters" hidden></div>
+
+  <div class="listhead"><h2 id="dayh">Loading...</h2><span class="count" id="count"></span></div>
+  <ul class="rows" id="rows" hidden></ul>
+  <p class="note" id="msg"></p>
+  <p class="foot" id="foot"></p>
+</div>
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var API = window.PHH_OFFICE_API || "";
+  var params = new URLSearchParams(location.search);
+  var TEST = params.get("test") === "1";
+  var CODE = ""; try{ CODE = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
+  if(!CODE){ location.replace("./"); return; }
+
+  var TZ = "Australia/Sydney";
+  function sydToday(){ return new Intl.DateTimeFormat("en-CA",{ timeZone:TZ }).format(new Date()); }
+  function shift(d, n){ var x = new Date(d + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0,10); }
+  function dayLabel(d){ return new Date(d + "T12:00:00+10:00").toLocaleDateString("en-AU",{ timeZone:TZ, weekday:"long", day:"numeric", month:"long" }); }
+  function time(ts){ return ts ? new Date(ts).toLocaleTimeString("en-AU",{ timeZone:TZ, hour:"numeric", minute:"2-digit" }) : ""; }
+  /* hh_cleaned_at is HomHero's Sydney local time with no zone, e.g. 2026-10-16 14:41:00 */
+  function localTime(s){ var m = /(\d{2}):(\d{2})/.exec(String(s || "").slice(10)); if(!m) return ""; var h = +m[1]; return (h % 12 || 12) + ":" + m[2] + (h < 12 ? " am" : " pm"); }
+  function mins(a, b){ var m = Math.round((new Date(b) - new Date(a)) / 60000); if(!(m >= 0)) return ""; return m >= 60 ? Math.floor(m/60) + " h " + (m % 60) + " min" : m + " min"; }
+  function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined) e.textContent = text; return e; }
+
+  var state = { date: params.get("date") || sydToday(), rows: [], filter: "all", q: "", who: "" };
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(state.date)) state.date = sydToday();
+
+  function signOut(){ try{ localStorage.removeItem("phh-staff-code"); }catch(e){} location.replace("./"); }
+  $("signout").addEventListener("click", function(e){ e.preventDefault(); signOut(); });
+
+  /* What each clean needs from the office. */
+  function kind(r){
+    if(r.submitted) return "checked";
+    if(r.hhCleanedAt && r.onCleanCheck) return "missing";
+    if(r.hhCleanedAt) return "cleaned";
+    return "waiting";
+  }
+  var FILTERS = [
+    ["all", "All", function(){ return true; }],
+    ["missing", "Missing check", function(r){ return kind(r) === "missing"; }],
+    ["flagged", "Flagged", function(r){ return r.flagged; }],
+    ["maint", "Maintenance", function(r){ return r.maintCount > 0; }],
+    ["consumables", "Consumables", function(r){ return r.consumables === "yes"; }],
+    ["checked", "Checked", function(r){ return r.submitted; }]
+  ];
+  function filterFn(k){ for(var i=0;i<FILTERS.length;i++) if(FILTERS[i][0] === k) return FILTERS[i][2]; return FILTERS[0][2]; }
+
+  function base(){
+    var q = state.q.toLowerCase();
+    return state.rows.filter(function(r){ return (!q || String(r.property).toLowerCase().indexOf(q) >= 0) && (!state.who || r.hhCleaner === state.who); });
+  }
+
+  function renderSummary(){
+    var rows = base();
+    var n = function(f){ return rows.filter(f).length; };
+    var stats = [
+      [rows.length, "Cleans", false],
+      [n(function(r){ return !!r.hhCleanedAt; }), "Done in HomHero", false],
+      [n(function(r){ return r.submitted; }), "Clean checks", false],
+      [n(function(r){ return kind(r) === "missing"; }), "Missing a check", true],
+      [n(function(r){ return r.flagged; }), "Flagged", true]
+    ];
+    var box = $("sum"); box.innerHTML = "";
+    stats.forEach(function(s){ var d = el("div", "stat" + (s[2] && s[0] ? " warn" : "")); d.appendChild(el("b", "", String(s[0]))); d.appendChild(el("span", "", s[1])); box.appendChild(d); });
+    box.hidden = false;
+    var fb = $("filters"); fb.innerHTML = "";
+    FILTERS.forEach(function(f){
+      var b = el("button", "fbtn"); b.type = "button"; b.setAttribute("aria-pressed", String(state.filter === f[0]));
+      b.appendChild(document.createTextNode(f[1])); b.appendChild(el("span", "n", String(rows.filter(f[2]).length)));
+      b.addEventListener("click", function(){ state.filter = f[0]; render(); });
+      fb.appendChild(b);
+    });
+    fb.hidden = false;
+  }
+
+  function rowEl(r){
+    var k = kind(r);
+    var link = !!r.submissionId;
+    var a = el(link ? "a" : "div", "row");
+    if(link) a.href = "view.html?id=" + encodeURIComponent(r.submissionId) + "&from=office" + (state.date ? "&date=" + state.date : "");
+    var main = el("div", "main");
+    main.appendChild(el("span", "prop", r.property + (r.test ? " (test)" : "")));
+    main.appendChild(el("span", "sub", "HomHero: " + (r.hhCleaner || "No cleaner assigned") + (r.bedrooms ? " | " + r.bedrooms + " bed, " + r.bathrooms + " bath" : "")));
+    if(k === "checked"){
+      var bits = ["Clean check by " + (r.submittedBy || "?") + " at " + time(r.submittedAt)];
+      if(r.photoCount) bits.push(r.photoCount + " photos");
+      var ct = r.firstPhotoAt ? mins(r.firstPhotoAt, r.submittedAt) : "";
+      if(ct) bits.push("clean time " + ct);
+      main.appendChild(el("span", "sub", bits.join(" | ")));
+    } else if(k === "missing"){
+      main.appendChild(el("span", "sub warn", "Done in HomHero at " + localTime(r.hhCleanedAt) + ", no clean check"));
+    } else if(k === "cleaned"){
+      main.appendChild(el("span", "sub", "Done in HomHero at " + localTime(r.hhCleanedAt) + (r.hhPhotos !== null ? ", " + r.hhPhotos + " HomHero photos" : "") + ". Cleaner not on Clean Check yet"));
+    } else {
+      main.appendChild(el("span", "sub", r.onCleanCheck ? "Not done yet" : "Not done yet. Cleaner not on Clean Check yet"));
+    }
+    if(r.flags && r.flags.length){
+      var c = el("div", "chips");
+      r.flags.forEach(function(f){ c.appendChild(el("span", "chip " + f.tone, f.label)); });
+      main.appendChild(c);
+    }
+    if(r.homhero){
+      var h = el("span", "hh"); h.appendChild(document.createTextNode("Sent to HomHero: "));
+      [["note", "note"], ["photos", "photos"], ["done", "marked cleaned"], ["maint", "maintenance jobs"]].forEach(function(p, i){
+        var v = r.homhero[p[0]]; if(v === null || v === undefined) return;
+        if(i) h.appendChild(document.createTextNode(" | "));
+        h.appendChild(el("span", v ? "y" : "", p[1] + (v ? " ✓" : " pending")));
+      });
+      main.appendChild(h);
+    }
+    a.appendChild(main);
+    var tags = { checked:["ok","Checked"], missing:["warn","Missing"], cleaned:["plain","Done in HomHero"], waiting:["plain","Waiting"] };
+    a.appendChild(el("span", "tag " + tags[k][0], tags[k][1]));
+    if(link){ var ch = el("span", "chev", "›"); ch.setAttribute("aria-hidden", "true"); a.appendChild(ch); }
+    var li = document.createElement("li"); li.appendChild(a); return li;
+  }
+
+  function render(){
+    renderSummary();
+    var rows = base().filter(filterFn(state.filter));
+    var ul = $("rows"); ul.innerHTML = "";
+    rows.forEach(function(r){ ul.appendChild(rowEl(r)); });
+    ul.hidden = !rows.length;
+    $("count").textContent = rows.length + " shown";
+    $("msg").className = "note";
+    $("msg").textContent = rows.length ? "" : (state.rows.length ? "Nothing matches these filters." : "No cleans for this date.");
+  }
+
+  function fillWho(list){
+    var sel = $("who"), cur = state.who;
+    sel.innerHTML = '<option value="">All cleaners</option>';
+    list.forEach(function(n){ var o = el("option", "", n); o.value = n; sel.appendChild(o); });
+    sel.value = list.indexOf(cur) >= 0 ? cur : ""; state.who = sel.value;
+  }
+
+  var loading = 0;
+  function load(){
+    var my = ++loading;
+    $("date").value = state.date;
+    $("dayh").textContent = dayLabel(state.date);
+    $("msg").className = "note"; $("msg").textContent = "Loading...";
+    var u = new URL(location.href); u.searchParams.set("date", state.date); history.replaceState(null, "", u);
+    fetch(API + "/day", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: CODE, date: state.date, includeTest: TEST }) })
+      .then(function(r){ return r.json().then(function(j){ if(r.status === 403){ signOut(); throw new Error("Signed out"); } if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })
+      .then(function(j){
+        if(my !== loading) return;
+        $("mename").textContent = j.name; $("me").hidden = false;
+        state.rows = j.rows || []; fillWho(j.cleaners || []);
+        render();
+        $("foot").textContent = "Updated " + new Date().toLocaleTimeString("en-AU",{ hour:"numeric", minute:"2-digit" }) + ". Owner cleans and cancelled bookings are not shown. Tap a checked clean to see its photos and checklist.";
+      })
+      .catch(function(e){ if(my !== loading) return; $("rows").hidden = true; $("msg").className = "note err"; $("msg").textContent = e.message; });
+  }
+
+  $("prev").addEventListener("click", function(){ state.date = shift(state.date, -1); load(); });
+  $("next").addEventListener("click", function(){ state.date = shift(state.date, 1); load(); });
+  $("today").addEventListener("click", function(){ state.date = sydToday(); load(); });
+  $("date").addEventListener("change", function(){ if(/^\d{4}-\d{2}-\d{2}$/.test(this.value)){ state.date = this.value; load(); } });
+  $("q").addEventListener("input", function(){ state.q = this.value.trim(); render(); });
+  $("who").addEventListener("change", function(){ state.who = this.value; render(); });
+  document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible") load(); });
+  setInterval(function(){ if(document.visibilityState === "visible") load(); }, 5 * 60000);
+  load();
+})();
+</script>
+</body></html>

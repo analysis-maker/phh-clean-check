@@ -746,17 +746,17 @@ window.PHH_CHECKLIST = {
       $("pickh1").textContent = "Today's cleans"; $("pickmeta").textContent = "Enter your code to see your cleans for today.";
       msg(t, err);
     }
-    /* One app, two sides: a 10-digit staff code opens the CST office view instead of a cleaner's list. */
+    /* One app, three sides: a code that is not a cleaner's is tried as an office (staff) or owner code. */
     function staffLogin(code){
       $("codebox").hidden = true;
-      msg("Opening the office view...");
+      msg("Opening...");
       fetch(OFFICE_API + "/login", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
         .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })
-        .then(function(){ try{ localStorage.setItem("phh-staff-code", code); localStorage.removeItem(KEY); }catch(e){} location.href = "office.html"; })
+        .then(function(j){ var owner = j.role === "owner"; try{ localStorage.setItem(owner ? "phh-owner-code" : "phh-staff-code", code); localStorage.removeItem(owner ? "phh-staff-code" : "phh-owner-code"); localStorage.removeItem(KEY); }catch(e){} location.href = owner ? "owner.html" : "office.html"; })
         .catch(function(e){ reset(e.message, true); });
     }
     function loadList(code){
-      if(/^\d{10}$/.test(code)) return staffLogin(code);
+      if(!/^\d{4,8}$/.test(code)) return staffLogin(code);
       $("codebox").hidden = true;
       msg("Loading your cleans...");
       fetch(API + "/today", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
@@ -772,7 +772,7 @@ window.PHH_CHECKLIST = {
           if(!all.length){ $("picklist").hidden = true; msg("No cleans for you today. If this looks wrong, call the PHH office."); return; }
           show(all);
         })
-        .catch(function(e){ reset(e.message, true); });
+        .catch(function(e){ if(/not right/i.test(e.message)) return staffLogin(code); reset(e.message, true); });
     }
     $("codego").addEventListener("click", function(){ var v = $("code").value.trim(); if(v) loadList(v); });
     $("code").addEventListener("keydown", function(e){ if(e.key === "Enter"){ var v = this.value.trim(); if(v) loadList(v); } });
@@ -780,6 +780,8 @@ window.PHH_CHECKLIST = {
     $("switchcode").addEventListener("click", function(e){ e.preventDefault(); $("code").value = ""; reset(""); });
     var staffSaved = ""; try{ staffSaved = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
     if(staffSaved){ location.replace("office.html"); return; }
+    var ownerSaved = ""; try{ ownerSaved = localStorage.getItem("phh-owner-code") || ""; }catch(e){}
+    if(ownerSaved){ location.replace("owner.html"); return; }
     var saved = ""; try{ saved = localStorage.getItem(KEY) || ""; }catch(e){}
     if(saved) loadList(saved); else { $("codebox").hidden = false; }
   }

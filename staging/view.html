@@ -144,8 +144,11 @@ window.PHH_API = window.PHH_API || "";
   var qs = new URLSearchParams(location.search);
   var id = qs.get("id") || "";
   if(qs.get("from") === "office"){ var bk = $("back"), dt = qs.get("date") || ""; bk.href = "office.html" + (/^\d{4}-\d{2}-\d{2}$/.test(dt) ? "?date=" + dt : ""); bk.hidden = false; bk.style.margin = "0 0 12px"; bk.style.display = "block"; }
+  /* Owner view: same record, without the office-only flags, booking number and HomHero job status. */
+  var OWNER = qs.get("from") === "owner";
+  if(OWNER){ var bo = $("back"); bo.href = "owner.html"; bo.textContent = "\u2039 Back to my properties"; bo.hidden = false; bo.style.margin = "0 0 12px"; bo.style.display = "block"; document.querySelector(".badge").textContent = "Clean report"; }
   function fmt(ts){ return ts ? new Date(ts).toLocaleString("en-AU",{timeZone:"Australia/Sydney",weekday:"short",day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"}) : ""; }
-  function chip(t, warn){ var c = document.createElement("span"); c.className = "chip" + (warn ? " warn" : ""); c.textContent = t; $("sum").appendChild(c); }
+  function chip(t, warn){ if(OWNER && warn) return; var c = document.createElement("span"); c.className = "chip" + (warn ? " warn" : ""); c.textContent = t; $("sum").appendChild(c); }
   function fail(m){ $("prop").textContent = "Clean check not found"; $("err").hidden = false; $("err").textContent = m; }
   if(!window.PHH_API || !id){ fail("This link is incomplete."); return; }
   fetch(window.PHH_API + "/view", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ id:id }) })
@@ -155,16 +158,16 @@ window.PHH_API = window.PHH_API || "";
       $("prop").textContent = j.property || "Clean check";
       $("when").textContent = "Completed " + fmt(j.submittedAt) + " (Sydney)";
       $("who").textContent = "By " + j.cleaner;
-      $("res").textContent = "Booking " + j.res;
+      $("res").textContent = OWNER ? "" : "Booking " + j.res;
       var n = 0; j.sections.forEach(function(s){ n += s.items.length; });
-      chip(n + " items" + (j.naCount ? " (" + j.naCount + " N/A)" : ""));
+      chip(n + " checklist items" + (j.naCount && !OWNER ? " (" + j.naCount + " N/A)" : ""));
       chip(j.photos.length + " photos");
       if(j.firstPhotoAt && j.submittedAt){
         var mins = Math.round((new Date(j.submittedAt) - new Date(j.firstPhotoAt)) / 60000);
         if(mins >= 0){ var t = mins >= 60 ? Math.floor(mins/60) + " h " + (mins % 60) + " min" : mins + " min";
           chip("Clean time " + t + " (first photo " + new Date(j.firstPhotoAt).toLocaleTimeString("en-AU",{timeZone:"Australia/Sydney",hour:"numeric",minute:"2-digit"}) + " to Complete)"); }
       }
-      if(j.consumables) chip("Consumables needed: " + (j.consumables === "yes" ? "Yes" : "No"), j.consumables === "yes");
+      if(j.consumables && !OWNER) chip("Consumables needed: " + (j.consumables === "yes" ? "Yes" : "No"), j.consumables === "yes");
       if(j.noBbq) chip("Marked as no BBQ", true);
       var mt = j.maintenance || [];
       if(mt.length) chip(mt.length + " maintenance issue" + (mt.length > 1 ? "s" : ""), true);
@@ -179,7 +182,7 @@ window.PHH_API = window.PHH_API || "";
           d.querySelector(".t").textContent = "Issue " + m.n;
           var h = d.querySelector(".ihead");
           if(m.urgent){ var u = document.createElement("span"); u.className = "chip warn"; u.textContent = "Urgent"; h.appendChild(u); }
-          var hj = document.createElement("span"); hj.className = "chip"; hj.textContent = m.hhJob ? "HomHero job " + m.hhJob : "Waiting to go into HomHero"; h.appendChild(hj);
+          if(!OWNER){ var hj = document.createElement("span"); hj.className = "chip"; hj.textContent = m.hhJob ? "HomHero job " + m.hhJob : "Waiting to go into HomHero"; h.appendChild(hj); }
           d.querySelector(".itext").textContent = m.text;
           var ph = d.querySelector(".photos");
           (m.photos || []).forEach(function(p, k){
@@ -197,7 +200,7 @@ window.PHH_API = window.PHH_API || "";
         if(p.url){ a.href = p.url; var im = document.createElement("img"); im.loading = "lazy"; im.alt = p.label; im.src = p.url; a.appendChild(im); }
         var cap = document.createElement("div"); cap.className = "cap"; cap.textContent = p.label;
         var st = document.createElement("span"); st.className = "stamp"; st.textContent = fmt(p.stampedAt); cap.appendChild(st);
-        if(p.oldPhoto){ var fl = document.createElement("span"); fl.className = "flag"; fl.textContent = "Photo file is older than 12 hours"; cap.appendChild(fl); }
+        if(p.oldPhoto && !OWNER){ var fl = document.createElement("span"); fl.className = "flag"; fl.textContent = "Photo file is older than 12 hours"; cap.appendChild(fl); }
         if(!p.url){ var f2 = document.createElement("span"); f2.className = "flag"; f2.textContent = "Photo file not found"; cap.appendChild(f2); }
         a.appendChild(cap); $("photos").appendChild(a);
       });

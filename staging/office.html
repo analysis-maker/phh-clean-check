@@ -164,8 +164,12 @@ a.row:hover{background:var(--surface-2)}
     ["flagged", "Flagged", function(r){ return r.flagged; }],
     ["maint", "Maintenance", function(r){ return r.maintCount > 0; }],
     ["consumables", "Consumables", function(r){ return r.consumables === "yes"; }],
+    ["b2b", "Back to back", function(r){ return !!r.backToBack; }],
+    ["precheck", "Pre-arrival check pending", function(r){ return preDue(r) && (r.nextPreInspection === false || r.nextPreMaintenance === false); }],
     ["checked", "Checked", function(r){ return r.submitted; }]
   ];
+  /* Next guests arrive on the day being viewed or the day after: the pre-arrival checks matter. */
+  function preDue(r){ var d = String(r.nextArrivalAt || "").slice(0,10); return !!d && (d === state.date || d === shift(state.date, 1)); }
   function filterFn(k){ for(var i=0;i<FILTERS.length;i++) if(FILTERS[i][0] === k) return FILTERS[i][2]; return FILTERS[0][2]; }
 
   function base(){
@@ -218,6 +222,23 @@ a.row:hover{background:var(--surface-2)}
       var past = state.date < sydToday();
       main.appendChild(el("span", "sub", (past ? "Not marked done in HomHero" : "Not done yet") + (r.onCleanCheck ? "" : ". Cleaner not on Clean Check yet")));
     }
+    var nm = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/.exec(String(r.nextArrivalAt || ""));
+    if(nm || r.backToBack){
+      var nx = el("span", "sub" + (r.backToBack ? " warn" : ""));
+      var when = nm ? (nm[1] === state.date ? "same day" : new Date(nm[1] + "T12:00:00+10:00").toLocaleDateString("en-AU",{ timeZone:TZ, weekday:"short", day:"numeric", month:"short" })) + " " + localTime(nm[1] + " " + nm[2] + ":" + nm[3]) : "";
+      nx.textContent = (r.backToBack ? "Back to back. " : "") + (nm ? "Next guests " + when : "");
+      main.appendChild(nx);
+    }
+    if(preDue(r) && (r.nextPreInspection !== null || r.nextPreMaintenance !== null)){
+      var pc = el("span", "hh");
+      var part = function(label, v){ var x = el("span", v ? "y" : "", label + (v ? " \u2713" : " pending")); return x; };
+      pc.appendChild(document.createTextNode("Pre-arrival (HomHero): "));
+      pc.appendChild(part("inspection", r.nextPreInspection));
+      pc.appendChild(document.createTextNode(" | "));
+      pc.appendChild(part("maintenance", r.nextPreMaintenance));
+      main.appendChild(pc);
+    }
+    if(r.hkNote){ main.appendChild(el("span", "sub", "HomHero note: " + r.hkNote)); }
     if(r.flags && r.flags.length){
       var c = el("div", "chips");
       r.flags.forEach(function(f){ c.appendChild(el("span", "chip " + f.tone, f.label)); });

@@ -1,6 +1,12 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Clean Check">
+<link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preload" href="raleway-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://rxhpnowszmetjxbwylil.supabase.co" crossorigin>
 <script>window.PHH_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/clean-api";</script>
@@ -35,6 +41,10 @@ h2{font-size:1.2rem;font-weight:800;letter-spacing:-.01em}
 .badge{display:inline-flex;align-items:center;gap:8px;background:var(--accent-hl);border:1px solid rgba(33,166,199,.35);color:var(--primary);padding:6px 12px;border-radius:9999px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
 .badge::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--primary)}
 .meta{display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--muted);font-size:.92rem;margin-top:4px}
+.hhinfo{margin-top:14px;padding:12px 14px;border-radius:var(--radius-md);background:var(--surface-2);border:1px solid var(--line);font-size:.92rem;display:grid;gap:6px}
+.hhinfo .b2b{color:var(--warn);font-weight:800}
+.hhinfo .hhnote{white-space:pre-wrap;color:var(--ink)}
+.hhinfo a.hhlink{display:block;text-align:center;text-decoration:none;font-weight:700;color:var(--primary);border:2px solid var(--primary);border-radius:var(--radius-md);padding:10px 12px;margin-top:4px;background:#fff}
 .bar{height:8px;border-radius:9999px;background:var(--offset);overflow:hidden}
 .bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
 .count{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
@@ -132,7 +142,7 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
   </header>
   <div class="who" id="codebox" hidden>
     <label class="lbl" for="code">Your code from PHH</label>
-    <input type="text" id="code" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Your code">
+    <input type="text" id="code" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="Your code">
     <button class="submit go" id="codego" type="button">Show my cleans</button>
   </div>
   <div class="who" id="searchbox" hidden>
@@ -149,6 +159,7 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
     <span class="badge">Clean check</span>
     <h1 id="prop">Loading clean...</h1>
     <div class="meta"><span id="cdate"></span><span id="cres"></span></div>
+    <div class="hhinfo" id="hhinfo" hidden><span class="b2b" id="hhb2b" hidden></span><span id="hhnext" hidden></span><span class="hhnote" id="hhnote" hidden></span><a class="hhlink" id="hhlink" target="_blank" rel="noopener">Open this clean in HomHero Cleaner (entry codes and notes)</a></div>
     <div class="due">Complete by 3pm.</div>
     <div class="banner" id="howto">Take the first photo (guest keys) when you arrive. Then tick each section and take its photos as you go. Photos are time-stamped. No photos, no payment.</div>
     <a class="back" id="back" href="./" hidden>Back to my cleans</a>
@@ -192,8 +203,9 @@ window.PHH_API = window.PHH_API || "";
 window.PHH_CHECKLIST = {
   version: "2026-10-14-craig-v12",
   consumablesUrl: "https://app.process.st/workflows/Consumables-Ordering-uYciaTu565lWPqE3m1dEPg/run-link",
-  // Link for "Please log any maintenance via HomHero". Empty = the button is hidden and only the text shows.
-  maintenanceUrl: "https://app.homhero.com.au/#maintenance",
+  // "Or log it in HomHero Cleaner yourself": the housekeeper's own HomHero Cleaner page for this clean ({res} = booking).
+  // Empty = the link is hidden. (Was the staff portal, which housekeepers cannot log into. Fixed 19 Oct 2026.)
+  maintenanceUrl: "https://cleaner.homhero.com.au/app/cleans/{res}?departure=1",
   sections: [
     { id: "entry", title: "Entry", items: [
       { id: "ent_cobwebs", text: "Check entryway for cobwebs/dust and clean" },
@@ -298,6 +310,7 @@ window.PHH_CHECKLIST = {
   "use strict";
   var CL = window.PHH_CHECKLIST;
   var API = window.PHH_API;
+  var OFFICE_API = String(API).replace(/clean-api(-v11)?$/, "office-api");
   var params = new URLSearchParams(location.search);
   var RES = params.get("res");
   var TOKEN = params.get("t") || "";
@@ -381,6 +394,31 @@ window.PHH_CHECKLIST = {
     return el;
   }
 
+  /* The housekeeper's HomHero Cleaner page for this clean. Without a numeric booking (demo), the portal home. */
+  function portalUrl(){ var r = String((clean && clean.res) || RES || ""); return /^\d{1,12}$/.test(r) ? CL.maintenanceUrl.replace("{res}", r) : "https://cleaner.homhero.com.au/app"; }
+  /* Next guests, back to back and the booking's housekeeping note (office-api, only for the cleaner on this clean). */
+  function hhInfo(){
+    var box = $("hhinfo"); if(!box) return;
+    $("hhlink").href = portalUrl(); box.hidden = false;
+    var code = ""; try{ code = localStorage.getItem("phh-cleaner-code") || ""; }catch(e){}
+    if(!code || !RES) return;
+    fetch(OFFICE_API + "/clean-extra", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code, res: RES }) })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){
+        if(!j) return;
+        if(j.portalUrl) $("hhlink").href = j.portalUrl;
+        var m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/.exec(String(j.nextArrivalAt || ""));
+        if(m){
+          var h = +m[2], t = (h % 12 || 12) + ":" + m[3] + (h < 12 ? " am" : " pm");
+          var d = new Date(m[1] + "T12:00:00+10:00").toLocaleDateString("en-AU",{ timeZone:"Australia/Sydney", weekday:"short", day:"numeric", month:"short" });
+          var today = new Intl.DateTimeFormat("en-CA",{ timeZone:"Australia/Sydney" }).format(new Date());
+          if(j.backToBack || m[1] === today){ $("hhb2b").textContent = "Back to back: next guests arrive " + (m[1] === today ? "today" : d) + " at " + t; $("hhb2b").hidden = false; }
+          else { $("hhnext").textContent = "Next guests arrive " + d + " at " + t; $("hhnext").hidden = false; }
+        } else if(j.backToBack){ $("hhb2b").textContent = "Back to back: next guests arrive today"; $("hhb2b").hidden = false; }
+        if(j.hkNote){ $("hhnote").textContent = "Note from PHH: " + j.hkNote; $("hhnote").hidden = false; }
+      }).catch(function(){});
+  }
+
   function render(){
     var host = $("sections"); host.innerHTML = "";
     CL.sections.forEach(function(sec){
@@ -404,7 +442,7 @@ window.PHH_CHECKLIST = {
         var m = document.createElement("div"); m.className = "maint";
         m.innerHTML = '<p class="note" style="margin-top:0">Anything broken, damaged or needing repair? Add each issue here with a photo. It goes straight to the PHH maintenance team in HomHero, so there is no need to log it in HomHero as well.</p>' +
           '<div id="issues"></div><button type="button" class="segbtn addissue" id="addissue">+ Add maintenance issue</button>';
-        if(CL.maintenanceUrl){ var a = document.createElement("a"); a.className = "textlink"; a.target = "_blank"; a.rel = "noopener"; a.href = CL.maintenanceUrl; a.textContent = "Or log it in HomHero yourself"; m.appendChild(a); }
+        if(CL.maintenanceUrl){ var a = document.createElement("a"); a.className = "textlink"; a.target = "_blank"; a.rel = "noopener"; a.href = portalUrl(); a.textContent = "Or log it in HomHero Cleaner yourself"; m.appendChild(a); }
         m.querySelector("#addissue").addEventListener("click", addIssue);
         el.appendChild(m);
       }
@@ -711,6 +749,8 @@ window.PHH_CHECKLIST = {
     if(c.roomsLocked){ state.rooms = { bedrooms: Math.max(1, Math.min(10, Math.round(hb) || 1)), bathrooms: Math.max(1, Math.min(10, Math.floor(ht) || 1)) }; state.roomsEdited = false; }
     else if(!state.roomsEdited && (hb >= 1 || ht >= 1)){ state.rooms = { bedrooms: Math.max(1, Math.min(10, Math.round(hb) || 1)), bathrooms: Math.max(1, Math.min(10, Math.floor(ht) || 1)) }; }
     fillNames(); save(); renderPhotos(); update();
+    hhInfo();
+    var ml = document.querySelector(".maint a.textlink"); if(ml) ml.href = portalUrl();
   }
 
   /* Cleaner's list: no booking in the link, so list today's cleans for the cleaner's own code. */
@@ -739,7 +779,17 @@ window.PHH_CHECKLIST = {
       $("pickh1").textContent = "Today's cleans"; $("pickmeta").textContent = "Enter your code to see your cleans for today.";
       msg(t, err);
     }
+    /* One app, three sides: a code that is not a cleaner's is tried as an office (staff) or owner code. */
+    function staffLogin(code){
+      $("codebox").hidden = true;
+      msg("Opening...");
+      fetch(OFFICE_API + "/login", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
+        .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })
+        .then(function(j){ var owner = j.role === "owner"; try{ localStorage.setItem(owner ? "phh-owner-code" : "phh-staff-code", code); localStorage.removeItem(owner ? "phh-staff-code" : "phh-owner-code"); localStorage.removeItem(KEY); }catch(e){} location.href = owner ? "owner.html" : "office.html"; })
+        .catch(function(e){ reset(e.message, true); });
+    }
     function loadList(code){
+      if(!/^\d{4,8}$/.test(code)) return staffLogin(code);
       $("codebox").hidden = true;
       msg("Loading your cleans...");
       fetch(API + "/today", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
@@ -755,12 +805,16 @@ window.PHH_CHECKLIST = {
           if(!all.length){ $("picklist").hidden = true; msg("No cleans for you today. If this looks wrong, call the PHH office."); return; }
           show(all);
         })
-        .catch(function(e){ reset(e.message, true); });
+        .catch(function(e){ if(/not right/i.test(e.message)) return staffLogin(code); reset(e.message, true); });
     }
     $("codego").addEventListener("click", function(){ var v = $("code").value.trim(); if(v) loadList(v); });
     $("code").addEventListener("keydown", function(e){ if(e.key === "Enter"){ var v = this.value.trim(); if(v) loadList(v); } });
     $("q").addEventListener("input", function(){ var q = this.value.trim().toLowerCase(); show(all.filter(function(c){ return String(c.property).toLowerCase().indexOf(q) >= 0; })); });
     $("switchcode").addEventListener("click", function(e){ e.preventDefault(); $("code").value = ""; reset(""); });
+    var staffSaved = ""; try{ staffSaved = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
+    if(staffSaved){ location.replace("office.html"); return; }
+    var ownerSaved = ""; try{ ownerSaved = localStorage.getItem("phh-owner-code") || ""; }catch(e){}
+    if(ownerSaved){ location.replace("owner.html"); return; }
     var saved = ""; try{ saved = localStorage.getItem(KEY) || ""; }catch(e){}
     if(saved) loadList(saved); else { $("codebox").hidden = false; }
   }

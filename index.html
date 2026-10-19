@@ -33,6 +33,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font
 .wrap{max-width:640px;margin:0 auto}
 .nav{margin-inline:-16px;padding:14px 16px;background:#fff;border-bottom:1px solid var(--divider)}
 .nav img{display:block;height:34px;width:auto}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.nav .me{font-size:.85rem;color:var(--muted);text-align:right;white-space:nowrap}
+.nav .me a{color:var(--primary);font-weight:700;text-decoration:none;margin-left:8px;padding:8px 0;display:inline-block}
 h1,h2{font-family:var(--font);text-wrap:balance;margin:0;color:var(--ink)}
 h1{font-size:1.9rem;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-top:12px}
 h2{font-size:1.2rem;font-weight:800;letter-spacing:-.01em}
@@ -131,7 +134,7 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
 @media (prefers-reduced-motion: reduce){.bar>i{transition:none}}
 </style>
 
-<nav class="nav"><div class="wrap"><img src="logo.png" alt="Professional Holiday Homes" width="183" height="34" fetchpriority="high"></div></nav>
+<nav class="nav"><div class="wrap"><img src="logo.png" alt="Professional Holiday Homes" width="183" height="34" fetchpriority="high"><div class="me" id="me" hidden><span id="mename"></span><a href="#" id="signout">Sign out</a></div></div></nav>
 
 <div class="wrap" id="pick" hidden>
   <header class="top">
@@ -321,6 +324,12 @@ window.PHH_CHECKLIST = {
   var MAX_ISSUES = 5, MAX_ISSUE_PHOTOS = 3; /* maintenance: each issue keeps a fixed slot (1-5) for its photo keys mt{slot}_{1-3} */
   var clean = null;
   var $ = function(id){ return document.getElementById(id); };
+  /* Sign out (top right): clears every saved code (cleaner, office, owner) and goes back to the code screen.
+     A clean check in progress stays saved on the phone for that booking. */
+  function signOutAll(e){ if(e) e.preventDefault(); try{ ["phh-cleaner-code","phh-cleaner-name","phh-staff-code","phh-owner-code"].forEach(function(k){ localStorage.removeItem(k); }); }catch(x){} location.href = location.pathname; }
+  function showMe(name){ var me = $("me"); if(!me) return; $("mename").textContent = name || ""; me.hidden = false; }
+  if($("signout")) $("signout").addEventListener("click", signOutAll);
+  (function(){ var c = "", n = ""; try{ c = localStorage.getItem("phh-cleaner-code") || ""; n = localStorage.getItem("phh-cleaner-name") || ""; }catch(e){} if(c) showMe(n ? n.split(" ")[0] : ""); })();
   var key = "phh-clean-v12-" + (RES || "demo");
   var MAX_PHOTO_AGE_MIN = 15; /* live photos only: refuse photos taken more than 15 minutes ago */
   var pending = 0;
@@ -775,7 +784,7 @@ window.PHH_CHECKLIST = {
     }
     function reset(t, err){
       try{ localStorage.removeItem(KEY); }catch(x){}
-      $("codebox").hidden = false; $("searchbox").hidden = true; $("picklist").hidden = true; $("notme").hidden = true;
+      $("codebox").hidden = false; $("searchbox").hidden = true; $("picklist").hidden = true; $("notme").hidden = true; if($("me")) $("me").hidden = true;
       $("pickh1").textContent = "Today's cleans"; $("pickmeta").textContent = "Enter your code to see your cleans for today.";
       msg(t, err);
     }
@@ -797,6 +806,7 @@ window.PHH_CHECKLIST = {
         .then(function(j){
           try{ localStorage.setItem(KEY, code); }catch(e){}
           office = !!j.office; all = j.cleans || [];
+          showMe(office ? "PHH office" : String(j.cleaner || "").split(" ")[0]);
           try{ if(office) localStorage.removeItem("phh-cleaner-name"); else localStorage.setItem("phh-cleaner-name", String(j.cleaner || "")); }catch(e){}
           $("pickh1").textContent = office ? "All cleans today" : "Hi " + String(j.cleaner || "").split(" ")[0];
           $("pickmeta").textContent = office ? "Office view. Every clean with a PHH housekeeper." : "Your cleans for today. Pick the property you are cleaning.";

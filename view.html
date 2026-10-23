@@ -113,6 +113,25 @@ body{padding-block:0 48px}
 .issue .ihead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-weight:800}
 .issue .itext{margin:8px 0 0;white-space:pre-wrap}
 .issue .photos{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+/* Photo viewer: swipe left and right through the photos, full screen. */
+.lb{position:fixed;inset:0;z-index:50;background:#0d1b22;display:flex;flex-direction:column;color:#fff}
+.lb[hidden]{display:none !important}
+.lb-top{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px}
+.lb-count{font-weight:700;font-variant-numeric:tabular-nums;font-size:.95rem;opacity:.85}
+.lb-close{margin-left:auto;width:44px;height:44px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;font-size:1.6rem;line-height:1;cursor:pointer}
+.lb-track{flex:1;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.lb-track::-webkit-scrollbar{display:none}
+.lb-slide{flex:0 0 100%;scroll-snap-align:center;scroll-snap-stop:always;display:grid;place-items:center;padding:0 8px;min-width:0}
+.lb-slide img{max-width:100%;max-height:calc(100vh - 170px);max-height:calc(100dvh - 170px);object-fit:contain;display:block;user-select:none;-webkit-user-drag:none}
+.lb-cap{padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px));text-align:center}
+.lb-cap b{display:block;font-size:1.05rem}
+.lb-cap span{display:block;font-size:.85rem;opacity:.75;margin-top:2px}
+.lb-cap span.flag{color:#ffb38a;opacity:1}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:1.8rem;line-height:1;cursor:pointer;display:none}
+.lb-prev{left:12px}.lb-next{right:12px}
+@media (hover:hover) and (pointer:fine){.lb-nav{display:block}}
+.lb-nav:disabled{opacity:.25;cursor:default}
+body.lb-open{overflow:hidden}
 </style>
 
 <nav class="nav"><div class="wrap"><img src="logo.png" alt="Professional Holiday Homes" width="183" height="34"></div></nav>
@@ -132,7 +151,7 @@ body{padding-block:0 48px}
   <section class="sec" id="photosec" hidden>
     <div class="sechead"><h2>Photos</h2><span class="secount ok" id="phcount"></span></div>
     <div class="photos" id="photos"></div>
-    <p class="note">Tap a photo to open it full size. Photo links last one hour. Reload this page for fresh links.</p>
+    <p class="note">Tap a photo to open it, then swipe left or right. Photo links last one hour. Reload this page for fresh links.</p>
   </section>
   <div id="sections"></div>
 </div>
@@ -188,6 +207,7 @@ window.PHH_API = window.PHH_API || "";
           (m.photos || []).forEach(function(p, k){
             var a = document.createElement("a"); a.className = "ph has"; a.target = "_blank"; a.rel = "noopener";
             if(p.url){ a.href = p.url; var im = document.createElement("img"); im.loading = "lazy"; im.alt = "Maintenance photo " + (k + 1); im.src = p.url; a.appendChild(im); }
+            if(p.url){ a.addEventListener("click", function(e){ if(e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); window.phhViewer.open((m.photos || []).map(function(q, n){ return { url: q.url, label: "Maintenance photo " + (n + 1), sub: m.text || m.description || "" }; }), k); }); }
             var cap = document.createElement("div"); cap.className = "cap"; cap.textContent = fmt(p.stampedAt); a.appendChild(cap); ph.appendChild(a);
           });
           if(!(m.photos || []).length) ph.remove();
@@ -195,6 +215,7 @@ window.PHH_API = window.PHH_API || "";
         });
       }
       $("photosec").hidden = false; $("phcount").textContent = String(j.photos.length);
+      var gallery = [];
       j.photos.forEach(function(p){
         var a = document.createElement("a"); a.className = "ph has"; a.target = "_blank"; a.rel = "noopener";
         if(p.url){ a.href = p.url; var im = document.createElement("img"); im.loading = "lazy"; im.alt = p.label; im.src = p.url; a.appendChild(im); }
@@ -203,6 +224,11 @@ window.PHH_API = window.PHH_API || "";
         if(p.oldPhoto && !OWNER){ var fl = document.createElement("span"); fl.className = "flag"; fl.textContent = "Photo file is older than 12 hours"; cap.appendChild(fl); }
         if(!p.url){ var f2 = document.createElement("span"); f2.className = "flag"; f2.textContent = "Photo file not found"; cap.appendChild(f2); }
         a.appendChild(cap); $("photos").appendChild(a);
+        if(p.url){
+          var idx = gallery.length;
+          gallery.push({ url: p.url, label: p.label, sub: fmt(p.stampedAt), flag: p.oldPhoto && !OWNER ? "Photo file is older than 12 hours" : "" });
+          a.addEventListener("click", function(e){ if(e.metaKey || e.ctrlKey || e.shiftKey) return; e.preventDefault(); window.phhViewer.open(gallery, idx); });
+        }
       });
       j.sections.forEach(function(sec){
         var el = document.createElement("section"); el.className = "sec";
@@ -222,4 +248,68 @@ window.PHH_API = window.PHH_API || "";
 })();
 </script>
 
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Photo viewer">
+  <div class="lb-top"><span class="lb-count" id="lbCount"></span><button class="lb-close" id="lbClose" type="button" aria-label="Close photos">&times;</button></div>
+  <div class="lb-track" id="lbTrack"></div>
+  <button class="lb-nav lb-prev" id="lbPrev" type="button" aria-label="Previous photo">&lsaquo;</button>
+  <button class="lb-nav lb-next" id="lbNext" type="button" aria-label="Next photo">&rsaquo;</button>
+  <div class="lb-cap" id="lbCap"><b></b><span></span></div>
+</div>
+<script>
+/* Photo viewer. window.phhViewer.open(list, index); list = [{url, label, sub, flag}] */
+(function(){
+  "use strict";
+  var lb = document.getElementById("lb"), track = document.getElementById("lbTrack"), count = document.getElementById("lbCount");
+  var cap = document.getElementById("lbCap"), prev = document.getElementById("lbPrev"), next = document.getElementById("lbNext");
+  var list = [], cur = 0, lastFocus = null, ticking = false;
+  function show(i){
+    cur = Math.max(0, Math.min(list.length - 1, i));
+    var p = list[cur] || {};
+    count.textContent = (cur + 1) + " / " + list.length;
+    cap.innerHTML = "<b></b><span></span>";
+    cap.querySelector("b").textContent = p.label || "";
+    cap.querySelector("span").textContent = p.sub || "";
+    if(p.flag){ var f = document.createElement("span"); f.className = "flag"; f.textContent = p.flag; cap.appendChild(f); }
+    prev.disabled = cur === 0; next.disabled = cur === list.length - 1;
+  }
+  function go(i, smooth){ track.scrollTo({ left: Math.max(0, Math.min(list.length - 1, i)) * track.clientWidth, behavior: smooth ? "smooth" : "auto" }); show(i); }
+  function open(items, i){
+    list = items.filter(function(p){ return p && p.url; });
+    if(!list.length) return;
+    lastFocus = document.activeElement;
+    track.innerHTML = "";
+    list.forEach(function(p, k){
+      var d = document.createElement("div"); d.className = "lb-slide";
+      var im = document.createElement("img"); im.alt = p.label || ("Photo " + (k + 1)); im.decoding = "async";
+      if(Math.abs(k - i) <= 1) im.src = p.url; else im.dataset.src = p.url;
+      d.appendChild(im); track.appendChild(d);
+    });
+    lb.hidden = false; document.body.classList.add("lb-open");
+    requestAnimationFrame(function(){ go(i, false); });
+    document.getElementById("lbClose").focus();
+  }
+  function close(){ lb.hidden = true; document.body.classList.remove("lb-open"); track.innerHTML = ""; if(lastFocus && lastFocus.focus) lastFocus.focus(); }
+  track.addEventListener("scroll", function(){
+    if(ticking) return; ticking = true;
+    requestAnimationFrame(function(){
+      ticking = false;
+      var i = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+      if(i !== cur) show(i);
+      /* load this photo and its neighbours */
+      [i - 1, i, i + 1].forEach(function(k){ var s = track.children[k]; var im = s && s.querySelector("img"); if(im && im.dataset.src){ im.src = im.dataset.src; delete im.dataset.src; } });
+    });
+  }, { passive: true });
+  prev.addEventListener("click", function(){ go(cur - 1, true); });
+  next.addEventListener("click", function(){ go(cur + 1, true); });
+  document.getElementById("lbClose").addEventListener("click", close);
+  document.addEventListener("keydown", function(e){
+    if(lb.hidden) return;
+    if(e.key === "Escape") close();
+    else if(e.key === "ArrowLeft") go(cur - 1, true);
+    else if(e.key === "ArrowRight") go(cur + 1, true);
+  });
+  window.addEventListener("resize", function(){ if(!lb.hidden) go(cur, false); });
+  window.phhViewer = { open: open };
+})();
+</script>
 </body></html>

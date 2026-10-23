@@ -3,128 +3,231 @@
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#5bbfb5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Clean Check">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="preload" href="raleway-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://rxhpnowszmetjxbwylil.supabase.co" crossorigin>
 <script>window.PHH_OFFICE_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/office-api";</script>
-<title>PHH Clean Check - Office</title>
+<title>Clean Check Office</title>
 <style>
-@font-face{font-family:"Raleway";font-style:normal;font-weight:100 900;font-display:swap;src:url("raleway-latin.woff2") format("woff2")}
-/* Office side of PHH Clean Check. Same look as the cleaner app and view.html (PHH Landing Page v24). */
+/* Office view v2 (23 Oct 2026). Laid out like HomHero's Cleaning screen so staff feel at home:
+   teal bar, uppercase section title, tabs, filter row, dense table with a coloured status cell. */
 :root{
   color-scheme:light;
-  --bg:#ffffff; --surface:#ffffff; --surface-2:#f4f8fb; --offset:#e8f0f6;
-  --ink:#1a3a4a; --muted:#4f5c6b; --faint:#8a9bb0; --line:#c9d5df; --divider:#dce5ec;
-  --primary:#2275b0; --accent:#21a6c7; --accent-hl:#d6edf4;
-  --teal:#0e7c8f; --teal-hover:#0a6273; --teal-hl:#d7ebef;
-  --warn:#b4541a; --warn-soft:#fbeee4;
-  --radius:1rem; --radius-md:.5rem;
-  --shadow:0 4px 12px rgba(34,117,176,.08), 0 2px 4px rgba(34,117,176,.05);
-  --font:"Raleway", "Helvetica Neue", Arial, sans-serif;
+  --teal:#5bbfb5; --teal-ink:#23807a; --teal-soft:#e6f5f3;
+  --bg:#f4f5f5; --panel:#ffffff; --ink:#26323a; --muted:#5d6b73; --faint:#8b979e; --line:#e1e5e7; --line-2:#eef1f2;
+  --ok:#9ccf63; --ok-ink:#2f5d12; --pend:#f6b81a; --pend-ink:#5c4300; --miss:#e4574d; --miss-ink:#ffffff; --idle:#e3e7e9; --idle-ink:#4a565c;
+  --warn:#b2461d; --warn-soft:#fdece5; --info:#1f6f9a; --info-soft:#e5f1f8;
+  --font:"Roboto", "Helvetica Neue", Arial, sans-serif;
 }
 *{box-sizing:border-box}
 [hidden]{display:none !important}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.5;font-weight:500;font-variant-numeric:lining-nums;padding-inline:16px;padding-block:0 64px}
-.wrap{max-width:900px;margin:0 auto}
-.nav{margin-inline:-16px;padding:12px 16px;background:#fff;border-bottom:1px solid var(--divider);padding-top:calc(12px + env(safe-area-inset-top,0px))}
-.nav .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.nav img{display:block;height:32px;width:auto}
-.nav .me{font-size:.85rem;color:var(--muted);text-align:right}
-.nav .me a{color:var(--primary);font-weight:700;text-decoration:none;margin-left:8px}
-h1,h2{font-family:var(--font);text-wrap:balance;margin:0;color:var(--ink)}
-h1{font-size:1.9rem;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-top:12px}
-h2{font-size:1.1rem;font-weight:800;letter-spacing:-.01em}
-.top{padding-block:20px 4px}
-.badge{display:inline-flex;align-items:center;gap:8px;background:var(--accent-hl);border:1px solid rgba(33,166,199,.35);color:var(--primary);padding:6px 12px;border-radius:9999px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
-.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--primary)}
-.lbl{display:block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
-.controls{display:grid;grid-template-columns:1fr;gap:14px;margin-top:18px}
-@media (min-width:720px){.controls{grid-template-columns:auto 1fr 220px;align-items:end}}
-.daterow{display:flex;gap:8px;align-items:center}
-input,select{font:inherit;padding:11px 14px;border-radius:var(--radius-md);border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%;min-height:46px}
-input[type=date]{width:auto;min-width:0;flex:1}
-input::placeholder{color:var(--faint)}
-input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.iconbtn{flex:none;width:46px;height:46px;border-radius:var(--radius-md);border:1px solid var(--line);background:var(--surface);font:inherit;font-weight:800;font-size:1.2rem;color:var(--primary);cursor:pointer}
-.textbtn{flex:none;font:inherit;font-weight:700;font-size:.9rem;height:46px;padding:0 14px;border-radius:var(--radius-md);border:1px solid var(--line);background:var(--surface);color:var(--primary);cursor:pointer}
-.filters{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.fbtn{font:inherit;font-size:.85rem;font-weight:700;padding:8px 14px;border-radius:9999px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
-.fbtn[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:#fff}
-.fbtn .n{font-variant-numeric:tabular-nums;opacity:.8;margin-left:4px}
-.sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}
-@media (min-width:720px){.sum{grid-template-columns:repeat(5,minmax(0,1fr))}}
-.stat{border:1px solid var(--line);border-radius:var(--radius-md);padding:10px 12px;background:var(--surface-2)}
-.stat b{display:block;font-size:1.5rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.stat span{font-size:.8rem;color:var(--muted);font-weight:600}
-.stat.warn{background:var(--warn-soft);border-color:rgba(180,84,26,.35)}
-.stat.warn b{color:var(--warn)}
-.listhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:26px 0 10px}
-.listhead .count{font-size:.85rem;color:var(--faint);font-weight:700;font-variant-numeric:tabular-nums}
-ul.rows{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
-ul.rows li{border-top:1px solid var(--divider)}
-ul.rows li:first-child{border-top:0}
-.row{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;color:inherit;text-decoration:none}
-a.row:hover{background:var(--surface-2)}
-.row .main{flex:1;min-width:0;display:grid;gap:3px}
-.row .prop{font-weight:800;font-size:1rem}
-.row .sub{font-size:.85rem;color:var(--muted)}
-.row .sub.warn{color:var(--warn);font-weight:700}
-.row .chev{flex:none;color:var(--faint);font-weight:700;font-size:1.3rem;line-height:1.2}
-.tag{flex:none;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:9999px;padding:4px 10px;margin-top:2px;white-space:nowrap}
-.tag.ok{color:var(--teal);background:var(--teal-hl)}
-.tag.warn{color:var(--warn);background:var(--warn-soft)}
-.tag.plain{color:var(--muted);background:var(--offset)}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-.chip{font-size:.78rem;font-weight:700;border-radius:9999px;padding:4px 10px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink)}
-.chip.warn{background:var(--warn-soft);border-color:rgba(180,84,26,.35);color:var(--warn)}
-.chip.info{background:var(--accent-hl);border-color:rgba(33,166,199,.35);color:var(--primary)}
-.hh{font-size:.78rem;color:var(--faint)}
-.hh .y{color:var(--teal);font-weight:700}
-.note{margin-top:12px;color:var(--muted);font-size:.9rem}
-.err{color:var(--warn);font-weight:700}
-.empty{padding:22px 16px;color:var(--muted)}
-.foot{margin-top:18px;font-size:.8rem;color:var(--faint)}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:400 14px/1.45 var(--font);font-variant-numeric:tabular-nums}
+a{color:var(--teal-ink)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid #1f6f9a;outline-offset:2px}
+
+/* Top bar */
+.bar{display:flex;align-items:stretch;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;padding-top:env(safe-area-inset-top,0px)}
+.brand{background:var(--teal);color:#fff;display:flex;align-items:center;gap:10px;padding:0 18px;min-height:52px;font-weight:500;font-size:18px;letter-spacing:.01em;white-space:nowrap}
+.brand img{height:24px;width:24px;border-radius:5px;background:#fff;padding:2px}
+.section{display:flex;align-items:center;padding:0 18px;color:var(--teal-ink);font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:.04em}
+.me{margin-left:auto;display:flex;align-items:center;gap:14px;padding:0 18px;color:var(--muted);white-space:nowrap}
+.me button{border:0;background:none;color:var(--teal-ink);font-weight:500;cursor:pointer;padding:8px 0}
+
+/* Tabs */
+.tabs{display:flex;justify-content:center;gap:4px;background:#fff;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{border:0;background:none;padding:14px 18px 12px;text-transform:uppercase;font-weight:500;font-size:13px;letter-spacing:.04em;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--teal-ink);border-bottom-color:var(--teal)}
+.tab .n{display:inline-block;min-width:20px;margin-left:6px;padding:0 6px;border-radius:10px;background:var(--miss);color:#fff;font-size:11px;line-height:18px;text-align:center}
+
+main{padding:14px 16px 64px;max-width:1500px;margin:0 auto}
+.trial{background:var(--info-soft);color:var(--info);border:1px solid #c9e1ee;padding:8px 12px;border-radius:4px;margin-bottom:12px;font-size:13px}
+
+/* Filter row */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);padding:10px 12px;border-radius:4px}
+.filters input,.filters select{border:0;border-bottom:1px solid #c8cfd3;background:transparent;padding:8px 4px;min-height:38px;min-width:0}
+.filters input[type=search]{flex:1 1 180px}
+.filters select{flex:0 1 190px}
+.datebox{display:flex;align-items:center;gap:4px}
+.datebox input{width:150px}
+.ibtn{width:36px;height:36px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--teal-ink);font-size:18px;font-weight:700;cursor:pointer}
+.btn{border:0;border-radius:4px;background:var(--teal);color:#fff;font-weight:500;padding:9px 14px;cursor:pointer;text-transform:uppercase;font-size:12px;letter-spacing:.04em;white-space:nowrap}
+.btn.ghost{background:#fff;color:var(--teal-ink);border:1px solid var(--teal)}
+.btn.small{padding:6px 10px}
+
+/* Summary strip */
+.strip{display:flex;flex-wrap:wrap;gap:0;margin:12px 0;background:#fff;border:1px solid var(--line);border-radius:4px}
+.strip div{flex:1 1 120px;padding:10px 14px;border-right:1px solid var(--line-2)}
+.strip div:last-child{border-right:0}
+.strip b{display:block;font-size:22px;font-weight:500}
+.strip span{color:var(--muted);font-size:12px}
+.strip .bad b{color:var(--miss)}
+
+/* Table */
+.tablewrap{background:#fff;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{font-weight:500;text-align:left;color:var(--ink);background:#fafbfb;border-bottom:1px solid var(--line);padding:9px 10px;font-size:13px;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+tr.r{cursor:pointer}
+tr.r:hover td{background:#f8fbfb}
+tr.r[aria-expanded="true"] td{background:var(--teal-soft)}
+td.st{padding:0;width:118px}
+.stc{display:flex;align-items:center;height:100%;min-height:40px;padding:0 12px;font-weight:700;font-size:13px}
+.st-checked{background:var(--ok);color:var(--ok-ink)}
+.st-missing{background:var(--miss);color:var(--miss-ink)}
+.st-cleaned{background:var(--idle);color:var(--idle-ink)}
+.st-waiting{background:var(--pend);color:var(--pend-ink)}
+.prop{font-weight:500}
+td.col-prop{min-width:170px}
+.sub{color:var(--faint);font-size:12px}
+.score{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.s5,.s4{background:#5aa52a}.s3{background:var(--pend)}.s2,.s1{background:var(--miss)}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:12px;padding:2px 8px;border-radius:10px;background:var(--line-2);color:var(--ink);white-space:nowrap}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.info{background:var(--info-soft);color:var(--info)}
+.chip.ok{background:#eaf5df;color:var(--ok-ink)}
+.nowrap{white-space:nowrap}
+.empty{padding:28px 16px;color:var(--muted);text-align:center;background:#fff}
+
+/* Detail row */
+tr.d td{background:#fbfdfd;padding:0 0 4px}
+.detail{display:grid;gap:14px;padding:14px 16px 12px;grid-template-columns:1fr}
+@media (min-width:900px){.detail{grid-template-columns:1.3fr 1fr}}
+.detail h3{margin:0 0 6px;font-size:13px;font-weight:700;color:var(--teal-ink);text-transform:uppercase;letter-spacing:.04em}
+.detail p{margin:0 0 8px}
+.detail ul{margin:0;padding-left:18px}
+.detail li{margin:3px 0}
+.sev-high{color:var(--miss);font-weight:700}
+.sev-medium{color:var(--warn);font-weight:700}
+.sev-low{color:var(--muted);font-weight:700}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.agree{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.agree input{flex:1 1 200px;border:1px solid var(--line);border-radius:4px;padding:7px 8px}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:3px 12px;font-size:13px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+
+/* Housekeeper and property tables */
+.toprow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.toprow h2{margin:0;font-size:16px;font-weight:500}
+.issues{background:#fff;border:1px solid var(--line);border-radius:4px;padding:12px 16px;margin-bottom:12px}
+.issues h3{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-ink)}
+.issues ol{margin:0;padding-left:20px}
+.bar100{height:6px;background:var(--line-2);border-radius:3px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle;margin-left:6px}
+.bar100 i{display:block;height:100%;background:var(--teal)}
+
+.msg{margin:12px 0;color:var(--muted)}
+.err{color:var(--miss);font-weight:500}
+
+/* Phones: rows become stacked cards with the status as a left stripe. */
+@media (max-width:760px){
+  .section{display:none}
+  .tabs{justify-content:flex-start}
+  .datebox{flex:1 1 100%}
+  .datebox input{flex:1}
+  table,thead,tbody,tr,td{display:block;width:100%}
+  thead{display:none}
+  tr.r{position:relative;padding:10px 12px 10px 18px;border-bottom:1px solid var(--line)}
+  tr.r td{border:0;padding:2px 0;background:transparent !important}
+  td.st{position:absolute;left:0;top:0;bottom:0;width:8px;min-height:0}
+  td.st .stc{font-size:0;padding:0;min-height:100%}
+  td[data-l]::before{content:attr(data-l) ": ";color:var(--faint);font-size:12px}
+  td.col-prop::before,td.col-flags::before{content:none}
+  tr.r[aria-expanded="true"]{background:var(--teal-soft)}
+  .stlabel{display:inline-block !important}
+  .hk td{display:grid;grid-template-columns:140px 1fr}
+  .hk td::before{content:attr(data-l);color:var(--faint);font-size:12px}
+  .hk td.name{display:block;font-weight:700;font-size:15px}
+  .hk td.name::before{content:none}
+  .hk tr{border-bottom:1px solid var(--line);padding:8px 12px}
+  .hk td{border:0;padding:2px 0}
+  tr.r td:empty,tr.r td.e{display:none}
+  .chip{white-space:normal}
+  .filters select{flex:1 1 45%}
+  .filters input[type=search]{flex:1 1 100%}
+}
+.stlabel{display:none;font-size:11px;font-weight:700;border-radius:3px;padding:1px 6px;margin-left:6px;vertical-align:1px}
 </style>
 </head><body>
-<nav class="nav"><div class="wrap"><img src="logo.png" alt="Professional Holiday Homes" width="172" height="32"><div class="me" id="me" hidden><span id="mename"></span><a href="#" id="signout">Sign out</a></div></div></nav>
-<div class="wrap">
-  <header class="top">
-    <span class="badge">Office view</span>
-    <h1>Clean checks</h1>
-  </header>
+<header class="bar">
+  <div class="brand"><img src="icon-180.png" alt="" width="24" height="24">Clean Check</div>
+  <div class="section" id="sectionTitle">Cleaning</div>
+  <div class="me" id="me"><span id="mename"></span><button type="button" id="signout">Sign out</button></div>
+</header>
+<nav class="tabs" role="tablist" aria-label="Views">
+  <button class="tab" role="tab" data-tab="cleans" aria-selected="true">Cleans</button>
+  <button class="tab" role="tab" data-tab="attention" aria-selected="false">Needs attention<span class="n" id="attnN" hidden></span></button>
+  <button class="tab" role="tab" data-tab="hk" aria-selected="false">Housekeepers</button>
+  <button class="tab" role="tab" data-tab="props" aria-selected="false">Properties</button>
+</nav>
 
-  <div class="controls">
-    <div>
-      <label class="lbl" for="date">Date</label>
-      <div class="daterow">
-        <button class="iconbtn" id="prev" type="button" aria-label="Previous day">&lsaquo;</button>
-        <input type="date" id="date">
-        <button class="iconbtn" id="next" type="button" aria-label="Next day">&rsaquo;</button>
-        <button class="textbtn" id="today" type="button">Today</button>
+<main>
+  <p class="trial">AI photo review is on trial. Its scores and flags are pointers only: open the photos before acting on one, and tap "AI was right" or "AI was wrong" so we can tune it.</p>
+
+  <!-- Cleans and Needs attention share one day view -->
+  <section id="dayView">
+    <div class="filters">
+      <div class="datebox">
+        <button class="ibtn" id="prev" type="button" aria-label="Previous day">&lsaquo;</button>
+        <input type="date" id="date" aria-label="Date">
+        <button class="ibtn" id="next" type="button" aria-label="Next day">&rsaquo;</button>
+        <button class="btn ghost small" id="today" type="button">Today</button>
       </div>
+      <input type="search" id="q" placeholder="Search property" aria-label="Search property" autocomplete="off">
+      <select id="status" aria-label="Status">
+        <option value="">All statuses</option>
+        <option value="checked">Checked</option>
+        <option value="missing">Missing check</option>
+        <option value="cleaned">Done in HomHero (not on Clean Check)</option>
+        <option value="waiting">Not done yet</option>
+      </select>
+      <select id="who" aria-label="Housekeeper"><option value="">All housekeepers</option></select>
+      <select id="extra" aria-label="Show">
+        <option value="">Everything</option>
+        <option value="b2b">Back to back</option>
+        <option value="maint">Maintenance logged</option>
+        <option value="consumables">Consumables requested</option>
+        <option value="precheck">Pre-arrival check pending</option>
+      </select>
     </div>
-    <div>
-      <label class="lbl" for="q">Property</label>
-      <input type="search" id="q" autocomplete="off" placeholder="Search properties">
+    <div class="strip" id="strip" hidden></div>
+    <div class="tablewrap" id="dayTableWrap" hidden>
+      <table>
+        <thead><tr>
+          <th>Status</th><th>Property</th><th>Housekeeper</th><th>Done in HomHero</th><th>Clean check</th>
+          <th>Check time</th><th>Photos</th><th>AI score</th><th>Flags</th><th>Next guests</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
     </div>
-    <div>
-      <label class="lbl" for="who">HomHero cleaner</label>
-      <select id="who"><option value="">All cleaners</option></select>
-    </div>
-  </div>
+    <p class="msg" id="msg">Loading...</p>
+  </section>
 
-  <div class="sum" id="sum" hidden></div>
-  <div class="filters" id="filters" hidden></div>
+  <!-- Housekeepers / Properties -->
+  <section id="insView" hidden>
+    <div class="toprow">
+      <h2 id="insTitle">Housekeepers</h2>
+      <select id="days" aria-label="Period">
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+    </div>
+    <div class="issues" id="issues" hidden></div>
+    <div class="tablewrap"><table class="hk"><thead id="insHead"></thead><tbody id="insRows"></tbody></table></div>
+    <p class="msg" id="insMsg"></p>
+  </section>
+</main>
 
-  <div class="listhead"><h2 id="dayh">Loading...</h2><span class="count" id="count"></span></div>
-  <ul class="rows" id="rows" hidden></ul>
-  <p class="note" id="msg"></p>
-  <p class="foot" id="foot"></p>
-</div>
 <script>
 (function(){
   "use strict";
@@ -138,174 +241,305 @@ a.row:hover{background:var(--surface-2)}
   var TZ = "Australia/Sydney";
   function sydToday(){ return new Intl.DateTimeFormat("en-CA",{ timeZone:TZ }).format(new Date()); }
   function shift(d, n){ var x = new Date(d + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0,10); }
-  function dayLabel(d){ return new Date(d + "T12:00:00+10:00").toLocaleDateString("en-AU",{ timeZone:TZ, weekday:"long", day:"numeric", month:"long" }); }
   function time(ts){ return ts ? new Date(ts).toLocaleTimeString("en-AU",{ timeZone:TZ, hour:"numeric", minute:"2-digit" }) : ""; }
-  /* hh_cleaned_at is HomHero's Sydney local time with no zone, e.g. 2026-10-16 14:41:00 */
   function localTime(s){ var m = /(\d{2}):(\d{2})/.exec(String(s || "").slice(10)); if(!m) return ""; var h = +m[1]; return (h % 12 || 12) + ":" + m[2] + (h < 12 ? " am" : " pm"); }
-  function mins(a, b){ var m = Math.round((new Date(b) - new Date(a)) / 60000); if(!(m >= 0)) return ""; return m >= 60 ? Math.floor(m/60) + " h " + (m % 60) + " min" : m + " min"; }
-  function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined) e.textContent = text; return e; }
+  function hm(m){ return m === null || m === undefined ? "" : (m >= 60 ? Math.floor(m/60) + " h " + (m % 60) + " min" : m + " min"); }
+  function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined && text !== null) e.textContent = text; return e; }
+  function post(route, body){
+    body.code = CODE;
+    return fetch(API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
+      .then(function(r){ return r.json().then(function(j){ if(r.status === 403){ signOut(); throw new Error("Signed out"); } if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+  function signOut(){ try{ localStorage.removeItem("phh-staff-code"); }catch(e){} location.replace("./"); }
+  $("signout").addEventListener("click", signOut);
 
-  var state = { date: params.get("date") || sydToday(), rows: [], filter: "all", q: "", who: "" };
+  var state = { tab:"cleans", date: params.get("date") || sydToday(), rows: [], q:"", status:"", who:"", extra:"", open:{} };
   if(!/^\d{4}-\d{2}-\d{2}$/.test(state.date)) state.date = sydToday();
 
-  function signOut(){ try{ localStorage.removeItem("phh-staff-code"); }catch(e){} location.replace("./"); }
-  $("signout").addEventListener("click", function(e){ e.preventDefault(); signOut(); });
-
-  /* What each clean needs from the office. */
-  function kind(r){
-    if(r.submitted) return "checked";
-    if(r.hhCleanedAt && r.onCleanCheck) return "missing";
-    if(r.hhCleanedAt) return "cleaned";
-    return "waiting";
-  }
-  var FILTERS = [
-    ["all", "All", function(){ return true; }],
-    ["missing", "Missing check", function(r){ return kind(r) === "missing"; }],
-    ["flagged", "Flagged", function(r){ return r.flagged; }],
-    ["maint", "Maintenance", function(r){ return r.maintCount > 0; }],
-    ["consumables", "Consumables", function(r){ return r.consumables === "yes"; }],
-    ["b2b", "Back to back", function(r){ return !!r.backToBack; }],
-    ["precheck", "Pre-arrival check pending", function(r){ return preDue(r) && (r.nextPreInspection === false || r.nextPreMaintenance === false); }],
-    ["checked", "Checked", function(r){ return r.submitted; }]
-  ];
-  /* Next guests arrive on the day being viewed or the day after: the pre-arrival checks matter. */
+  var STATUS = { checked:["Checked","st-checked"], missing:["Missing","st-missing"], cleaned:["Done in HomHero","st-cleaned"], waiting:["Not done","st-waiting"] };
+  function statusLabel(r){ if(r.status === "waiting") return state.date < sydToday() ? "Not done" : "Pending"; return STATUS[r.status][0]; }
   function preDue(r){ var d = String(r.nextArrivalAt || "").slice(0,10); return !!d && (d === state.date || d === shift(state.date, 1)); }
-  function filterFn(k){ for(var i=0;i<FILTERS.length;i++) if(FILTERS[i][0] === k) return FILTERS[i][2]; return FILTERS[0][2]; }
+  function needsAttention(r){
+    if(r.status === "missing") return true;
+    if(!r.submitted) return false;
+    if(r.flags.some(function(f){ return f.tone === "warn"; })) return true;
+    if(r.ai && r.ai.status === "done" && r.ai.verdict !== "to_standard") return true;
+    if(r.maintCount) return true;
+    return false;
+  }
 
-  function base(){
+  /* ---------- Day view ---------- */
+  function filtered(){
     var q = state.q.toLowerCase();
-    return state.rows.filter(function(r){ return (!q || String(r.property).toLowerCase().indexOf(q) >= 0) && (!state.who || r.hhCleaner === state.who); });
-  }
-
-  function renderSummary(){
-    var rows = base();
-    var n = function(f){ return rows.filter(f).length; };
-    var stats = [
-      [rows.length, "Cleans", false],
-      [n(function(r){ return !!r.hhCleanedAt; }), "Done in HomHero", false],
-      [n(function(r){ return r.submitted; }), "Clean checks", false],
-      [n(function(r){ return kind(r) === "missing"; }), "Missing a check", true],
-      [n(function(r){ return r.flagged; }), "Flagged", true]
-    ];
-    var box = $("sum"); box.innerHTML = "";
-    stats.forEach(function(s){ var d = el("div", "stat" + (s[2] && s[0] ? " warn" : "")); d.appendChild(el("b", "", String(s[0]))); d.appendChild(el("span", "", s[1])); box.appendChild(d); });
-    box.hidden = false;
-    var fb = $("filters"); fb.innerHTML = "";
-    FILTERS.forEach(function(f){
-      var b = el("button", "fbtn"); b.type = "button"; b.setAttribute("aria-pressed", String(state.filter === f[0]));
-      b.appendChild(document.createTextNode(f[1])); b.appendChild(el("span", "n", String(rows.filter(f[2]).length)));
-      b.addEventListener("click", function(){ state.filter = f[0]; render(); });
-      fb.appendChild(b);
+    return state.rows.filter(function(r){
+      if(q && String(r.property).toLowerCase().indexOf(q) < 0) return false;
+      if(state.who && r.hhCleaner !== state.who && r.submittedBy !== state.who) return false;
+      if(state.status && r.status !== state.status) return false;
+      if(state.extra === "b2b" && !r.backToBack) return false;
+      if(state.extra === "maint" && !r.maintCount) return false;
+      if(state.extra === "consumables" && r.consumables !== "yes") return false;
+      if(state.extra === "precheck" && !(preDue(r) && (r.nextPreInspection === false || r.nextPreMaintenance === false))) return false;
+      if(state.tab === "attention" && !needsAttention(r)) return false;
+      return true;
     });
-    fb.hidden = false;
   }
 
-  function rowEl(r){
-    var k = kind(r);
-    var link = !!r.submissionId;
-    var a = el(link ? "a" : "div", "row");
-    if(link) a.href = "view.html?id=" + encodeURIComponent(r.submissionId) + "&from=office" + (state.date ? "&date=" + state.date : "");
-    var main = el("div", "main");
-    main.appendChild(el("span", "prop", r.property + (r.test ? " (test)" : "")));
-    main.appendChild(el("span", "sub", "HomHero: " + (r.hhCleaner || "No cleaner assigned") + (r.bedrooms ? " | " + r.bedrooms + " bed, " + r.bathrooms + " bath" : "")));
-    if(k === "checked"){
-      var bits = ["Clean check by " + (r.submittedBy || "?") + " at " + time(r.submittedAt)];
-      if(r.photoCount) bits.push(r.photoCount + " photos");
-      var ct = r.firstPhotoAt ? mins(r.firstPhotoAt, r.submittedAt) : "";
-      if(ct) bits.push("clean time " + ct);
-      main.appendChild(el("span", "sub", bits.join(" | ")));
-    } else if(k === "missing"){
-      main.appendChild(el("span", "sub warn", "Done in HomHero at " + localTime(r.hhCleanedAt) + ", no clean check"));
-    } else if(k === "cleaned"){
-      main.appendChild(el("span", "sub", "Done in HomHero at " + localTime(r.hhCleanedAt) + (r.hhPhotos !== null ? ", " + r.hhPhotos + " HomHero photos" : "") + ". Cleaner not on Clean Check yet"));
+  function renderStrip(){
+    var rows = state.rows, n = function(f){ return rows.filter(f).length; };
+    var onCC = rows.filter(function(r){ return r.onCleanCheck || r.submitted; });
+    var scored = rows.filter(function(r){ return r.ai && r.ai.status === "done" && r.ai.score; });
+    var avg = scored.length ? (scored.reduce(function(s, r){ return s + r.ai.score; }, 0) / scored.length).toFixed(1) : "-";
+    var stats = [
+      [rows.length, "Cleans today", false],
+      [n(function(r){ return !!r.hhCleanedAt; }), "Done in HomHero", false],
+      [n(function(r){ return r.submitted; }) + " of " + onCC.length, "Clean checks (pilot)", false],
+      [n(function(r){ return r.status === "missing"; }), "Missing a check", true],
+      [n(needsAttention), "Need attention", true],
+      [avg, "Average AI score", false]
+    ];
+    var box = $("strip"); box.innerHTML = "";
+    stats.forEach(function(s){ var d = el("div", s[2] && s[0] ? "bad" : ""); d.appendChild(el("b", "", String(s[0]))); d.appendChild(el("span", "", s[1])); box.appendChild(d); });
+    box.hidden = false;
+    var a = n(needsAttention); $("attnN").textContent = a; $("attnN").hidden = !a;
+  }
+
+  function nextGuests(r){
+    var m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/.exec(String(r.nextArrivalAt || ""));
+    if(!m) return r.backToBack ? "Back to back" : "";
+    var day = m[1] === state.date ? "Today" : new Date(m[1] + "T12:00:00+10:00").toLocaleDateString("en-AU",{ timeZone:TZ, weekday:"short", day:"numeric", month:"short" });
+    return (r.backToBack ? "B2B " : "") + day + " " + localTime(m[1] + " " + m[2] + ":" + m[3]);
+  }
+
+  function scoreCell(r){
+    var td = el("td"); td.setAttribute("data-l", "AI");
+    if(!r.submitted){ td.appendChild(el("span", "sub", "")); return td; }
+    if(!r.ai){ td.appendChild(el("span", "sub", "Reviewing")); return td; }
+    if(r.ai.status !== "done"){ td.appendChild(el("span", "sub", "Not reviewed")); return td; }
+    var s = el("span", "score"); var d = el("i", "dot s" + r.ai.score); s.appendChild(d); s.appendChild(document.createTextNode(r.ai.score + "/5")); td.appendChild(s);
+    if(r.ai.checked) td.appendChild(el("span", "sub", r.ai.checked.agree ? " ✓ checked" : " ✗ disputed"));
+    return td;
+  }
+
+  function flagCell(r){
+    var td = el("td", "col-flags"); var c = el("div", "chips");
+    if(r.status === "missing") c.appendChild(el("span", "chip warn", "No clean check"));
+    if(r.ai && r.ai.status === "done"){
+      (r.ai.flags || []).slice(0, 3).forEach(function(f){ c.appendChild(el("span", "chip " + (f.severity === "low" ? "info" : "warn"), f.label)); });
+      if((r.ai.flags || []).length > 3) c.appendChild(el("span", "chip", "+" + (r.ai.flags.length - 3) + " more"));
+    }
+    r.flags.forEach(function(f){ c.appendChild(el("span", "chip " + f.tone, f.label)); });
+    td.appendChild(c); return td;
+  }
+
+  function rowEls(r){
+    var tr = el("tr", "r"); tr.tabIndex = 0; tr.setAttribute("aria-expanded", String(!!state.open[r.res]));
+    var st = el("td", "st"); st.appendChild(el("div", "stc " + STATUS[r.status][1], statusLabel(r))); tr.appendChild(st);
+    var p = el("td", "col-prop"); var pn = el("div", "prop", r.property + (r.test ? " (test)" : ""));
+    var sl = el("span", "stlabel " + STATUS[r.status][1], statusLabel(r)); pn.appendChild(sl);
+    p.appendChild(pn); p.appendChild(el("div", "sub", (r.bedrooms ? r.bedrooms + " bed, " + r.bathrooms + " bath | " : "") + "#" + r.res)); tr.appendChild(p);
+    var h = el("td", "", r.hhCleaner || "Not assigned"); h.setAttribute("data-l", "Housekeeper"); tr.appendChild(h);
+    var dh = el("td", "nowrap", r.hhCleanedAt ? localTime(r.hhCleanedAt) : ""); dh.setAttribute("data-l", "HomHero"); tr.appendChild(dh);
+    var cc = el("td", "nowrap" + (r.submitted || r.onCleanCheck ? "" : " sub"), r.submitted ? time(r.submittedAt) : (r.onCleanCheck ? "" : "n/a")); cc.setAttribute("data-l", "Clean check"); cc.title = r.onCleanCheck || r.submitted ? "" : "This housekeeper is not on Clean Check yet"; tr.appendChild(cc);
+    var ct = el("td", "nowrap", hm(r.checkMins)); ct.setAttribute("data-l", "Check time"); tr.appendChild(ct);
+    var ph = el("td", "", r.submitted ? String(r.photoCount || 0) : (r.hhPhotos !== null && r.hhPhotos !== undefined ? r.hhPhotos + " in HH" : "")); ph.setAttribute("data-l", "Photos"); tr.appendChild(ph);
+    tr.appendChild(scoreCell(r));
+    tr.appendChild(flagCell(r));
+    var ng = el("td", "nowrap", nextGuests(r)); ng.setAttribute("data-l", "Next guests"); tr.appendChild(ng);
+    Array.prototype.forEach.call(tr.children, function(td){ if(!td.classList.contains("st") && !td.textContent.trim()) td.classList.add("e"); });
+    var toggle = function(){ state.open[r.res] = !state.open[r.res]; renderRows(); };
+    tr.addEventListener("click", toggle);
+    tr.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); toggle(); } });
+    var out = [tr];
+    if(state.open[r.res]){ var d = el("tr", "d"); var td = el("td"); td.colSpan = 10; td.appendChild(detail(r)); d.appendChild(td); out.push(d); }
+    return out;
+  }
+
+  function detail(r){
+    var box = el("div", "detail");
+    var left = el("div");
+    if(r.submitted){
+      left.appendChild(el("h3", "", "AI photo review"));
+      if(!r.ai){ left.appendChild(el("p", "sub", "Waiting for the AI review (runs every 15 minutes).")); }
+      else if(r.ai.status !== "done"){ left.appendChild(el("p", "sub", "The AI could not review this one.")); }
+      else {
+        var verdict = { to_standard:"To standard", check:"Worth a look", below_standard:"Below standard" }[r.ai.verdict] || r.ai.verdict;
+        left.appendChild(el("p", "", r.ai.score + "/5, " + verdict + ". " + (r.ai.summary || "")));
+        if((r.ai.flags || []).length){
+          var ul = el("ul");
+          r.ai.flags.forEach(function(f){
+            var li = el("li"); li.appendChild(el("span", "sev-" + (f.severity || "low"), f.label));
+            if(f.note) li.appendChild(document.createTextNode(". " + f.note));
+            ul.appendChild(li);
+          });
+          left.appendChild(ul);
+        } else left.appendChild(el("p", "sub", "No problems spotted in the photos."));
+        if((r.ai.suggestions || []).length){
+          left.appendChild(el("h3", "", "Suggestions"));
+          var su = el("ul"); r.ai.suggestions.forEach(function(s){ su.appendChild(el("li", "", s)); }); left.appendChild(su);
+        }
+        var ag = el("div", "agree");
+        var note = el("input"); note.placeholder = "Optional note (what it got wrong)"; note.setAttribute("aria-label", "Note about the AI review");
+        var yes = el("button", "btn small", "AI was right"); yes.type = "button";
+        var no = el("button", "btn ghost small", "AI was wrong"); no.type = "button";
+        var said = el("span", "sub", r.ai.checked ? ("Checked by " + r.ai.checked.by + (r.ai.checked.agree ? ": right" : ": wrong") + (r.ai.checked.note ? ", " + r.ai.checked.note : "")) : "");
+        var send = function(agree){
+          yes.disabled = no.disabled = true;
+          post("review-check", { id: r.submissionId, agree: agree, note: note.value })
+            .then(function(){ r.ai.checked = { by:"you", agree:agree, note:note.value }; said.textContent = "Saved. Thanks."; })
+            .catch(function(e){ said.textContent = e.message; yes.disabled = no.disabled = false; });
+        };
+        yes.addEventListener("click", function(e){ e.stopPropagation(); send(true); });
+        no.addEventListener("click", function(e){ e.stopPropagation(); send(false); });
+        note.addEventListener("click", function(e){ e.stopPropagation(); });
+        ag.appendChild(note); ag.appendChild(yes); ag.appendChild(no); ag.appendChild(said);
+        left.appendChild(ag);
+      }
+      if(r.flags.length){
+        left.appendChild(el("h3", "", "Checks"));
+        var fl = el("ul"); r.flags.forEach(function(f){ fl.appendChild(el("li", f.tone === "warn" ? "sev-medium" : "", f.label)); }); left.appendChild(fl);
+      }
     } else {
-      var past = state.date < sydToday();
-      main.appendChild(el("span", "sub", (past ? "Not marked done in HomHero" : "Not done yet") + (r.onCleanCheck ? "" : ". Cleaner not on Clean Check yet")));
+      left.appendChild(el("h3", "", "Clean check"));
+      left.appendChild(el("p", "", r.status === "missing" ? "Marked done in HomHero at " + localTime(r.hhCleanedAt) + " with no clean check." :
+        r.status === "cleaned" ? "Done in HomHero at " + localTime(r.hhCleanedAt) + ". This housekeeper is not on Clean Check yet." :
+        "Not done yet."));
     }
-    var nm = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/.exec(String(r.nextArrivalAt || ""));
-    if(nm || r.backToBack){
-      var nx = el("span", "sub" + (r.backToBack ? " warn" : ""));
-      var when = nm ? (nm[1] === state.date ? "same day" : new Date(nm[1] + "T12:00:00+10:00").toLocaleDateString("en-AU",{ timeZone:TZ, weekday:"short", day:"numeric", month:"short" })) + " " + localTime(nm[1] + " " + nm[2] + ":" + nm[3]) : "";
-      nx.textContent = (r.backToBack ? "Back to back. " : "") + (nm ? "Next guests " + when : "");
-      main.appendChild(nx);
-    }
-    if(preDue(r) && (r.nextPreInspection !== null || r.nextPreMaintenance !== null)){
-      var pc = el("span", "hh");
-      var part = function(label, v){ var x = el("span", v ? "y" : "", label + (v ? " \u2713" : " pending")); return x; };
-      pc.appendChild(document.createTextNode("Pre-arrival (HomHero): "));
-      pc.appendChild(part("inspection", r.nextPreInspection));
-      pc.appendChild(document.createTextNode(" | "));
-      pc.appendChild(part("maintenance", r.nextPreMaintenance));
-      main.appendChild(pc);
-    }
-    if(r.hkNote){ main.appendChild(el("span", "sub", "HomHero note: " + r.hkNote)); }
-    if(r.flags && r.flags.length){
-      var c = el("div", "chips");
-      r.flags.forEach(function(f){ c.appendChild(el("span", "chip " + f.tone, f.label)); });
-      main.appendChild(c);
-    }
+    box.appendChild(left);
+
+    var right = el("div");
+    right.appendChild(el("h3", "", "Details"));
+    var kv = el("dl", "kv");
+    var add = function(k, v){ if(v === "" || v === null || v === undefined) return; kv.appendChild(el("dt", "", k)); kv.appendChild(el("dd", "", v)); };
+    add("Housekeeper (HomHero)", r.hhCleaner);
+    if(r.submittedBy && r.submittedBy !== r.hhCleaner) add("Checked by", r.submittedBy);
+    add("Done in HomHero", r.hhCleanedAt ? localTime(r.hhCleanedAt) : "Not yet");
+    add("Clean check", r.submitted ? time(r.submittedAt) : "");
+    add("First photo to Complete", hm(r.checkMins));
+    add("Items N/A", r.submitted ? String(r.naCount) : "");
+    add("Next guests", nextGuests(r));
+    if(preDue(r) && (r.nextPreInspection !== null || r.nextPreMaintenance !== null))
+      add("Pre-arrival (HomHero)", "inspection " + (r.nextPreInspection ? "done" : "pending") + ", maintenance " + (r.nextPreMaintenance ? "done" : "pending"));
     if(r.homhero && !r.test){
-      var h = el("span", "hh"); h.appendChild(document.createTextNode("Sent to HomHero: "));
-      [["note", "note"], ["photos", "photos"], ["done", "marked cleaned"], ["maint", "maintenance jobs"]].forEach(function(p, i){
-        var v = r.homhero[p[0]]; if(v === null || v === undefined) return;
-        if(i) h.appendChild(document.createTextNode(" | "));
-        h.appendChild(el("span", v ? "y" : "", p[1] + (v ? " ✓" : " pending")));
-      });
-      main.appendChild(h);
+      var parts = []; [["note","note"],["photos","photos"],["maint","maintenance jobs"]].forEach(function(p){ var v = r.homhero[p[0]]; if(v === null || v === undefined) return; parts.push(p[1] + (v ? " ✓" : " pending")); });
+      add("Sent to HomHero", parts.join(", "));
     }
-    a.appendChild(main);
-    var tags = { checked:["ok","Checked"], missing:["warn","Missing"], cleaned:["plain","Done in HomHero"], waiting:["plain", state.date < sydToday() ? "Not done" : "Waiting"] };
-    a.appendChild(el("span", "tag " + tags[k][0], tags[k][1]));
-    if(link){ var ch = el("span", "chev", "›"); ch.setAttribute("aria-hidden", "true"); a.appendChild(ch); }
-    var li = document.createElement("li"); li.appendChild(a); return li;
+    add("HomHero note", r.hkNote);
+    right.appendChild(kv);
+    var acts = el("div", "actions");
+    if(r.submissionId){ var a = el("a", "btn", "Photos and checklist"); a.href = "view.html?id=" + encodeURIComponent(r.submissionId) + "&from=office&date=" + state.date; acts.appendChild(a); }
+    if(r.portalUrl){ var b = el("a", "btn ghost", "Open in HomHero Cleaner"); b.href = r.portalUrl; b.target = "_blank"; b.rel = "noopener"; acts.appendChild(b); }
+    right.appendChild(acts);
+    box.appendChild(right);
+    return box;
   }
 
-  function render(){
-    renderSummary();
-    var rows = base().filter(filterFn(state.filter));
-    var ul = $("rows"); ul.innerHTML = "";
-    rows.forEach(function(r){ ul.appendChild(rowEl(r)); });
-    ul.hidden = !rows.length;
-    $("count").textContent = rows.length + " shown";
-    $("msg").className = "note";
-    $("msg").textContent = rows.length ? "" : (state.rows.length ? "Nothing matches these filters." : "No cleans for this date.");
+  function renderRows(){
+    var rows = filtered();
+    if(state.tab === "attention") rows.sort(function(a, b){ return (a.status === "missing" ? 0 : 1) - (b.status === "missing" ? 0 : 1) || ((a.ai && a.ai.score) || 9) - ((b.ai && b.ai.score) || 9); });
+    var tb = $("rows"); tb.innerHTML = "";
+    rows.forEach(function(r){ rowEls(r).forEach(function(x){ tb.appendChild(x); }); });
+    $("dayTableWrap").hidden = !rows.length;
+    $("msg").className = "msg";
+    $("msg").textContent = rows.length ? (rows.length + " shown. Tap a row for the AI review, photos and HomHero link. Owner cleans and cancelled bookings are hidden.")
+      : (state.tab === "attention" ? "Nothing needs attention for this day." : (state.rows.length ? "Nothing matches these filters." : "No cleans for this date."));
   }
 
   function fillWho(list){
     var sel = $("who"), cur = state.who;
-    sel.innerHTML = '<option value="">All cleaners</option>';
+    sel.innerHTML = '<option value="">All housekeepers</option>';
     list.forEach(function(n){ var o = el("option", "", n); o.value = n; sel.appendChild(o); });
     sel.value = list.indexOf(cur) >= 0 ? cur : ""; state.who = sel.value;
   }
 
   var loading = 0;
-  function load(){
+  function loadDay(){
     var my = ++loading;
     $("date").value = state.date;
-    $("dayh").textContent = dayLabel(state.date);
-    $("msg").className = "note"; $("msg").textContent = "Loading...";
+    $("msg").className = "msg"; $("msg").textContent = "Loading...";
     var u = new URL(location.href); u.searchParams.set("date", state.date); history.replaceState(null, "", u);
-    fetch(API + "/day", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: CODE, date: state.date, includeTest: TEST }) })
-      .then(function(r){ return r.json().then(function(j){ if(r.status === 403){ signOut(); throw new Error("Signed out"); } if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })
-      .then(function(j){
-        if(my !== loading) return;
-        $("mename").textContent = j.name; $("me").hidden = false;
-        state.rows = j.rows || []; fillWho(j.cleaners || []);
-        render();
-        $("foot").textContent = "Updated " + new Date().toLocaleTimeString("en-AU",{ hour:"numeric", minute:"2-digit" }) + ". Owner cleans and cancelled bookings are not shown. Tap a checked clean to see its photos and checklist.";
-      })
-      .catch(function(e){ if(my !== loading) return; $("rows").hidden = true; $("msg").className = "note err"; $("msg").textContent = e.message; });
+    post("day", { date: state.date, includeTest: TEST }).then(function(j){
+      if(my !== loading) return;
+      $("mename").textContent = j.name; $("me").hidden = false;
+      state.rows = j.rows || []; fillWho(j.cleaners || []);
+      renderStrip(); renderRows();
+    }).catch(function(e){ if(my !== loading) return; $("dayTableWrap").hidden = true; $("msg").className = "msg err"; $("msg").textContent = e.message; });
   }
 
-  $("prev").addEventListener("click", function(){ state.date = shift(state.date, -1); load(); });
-  $("next").addEventListener("click", function(){ state.date = shift(state.date, 1); load(); });
-  $("today").addEventListener("click", function(){ state.date = sydToday(); load(); });
-  $("date").addEventListener("change", function(){ if(/^\d{4}-\d{2}-\d{2}$/.test(this.value)){ state.date = this.value; load(); } });
-  $("q").addEventListener("input", function(){ state.q = this.value.trim(); render(); });
-  $("who").addEventListener("change", function(){ state.who = this.value; render(); });
-  document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible") load(); });
-  setInterval(function(){ if(document.visibilityState === "visible") load(); }, 5 * 60000);
-  load();
+  /* ---------- Housekeepers and properties ---------- */
+  var FLAGNAME = { duplicate:"Reused photo", timing:"Photos all at the end", order:"HomHero before check", late:"After 3pm", na:"Many N/A", old:"Old photos", bbq:"No BBQ", rooms:"Rooms missing", maint:"Maintenance", consumables:"Consumables",
+    ai_wrong_photo:"Wrong photo (AI)", ai_not_clean:"Not clean (AI)", ai_presentation:"Presentation (AI)", ai_unclear_photo:"Unclear photo (AI)", ai_same_scene:"Same scene twice (AI)", ai_other:"Other (AI)" };
+  var SKIP = { maint:1, consumables:1, bbq:1 };
+  function topFlags(fc){
+    return Object.keys(fc || {}).filter(function(k){ return !SKIP[k]; }).sort(function(a, b){ return fc[b] - fc[a]; }).slice(0, 3)
+      .map(function(k){ return (FLAGNAME[k] || k) + " " + fc[k]; }).join(", ");
+  }
+  var insCache = {};
+  function loadIns(){
+    var days = $("days").value;
+    $("insMsg").className = "msg"; $("insMsg").textContent = "Loading...";
+    var go = insCache[days] ? Promise.resolve(insCache[days]) : post("insights", { days: +days }).then(function(j){ insCache[days] = j; return j; });
+    go.then(renderIns).catch(function(e){ $("insMsg").className = "msg err"; $("insMsg").textContent = e.message; });
+  }
+  function renderIns(j){
+    $("mename").textContent = $("mename").textContent || "";
+    var hk = state.tab === "hk";
+    $("insTitle").textContent = hk ? "Housekeepers on Clean Check" : "Properties with clean checks";
+    var head = $("insHead"), body = $("insRows"); head.innerHTML = ""; body.innerHTML = "";
+    var cols = hk
+      ? ["Housekeeper", "Cleans done", "Checks", "Check rate", "Missing", "AI score", "Below standard", "Typical check time", "Most common flags"]
+      : ["Property", "Checks", "AI score", "Below standard", "Typical check time", "Most common flags"];
+    var htr = el("tr"); cols.forEach(function(c){ htr.appendChild(el("th", "", c)); }); head.appendChild(htr);
+    var list = hk ? j.cleaners : j.properties;
+    list.forEach(function(x){
+      var tr = el("tr");
+      var cell = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
+      cell(cols[0], x.name, "name");
+      if(hk){
+        cell("Cleans done", String(x.done));
+        cell("Checks", String(x.checked));
+        var rate = cell("Check rate", x.checkRate === null ? "-" : x.checkRate + "%");
+        if(x.checkRate !== null){ var b = el("span", "bar100"); var i = el("i"); i.style.width = x.checkRate + "%"; b.appendChild(i); rate.appendChild(b); }
+        var mi = cell("Missing", String(x.missing)); if(x.missing) mi.style.color = "var(--miss)";
+      } else cell("Checks", String(x.checked));
+      cell("AI score", x.avgScore === null ? "-" : x.avgScore + "/5");
+      cell("Below standard", String(x.belowStandard));
+      cell("Typical check time", hm(x.medianCheckMins) || "-");
+      cell("Most common flags", topFlags(x.flagCount) || "None");
+      body.appendChild(tr);
+    });
+    var iss = $("issues"); iss.innerHTML = "";
+    if((j.topIssues || []).length){
+      iss.appendChild(el("h3", "", "What to work on (most common AI flags, " + j.days + " days)"));
+      var ol = el("ol"); j.topIssues.forEach(function(t){ ol.appendChild(el("li", "", t.label + " (" + t.n + ")")); }); iss.appendChild(ol);
+      iss.hidden = false;
+    } else iss.hidden = true;
+    $("insMsg").textContent = list.length ? "From " + j.from + " to " + j.to + ". Typical check time is the median from the first photo to Complete." : "No clean checks in this period yet.";
+  }
+
+  /* ---------- Tabs ---------- */
+  var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties" };
+  function setTab(t){
+    state.tab = t;
+    document.querySelectorAll(".tab").forEach(function(b){ b.setAttribute("aria-selected", String(b.getAttribute("data-tab") === t)); });
+    $("sectionTitle").textContent = TITLES[t];
+    var day = t === "cleans" || t === "attention";
+    $("dayView").hidden = !day; $("insView").hidden = day;
+    if(day){ if(state.rows.length) renderRows(); } else loadIns();
+  }
+  document.querySelectorAll(".tab").forEach(function(b){ b.addEventListener("click", function(){ setTab(b.getAttribute("data-tab")); }); });
+
+  $("prev").addEventListener("click", function(){ state.date = shift(state.date, -1); state.open = {}; loadDay(); });
+  $("next").addEventListener("click", function(){ state.date = shift(state.date, 1); state.open = {}; loadDay(); });
+  $("today").addEventListener("click", function(){ state.date = sydToday(); state.open = {}; loadDay(); });
+  $("date").addEventListener("change", function(){ if(/^\d{4}-\d{2}-\d{2}$/.test(this.value)){ state.date = this.value; state.open = {}; loadDay(); } });
+  $("q").addEventListener("input", function(){ state.q = this.value.trim(); renderRows(); });
+  $("status").addEventListener("change", function(){ state.status = this.value; renderRows(); });
+  $("who").addEventListener("change", function(){ state.who = this.value; renderRows(); });
+  $("extra").addEventListener("change", function(){ state.extra = this.value; renderRows(); });
+  $("days").addEventListener("change", loadIns);
+  document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible" && (state.tab === "cleans" || state.tab === "attention")) loadDay(); });
+  setInterval(function(){ if(document.visibilityState === "visible" && (state.tab === "cleans" || state.tab === "attention")) loadDay(); }, 5 * 60000);
+  loadDay();
 })();
 </script>
 </body></html>

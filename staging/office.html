@@ -156,8 +156,76 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
   .filters input[type=search]{flex:1 1 100%}
 }
 .stlabel{display:none;font-size:11px;font-weight:700;border-radius:3px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+.pushbox{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);padding:8px 12px;border-radius:4px;margin-bottom:12px;font-size:13px}
+.pushbox .pushtxt{flex:1 1 200px;color:var(--muted)}
+.pushbtn{border:0;border-radius:4px;background:var(--teal);color:#fff;font-weight:500;padding:7px 12px;cursor:pointer;text-transform:uppercase;font-size:12px;letter-spacing:.04em}
+.pushbtn.ghost{background:#fff;color:var(--teal-ink);border:1px solid var(--teal)}
+.pushbtn:disabled{opacity:.6}
 </style>
 </head><body>
+<script>
+/* Phone notifications (staging, 26 Oct 2026). window.phhPush(box, code, label) fills box with a Turn on / Send test control.
+   iPhone: only works in the app opened from the Home Screen icon (iOS 16.4+). No caching in sw.js, so pages stay fresh. */
+(function(){
+  "use strict";
+  var PUSH_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/push-api";
+  var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  var standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+  var supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  function post(route, body){
+    return fetch(PUSH_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body || {}) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+  function b64ToBytes(s){ s = s.replace(/-/g, "+").replace(/_/g, "/"); while(s.length % 4) s += "="; var raw = atob(s), out = new Uint8Array(raw.length); for(var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out; }
+  function reg(){ return navigator.serviceWorker.register("sw.js", { scope: "./" }).then(function(){ return navigator.serviceWorker.ready; }); }
+  window.phhPush = function(box, code, label){
+    if(!box) return;
+    box.innerHTML = ""; box.hidden = false;
+    var txt = document.createElement("span"); txt.className = "pushtxt";
+    var btn = document.createElement("button"); btn.type = "button"; btn.className = "pushbtn";
+    var test = document.createElement("button"); test.type = "button"; test.className = "pushbtn ghost"; test.textContent = "Send a test"; test.hidden = true;
+    box.appendChild(txt); box.appendChild(btn); box.appendChild(test);
+    function say(t){ txt.textContent = t; }
+    if(!supported){
+      btn.hidden = true;
+      if(ios && !standalone) say("To get " + label + ", open Clean Check from its Home Screen icon.");
+      else box.hidden = true;
+      return;
+    }
+    if(Notification.permission === "denied"){ btn.hidden = true; say("Notifications are blocked for Clean Check in your phone settings."); return; }
+    var current = null;
+    function on(sub){ current = sub; say(label.charAt(0).toUpperCase() + label.slice(1) + " are on for this phone."); btn.hidden = true; test.hidden = false; }
+    function off(){ say("Get " + label + " on this phone."); btn.textContent = "Turn on"; btn.hidden = false; btn.disabled = false; test.hidden = true; }
+    reg().then(function(r){ return r.pushManager.getSubscription(); }).then(function(sub){
+      if(sub && Notification.permission === "granted"){
+        /* re-save in case the code on this phone changed */
+        post("subscribe", { code: code, sub: sub.toJSON() }).then(function(){ on(sub); }).catch(function(){ off(); });
+      } else off();
+    }).catch(function(){ off(); });
+    btn.addEventListener("click", function(){
+      btn.disabled = true; say("Turning on...");
+      /* the permission prompt must come straight from the tap on iPhone */
+      Notification.requestPermission().then(function(p){
+        if(p !== "granted") throw new Error(p === "denied" ? "Notifications are blocked. You can allow them in your phone settings." : "Notifications were not turned on.");
+        return Promise.all([reg(), post("key")]);
+      }).then(function(res){
+        return res[0].pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(res[1].publicKey) });
+      }).then(function(sub){
+        return post("subscribe", { code: code, sub: sub.toJSON() }).then(function(){ on(sub); });
+      }).catch(function(e){ btn.disabled = false; btn.hidden = false; btn.textContent = "Try again"; say(e.message || "That did not work."); });
+    });
+    test.addEventListener("click", function(){
+      if(!current) return;
+      test.disabled = true; say("Sending a test...");
+      post("test", { code: code, endpoint: current.endpoint })
+        .then(function(j){ say(j.sent ? "Test sent. It should appear in a few seconds." : "The test did not go through. Turn notifications off and on in your phone settings, then try again."); })
+        .catch(function(e){ say(e.message); })
+        .then(function(){ test.disabled = false; });
+    });
+  };
+})();
+</script>
+
 <header class="bar">
   <div class="brand"><img src="icon-180.png" alt="" width="24" height="24">Clean Check</div>
   <div class="section" id="sectionTitle">Cleaning</div>
@@ -172,6 +240,7 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
 
 <main>
   <p class="trial">AI photo review is on trial. Its scores and flags are pointers only: open the photos before acting on one, and tap "AI was right" or "AI was wrong" so we can tune it.</p>
+  <div class="pushbox" id="pushbox" hidden></div>
 
   <!-- Cleans and Needs attention share one day view -->
   <section id="dayView">
@@ -539,6 +608,7 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
   $("days").addEventListener("change", loadIns);
   document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible" && (state.tab === "cleans" || state.tab === "attention")) loadDay(); });
   setInterval(function(){ if(document.visibilityState === "visible" && (state.tab === "cleans" || state.tab === "attention")) loadDay(); }, 5 * 60000);
+  if(window.phhPush) window.phhPush($("pushbox"), CODE, "notifications");
   loadDay();
 })();
 </script>

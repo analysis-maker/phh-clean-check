@@ -801,7 +801,14 @@ window.PHH_CHECKLIST = {
       msg("Opening...");
       fetch(OFFICE_API + "/login", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
         .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })
-        .then(function(j){ var owner = j.role === "owner"; try{ localStorage.setItem(owner ? "phh-owner-code" : "phh-staff-code", code); localStorage.removeItem(owner ? "phh-staff-code" : "phh-owner-code"); localStorage.removeItem(KEY); }catch(e){} location.href = owner ? "owner.html" : "office.html?v=1026p"; })
+        .then(function(j){
+          var owner = j.role === "owner"; try{ localStorage.setItem(owner ? "phh-owner-code" : "phh-staff-code", code); localStorage.removeItem(owner ? "phh-staff-code" : "phh-owner-code"); localStorage.removeItem(KEY); }catch(e){}
+          if(owner){ location.href = "owner.html"; return; }
+          /* Staff: office view, or the maintenance dashboard for a maintenance code (staging asks office-api-v2 which one). */
+          return fetch(OFFICE_API + "-v2/login", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
+            .then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
+            .then(function(v){ var mv = v && v.view === "maintenance"; try{ localStorage.setItem("phh-staff-view", mv ? "maintenance" : "office"); }catch(e){} location.href = mv ? "maintenance.html?v=1028m" : "office.html?v=1028m"; });
+        })
         .catch(function(e){ reset(e.message, true); });
     }
     function loadList(code){
@@ -830,7 +837,8 @@ window.PHH_CHECKLIST = {
     $("q").addEventListener("input", function(){ var q = this.value.trim().toLowerCase(); show(all.filter(function(c){ return String(c.property).toLowerCase().indexOf(q) >= 0; })); });
     $("switchcode").addEventListener("click", function(e){ e.preventDefault(); $("code").value = ""; reset(""); });
     var staffSaved = ""; try{ staffSaved = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
-    if(staffSaved){ location.replace("office.html?v=1026p"); return; }
+    var staffView = ""; try{ staffView = localStorage.getItem("phh-staff-view") || ""; }catch(e){}
+    if(staffSaved){ location.replace(staffView === "maintenance" ? "maintenance.html?v=1028m" : "office.html?v=1028m"); return; }
     var ownerSaved = ""; try{ ownerSaved = localStorage.getItem("phh-owner-code") || ""; }catch(e){}
     if(ownerSaved){ location.replace("owner.html"); return; }
     var saved = ""; try{ saved = localStorage.getItem(KEY) || ""; }catch(e){}

@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#5bbfb5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Clean Check">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://rxhpnowszmetjxbwylil.supabase.co" crossorigin>
+<script>window.PHH_OFFICE_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/office-api-v2";</script>
+<title>Clean Check Maintenance</title>
+<style>
+/* Office view v2 (23 Oct 2026). Laid out like HomHero's Cleaning screen so staff feel at home:
+   teal bar, uppercase section title, tabs, filter row, dense table with a coloured status cell. */
+:root{
+  color-scheme:light;
+  --teal:#5bbfb5; --teal-ink:#23807a; --teal-soft:#e6f5f3;
+  --bg:#f4f5f5; --panel:#ffffff; --ink:#26323a; --muted:#5d6b73; --faint:#8b979e; --line:#e1e5e7; --line-2:#eef1f2;
+  --ok:#9ccf63; --ok-ink:#2f5d12; --pend:#f6b81a; --pend-ink:#5c4300; --miss:#e4574d; --miss-ink:#ffffff; --idle:#e3e7e9; --idle-ink:#4a565c;
+  --warn:#b2461d; --warn-soft:#fdece5; --info:#1f6f9a; --info-soft:#e5f1f8;
+  --font:"Roboto", "Helvetica Neue", Arial, sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:400 14px/1.45 var(--font);font-variant-numeric:tabular-nums}
+a{color:var(--teal-ink)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid #1f6f9a;outline-offset:2px}
+
+/* Top bar */
+.bar{display:flex;align-items:stretch;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;padding-top:env(safe-area-inset-top,0px)}
+.brand{background:var(--teal);color:#fff;display:flex;align-items:center;gap:10px;padding:0 18px;min-height:52px;font-weight:500;font-size:18px;letter-spacing:.01em;white-space:nowrap}
+.brand img{height:24px;width:24px;border-radius:5px;background:#fff;padding:2px}
+.section{display:flex;align-items:center;padding:0 18px;color:var(--teal-ink);font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:.04em}
+.me{margin-left:auto;display:flex;align-items:center;gap:14px;padding:0 18px;color:var(--muted);white-space:nowrap}
+.me button{border:0;background:none;color:var(--teal-ink);font-weight:500;cursor:pointer;padding:8px 0}
+
+/* Tabs */
+.tabs{display:flex;justify-content:center;gap:4px;background:#fff;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{border:0;background:none;padding:14px 18px 12px;text-transform:uppercase;font-weight:500;font-size:13px;letter-spacing:.04em;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--teal-ink);border-bottom-color:var(--teal)}
+.tab .n{display:inline-block;min-width:20px;margin-left:6px;padding:0 6px;border-radius:10px;background:var(--miss);color:#fff;font-size:11px;line-height:18px;text-align:center}
+
+main{padding:14px 16px 64px;max-width:1500px;margin:0 auto}
+.trial{background:var(--info-soft);color:var(--info);border:1px solid #c9e1ee;padding:8px 12px;border-radius:4px;margin-bottom:12px;font-size:13px}
+
+/* Filter row */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);padding:10px 12px;border-radius:4px}
+.filters input,.filters select{border:0;border-bottom:1px solid #c8cfd3;background:transparent;padding:8px 4px;min-height:38px;min-width:0}
+.filters input[type=search]{flex:1 1 180px}
+.filters select{flex:0 1 190px}
+.datebox{display:flex;align-items:center;gap:4px}
+.datebox input{width:150px}
+.ibtn{width:36px;height:36px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--teal-ink);font-size:18px;font-weight:700;cursor:pointer}
+.btn{border:0;border-radius:4px;background:var(--teal);color:#fff;font-weight:500;padding:9px 14px;cursor:pointer;text-transform:uppercase;font-size:12px;letter-spacing:.04em;white-space:nowrap}
+.btn.ghost{background:#fff;color:var(--teal-ink);border:1px solid var(--teal)}
+.btn.small{padding:6px 10px}
+
+/* Summary strip */
+.strip{display:flex;flex-wrap:wrap;gap:0;margin:12px 0;background:#fff;border:1px solid var(--line);border-radius:4px}
+.strip div{flex:1 1 120px;padding:10px 14px;border-right:1px solid var(--line-2)}
+.strip div:last-child{border-right:0}
+.strip b{display:block;font-size:22px;font-weight:500}
+.strip span{color:var(--muted);font-size:12px}
+.strip .bad b{color:var(--miss)}
+
+/* Table */
+.tablewrap{background:#fff;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{font-weight:500;text-align:left;color:var(--ink);background:#fafbfb;border-bottom:1px solid var(--line);padding:9px 10px;font-size:13px;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+tr.r{cursor:pointer}
+tr.r:hover td{background:#f8fbfb}
+tr.r[aria-expanded="true"] td{background:var(--teal-soft)}
+td.st{padding:0;width:118px}
+.stc{display:flex;align-items:center;height:100%;min-height:40px;padding:0 12px;font-weight:700;font-size:13px}
+.st-checked{background:var(--ok);color:var(--ok-ink)}
+.st-missing{background:var(--miss);color:var(--miss-ink)}
+.st-cleaned{background:var(--idle);color:var(--idle-ink)}
+.st-waiting{background:var(--pend);color:var(--pend-ink)}
+.prop{font-weight:500}
+td.col-prop{min-width:170px}
+.sub{color:var(--faint);font-size:12px}
+.score{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.s5,.s4{background:#5aa52a}.s3{background:var(--pend)}.s2,.s1{background:var(--miss)}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:12px;padding:2px 8px;border-radius:10px;background:var(--line-2);color:var(--ink);white-space:nowrap}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.info{background:var(--info-soft);color:var(--info)}
+.chip.ok{background:#eaf5df;color:var(--ok-ink)}
+.nowrap{white-space:nowrap}
+.empty{padding:28px 16px;color:var(--muted);text-align:center;background:#fff}
+
+/* Detail row */
+tr.d td{background:#fbfdfd;padding:0 0 4px}
+.detail{display:grid;gap:14px;padding:14px 16px 12px;grid-template-columns:1fr}
+@media (min-width:900px){.detail{grid-template-columns:1.3fr 1fr}}
+.detail h3{margin:0 0 6px;font-size:13px;font-weight:700;color:var(--teal-ink);text-transform:uppercase;letter-spacing:.04em}
+.detail p{margin:0 0 8px}
+.detail ul{margin:0;padding-left:18px}
+.detail li{margin:3px 0}
+.sev-high{color:var(--miss);font-weight:700}
+.sev-medium{color:var(--warn);font-weight:700}
+.sev-low{color:var(--muted);font-weight:700}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.agree{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.agree input{flex:1 1 200px;border:1px solid var(--line);border-radius:4px;padding:7px 8px}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:3px 12px;font-size:13px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+
+/* Housekeeper and property tables */
+.toprow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.toprow h2{margin:0;font-size:16px;font-weight:500}
+.issues{background:#fff;border:1px solid var(--line);border-radius:4px;padding:12px 16px;margin-bottom:12px}
+.issues h3{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-ink)}
+.issues ol{margin:0;padding-left:20px}
+.bar100{height:6px;background:var(--line-2);border-radius:3px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle;margin-left:6px}
+.bar100 i{display:block;height:100%;background:var(--teal)}
+
+.msg{margin:12px 0;color:var(--muted)}
+.err{color:var(--miss);font-weight:500}
+
+/* Phones: rows become stacked cards with the status as a left stripe. */
+@media (max-width:760px){
+  .section{display:none}
+  .tabs{justify-content:flex-start}
+  .datebox{flex:1 1 100%}
+  .datebox input{flex:1}
+  table,thead,tbody,tr,td{display:block;width:100%}
+  thead{display:none}
+  tr.r{position:relative;padding:10px 12px 10px 18px;border-bottom:1px solid var(--line)}
+  tr.r td{border:0;padding:2px 0;background:transparent !important}
+  td.st{position:absolute;left:0;top:0;bottom:0;width:8px;min-height:0}
+  td.st .stc{font-size:0;padding:0;min-height:100%}
+  td[data-l]::before{content:attr(data-l) ": ";color:var(--faint);font-size:12px}
+  td.col-prop::before,td.col-flags::before{content:none}
+  tr.r[aria-expanded="true"]{background:var(--teal-soft)}
+  .stlabel{display:inline-block !important}
+  .hk td{display:grid;grid-template-columns:140px 1fr}
+  .hk td::before{content:attr(data-l);color:var(--faint);font-size:12px}
+  .hk td.name{display:block;font-weight:700;font-size:15px}
+  .hk td.name::before{content:none}
+  .hk tr{border-bottom:1px solid var(--line);padding:8px 12px}
+  .hk td{border:0;padding:2px 0}
+  tr.r td:empty,tr.r td.e{display:none}
+  .chip{white-space:normal}
+  .filters select{flex:1 1 45%}
+  .filters input[type=search]{flex:1 1 100%}
+}
+.stlabel{display:none;font-size:11px;font-weight:700;border-radius:3px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+.pushbox{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);padding:8px 12px;border-radius:4px;margin-bottom:12px;font-size:13px}
+.pushbox .pushtxt{flex:1 1 200px;color:var(--muted)}
+.pushbtn{border:0;border-radius:4px;background:var(--teal);color:#fff;font-weight:500;padding:7px 12px;cursor:pointer;text-transform:uppercase;font-size:12px;letter-spacing:.04em}
+.pushbtn.ghost{background:#fff;color:var(--teal-ink);border:1px solid var(--teal)}
+.pushbtn:disabled{opacity:.6}
+/* Photo viewer: swipe left and right through the photos, full screen. */
+.lb{position:fixed;inset:0;z-index:50;background:#0d1b22;display:flex;flex-direction:column;color:#fff}
+.lb[hidden]{display:none !important}
+.lb-top{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px}
+.lb-count{font-weight:700;font-variant-numeric:tabular-nums;font-size:.95rem;opacity:.85}
+.lb-close{margin-left:auto;width:44px;height:44px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;font-size:1.6rem;line-height:1;cursor:pointer}
+.lb-track{flex:1;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.lb-track::-webkit-scrollbar{display:none}
+.lb-slide{flex:0 0 100%;scroll-snap-align:center;scroll-snap-stop:always;display:grid;place-items:center;padding:0 8px;min-width:0}
+.lb-slide img{max-width:100%;max-height:calc(100vh - 170px);max-height:calc(100dvh - 170px);object-fit:contain;display:block;user-select:none;-webkit-user-drag:none}
+.lb-cap{padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px));text-align:center}
+.lb-cap b{display:block;font-size:1.05rem}
+.lb-cap span{display:block;font-size:.85rem;opacity:.75;margin-top:2px}
+.lb-cap span.flag{color:#ffb38a;opacity:1}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:1.8rem;line-height:1;cursor:pointer;display:none}
+.lb-prev{left:12px}.lb-next{right:12px}
+@media (hover:hover) and (pointer:fine){.lb-nav{display:block}}
+.lb-nav:disabled{opacity:.25;cursor:default}
+body.lb-open{overflow:hidden}
+
+/* Maintenance dashboard extras */
+.st-info{background:#cfe6f3;color:#124d6e}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:6px}
+.thumb{padding:0;border:1px solid var(--line);border-radius:4px;background:#fff;cursor:pointer;aspect-ratio:1;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.me a{color:var(--teal-ink);font-weight:500;text-decoration:none}
+</style>
+</head><body>
+<script>
+/* Phone notifications (staging, 26 Oct 2026). window.phhPush(box, code, label) fills box with a Turn on / Send test control.
+   iPhone: only works in the app opened from the Home Screen icon (iOS 16.4+). No caching in sw.js, so pages stay fresh. */
+(function(){
+  "use strict";
+  var PUSH_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/push-api";
+  var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  var standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+  var supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  function post(route, body){
+    return fetch(PUSH_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body || {}) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+  function b64ToBytes(s){ s = s.replace(/-/g, "+").replace(/_/g, "/"); while(s.length % 4) s += "="; var raw = atob(s), out = new Uint8Array(raw.length); for(var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out; }
+  function reg(){ return navigator.serviceWorker.register("sw.js", { scope: "./" }).then(function(){ return navigator.serviceWorker.ready; }); }
+  window.phhPush = function(box, code, label){
+    if(!box) return;
+    box.innerHTML = ""; box.hidden = false;
+    var txt = document.createElement("span"); txt.className = "pushtxt";
+    var btn = document.createElement("button"); btn.type = "button"; btn.className = "pushbtn";
+    var test = document.createElement("button"); test.type = "button"; test.className = "pushbtn ghost"; test.textContent = "Send a test"; test.hidden = true;
+    box.appendChild(txt); box.appendChild(btn); box.appendChild(test);
+    function say(t){ txt.textContent = t; }
+    if(!supported){
+      btn.hidden = true;
+      if(ios && !standalone) say("To get " + label + ", open Clean Check from its Home Screen icon.");
+      else box.hidden = true;
+      return;
+    }
+    if(Notification.permission === "denied"){ btn.hidden = true; say("Notifications are blocked for Clean Check in your phone settings."); return; }
+    var current = null;
+    function on(sub){ current = sub; say(label.charAt(0).toUpperCase() + label.slice(1) + " are on for this phone."); btn.hidden = true; test.hidden = false; }
+    function off(){ say("Get " + label + " on this phone."); btn.textContent = "Turn on"; btn.hidden = false; btn.disabled = false; test.hidden = true; }
+    reg().then(function(r){ return r.pushManager.getSubscription(); }).then(function(sub){
+      if(sub && Notification.permission === "granted"){
+        /* re-save in case the code on this phone changed */
+        post("subscribe", { code: code, sub: sub.toJSON() }).then(function(){ on(sub); }).catch(function(){ off(); });
+      } else off();
+    }).catch(function(){ off(); });
+    btn.addEventListener("click", function(){
+      btn.disabled = true; say("Turning on...");
+      /* the permission prompt must come straight from the tap on iPhone */
+      Notification.requestPermission().then(function(p){
+        if(p !== "granted") throw new Error(p === "denied" ? "Notifications are blocked. You can allow them in your phone settings." : "Notifications were not turned on.");
+        return Promise.all([reg(), post("key")]);
+      }).then(function(res){
+        return res[0].pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(res[1].publicKey) });
+      }).then(function(sub){
+        return post("subscribe", { code: code, sub: sub.toJSON() }).then(function(){ on(sub); });
+      }).catch(function(e){ btn.disabled = false; btn.hidden = false; btn.textContent = "Try again"; say(e.message || "That did not work."); });
+    });
+    test.addEventListener("click", function(){
+      if(!current) return;
+      test.disabled = true; say("Sending a test...");
+      post("test", { code: code, endpoint: current.endpoint })
+        .then(function(j){ say(j.sent ? "Test sent. It should appear in a few seconds." : "The test did not go through. Turn notifications off and on in your phone settings, then try again."); })
+        .catch(function(e){ say(e.message); })
+        .then(function(){ test.disabled = false; });
+    });
+  };
+})();
+</script>
+<header class="bar">
+  <div class="brand"><img src="icon-180.png" alt="" width="24" height="24">Clean Check</div>
+  <div class="section">Maintenance</div>
+  <div class="me" id="me"><span id="mename"></span><a href="office.html?v=1028m" id="toOffice" hidden>Cleaning</a><button type="button" id="signout">Sign out</button></div>
+</header>
+<nav class="tabs" role="tablist" aria-label="Views">
+  <button class="tab" role="tab" data-tab="open" aria-selected="true">Open<span class="n" id="openN" hidden></span></button>
+  <button class="tab" role="tab" data-tab="done" aria-selected="false">Complete</button>
+  <button class="tab" role="tab" data-tab="all" aria-selected="false">All</button>
+</nav>
+<main>
+  <p class="trial">Maintenance issues housekeepers log in Clean Check, with their photos. Each one is also a HomHero maintenance job: assign and update it in HomHero as usual. Status here follows HomHero (checked every 10 minutes).</p>
+  <div class="pushbox" id="pushbox" hidden></div>
+  <div class="filters">
+    <input type="search" id="q" placeholder="Search property or issue" aria-label="Search property or issue" autocomplete="off">
+    <select id="urg" aria-label="Priority"><option value="">All priorities</option><option value="urgent">Urgent only</option></select>
+    <button class="btn ghost small" id="refresh" type="button">Refresh</button>
+  </div>
+  <div class="strip" id="strip"></div>
+  <p class="msg" id="msg">Loading...</p>
+  <div class="tablewrap" id="wrap" hidden>
+    <table>
+      <thead><tr><th>Status</th><th>Logged</th><th>Property</th><th>Issue</th><th>Photos</th><th>Logged by</th><th>Assigned to</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Photo viewer">
+  <div class="lb-top"><span class="lb-count" id="lbCount"></span><button class="lb-close" id="lbClose" type="button" aria-label="Close photos">&times;</button></div>
+  <div class="lb-track" id="lbTrack"></div>
+  <button class="lb-nav lb-prev" id="lbPrev" type="button" aria-label="Previous photo">&lsaquo;</button>
+  <button class="lb-nav lb-next" id="lbNext" type="button" aria-label="Next photo">&rsaquo;</button>
+  <div class="lb-cap" id="lbCap"><b></b><span></span></div>
+</div>
+
+<script>
+/* Photo viewer. window.phhViewer.open(list, index); list = [{url, label, sub, flag}] */
+(function(){
+  "use strict";
+  var lb = document.getElementById("lb"), track = document.getElementById("lbTrack"), count = document.getElementById("lbCount");
+  var cap = document.getElementById("lbCap"), prev = document.getElementById("lbPrev"), next = document.getElementById("lbNext");
+  var list = [], cur = 0, lastFocus = null, ticking = false;
+  function show(i){
+    cur = Math.max(0, Math.min(list.length - 1, i));
+    var p = list[cur] || {};
+    count.textContent = (cur + 1) + " / " + list.length;
+    cap.innerHTML = "<b></b><span></span>";
+    cap.querySelector("b").textContent = p.label || "";
+    cap.querySelector("span").textContent = p.sub || "";
+    if(p.flag){ var f = document.createElement("span"); f.className = "flag"; f.textContent = p.flag; cap.appendChild(f); }
+    prev.disabled = cur === 0; next.disabled = cur === list.length - 1;
+  }
+  function go(i, smooth){ track.scrollTo({ left: Math.max(0, Math.min(list.length - 1, i)) * track.clientWidth, behavior: smooth ? "smooth" : "auto" }); show(i); }
+  function open(items, i){
+    list = items.filter(function(p){ return p && p.url; });
+    if(!list.length) return;
+    lastFocus = document.activeElement;
+    track.innerHTML = "";
+    list.forEach(function(p, k){
+      var d = document.createElement("div"); d.className = "lb-slide";
+      var im = document.createElement("img"); im.alt = p.label || ("Photo " + (k + 1)); im.decoding = "async";
+      if(Math.abs(k - i) <= 1) im.src = p.url; else im.dataset.src = p.url;
+      d.appendChild(im); track.appendChild(d);
+    });
+    lb.hidden = false; document.body.classList.add("lb-open");
+    requestAnimationFrame(function(){ go(i, false); });
+    document.getElementById("lbClose").focus();
+  }
+  function close(){ lb.hidden = true; document.body.classList.remove("lb-open"); track.innerHTML = ""; if(lastFocus && lastFocus.focus) lastFocus.focus(); }
+  track.addEventListener("scroll", function(){
+    if(ticking) return; ticking = true;
+    requestAnimationFrame(function(){
+      ticking = false;
+      var i = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+      if(i !== cur) show(i);
+      /* load this photo and its neighbours */
+      [i - 1, i, i + 1].forEach(function(k){ var s = track.children[k]; var im = s && s.querySelector("img"); if(im && im.dataset.src){ im.src = im.dataset.src; delete im.dataset.src; } });
+    });
+  }, { passive: true });
+  prev.addEventListener("click", function(){ go(cur - 1, true); });
+  next.addEventListener("click", function(){ go(cur + 1, true); });
+  document.getElementById("lbClose").addEventListener("click", close);
+  document.addEventListener("keydown", function(e){
+    if(lb.hidden) return;
+    if(e.key === "Escape") close();
+    else if(e.key === "ArrowLeft") go(cur - 1, true);
+    else if(e.key === "ArrowRight") go(cur + 1, true);
+  });
+  window.addEventListener("resize", function(){ if(!lb.hidden) go(cur, false); });
+  window.phhViewer = { open: open };
+})();
+</script>
+<script>
+/* Maintenance dashboard (staging, 28 Oct 2026). For Angus (code with view "maintenance") and office staff. */
+(function(){
+  "use strict";
+  var API = window.PHH_OFFICE_API;
+  var CODE = ""; try{ CODE = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
+  if(!CODE){ location.replace("./"); return; }
+  var TZ = "Australia/Sydney";
+  var $ = function(id){ return document.getElementById(id); };
+  var params = new URLSearchParams(location.search);
+  var FOCUS = params.get("k") || "";
+  var state = { tab: FOCUS ? "all" : "open", q: "", urg: "", issues: [], open: {} };
+  if(FOCUS) state.open[FOCUS] = true;
+
+  function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined && text !== null) e.textContent = text; return e; }
+  function post(route, body){
+    return fetch(API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(Object.assign({ code: CODE }, body || {})) })
+      .then(function(r){ return r.json().then(function(j){ if(r.status === 403){ signOut(); throw new Error("Signed out."); } if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+  function signOut(){ try{ localStorage.removeItem("phh-staff-code"); localStorage.removeItem("phh-staff-view"); }catch(e){} location.replace("./"); }
+  $("signout").addEventListener("click", signOut);
+
+  function when(iso){
+    if(!iso) return "";
+    var d = new Date(iso); if(isNaN(d)) return String(iso);
+    return d.toLocaleDateString("en-AU", { timeZone: TZ, weekday:"short", day:"numeric", month:"short" }) + ", " + d.toLocaleTimeString("en-AU", { timeZone: TZ, hour:"numeric", minute:"2-digit" });
+  }
+  /* HomHero dates are Sydney local text: "2026-10-26 09:12:00" */
+  function hhWhen(s){
+    var m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(String(s || "")); if(!m) return s || "";
+    var mon = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m[2] - 1];
+    var h = +m[4], ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12;
+    return (+m[3]) + " " + mon + ", " + h + ":" + m[5] + " " + ap;
+  }
+  var STATUS = {
+    pending: ["Pending", "st-waiting"], handyman: ["Handyman", "st-info"], contractor: ["Contractor", "st-info"],
+    owner_approved: ["Owner approved", "st-info"], complete: ["Complete", "st-checked"]
+  };
+  function statusOf(i){
+    if(!i.homhero) return i.sentToHomHero ? ["Not in HomHero", "st-missing"] : ["Sending to HomHero", "st-cleaned"];
+    var s = STATUS[i.homhero.status];
+    return s || ["In HomHero", "st-waiting"];
+  }
+  function isDone(i){ return !!(i.homhero && i.homhero.status === "complete"); }
+  function assigned(i){ var h = i.homhero || {}; return [h.handyman, h.contractor].filter(Boolean).join(", "); }
+
+  function filtered(){
+    var q = state.q.toLowerCase();
+    return state.issues.filter(function(i){
+      if(state.tab === "open" && isDone(i)) return false;
+      if(state.tab === "done" && !isDone(i)) return false;
+      if(state.urg === "urgent" && !i.urgent) return false;
+      if(q && (i.property + " " + i.text + " " + i.housekeeper).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    });
+  }
+
+  function strip(){
+    var s = $("strip"); s.innerHTML = "";
+    var open = state.issues.filter(function(i){ return !isDone(i); });
+    var items = [
+      [open.length, "Open", open.length ? "" : ""],
+      [open.filter(function(i){ return i.urgent; }).length, "Urgent open", "bad"],
+      [open.filter(function(i){ return !i.homhero || i.homhero.status === "pending"; }).length, "Not assigned yet", ""],
+      [state.issues.filter(isDone).length, "Complete (60 days)", ""]
+    ];
+    items.forEach(function(x){ var d = el("div", x[0] && x[2] ? x[2] : ""); d.appendChild(el("b", "", String(x[0]))); d.appendChild(el("span", "", x[1])); s.appendChild(d); });
+    var n = $("openN"); n.hidden = !open.length; n.textContent = String(open.length);
+  }
+
+  function photosOf(i){ return (i.photos || []).map(function(p, k){ return { url: p.url, label: i.property + ": photo " + (k + 1) + " of " + i.photos.length, sub: i.text + (p.takenAt ? " | " + when(p.takenAt) : "") }; }); }
+
+  function detail(i){
+    var tr = el("tr", "d"); var td = el("td"); td.colSpan = 7; tr.appendChild(td);
+    var box = el("div", "detail"); td.appendChild(box);
+    var left = el("div"), right = el("div"); box.appendChild(left); box.appendChild(right);
+    left.appendChild(el("h3", "", "Issue"));
+    left.appendChild(el("p", "", i.text || "(no description)"));
+    if(i.photos && i.photos.length){
+      var g = el("div", "thumbs");
+      i.photos.forEach(function(p, k){
+        var b = el("button", "thumb"); b.type = "button"; b.setAttribute("aria-label", "Open photo " + (k + 1));
+        var im = el("img"); im.src = p.url; im.alt = ""; im.loading = "lazy"; b.appendChild(im);
+        b.addEventListener("click", function(e){ e.stopPropagation(); window.phhViewer.open(photosOf(i), k); });
+        g.appendChild(b);
+      });
+      left.appendChild(g);
+    } else left.appendChild(el("p", "sub", "No photos with this issue."));
+    right.appendChild(el("h3", "", "Details"));
+    var dl = el("dl", "kv");
+    function kv(k, v){ if(v === null || v === undefined || v === "") return; dl.appendChild(el("dt", "", k)); dl.appendChild(el("dd", "", v)); }
+    var h = i.homhero || {};
+    kv("Property", i.property);
+    kv("Priority", i.urgent ? "Urgent" : "Normal");
+    kv("Logged by", i.housekeeper + (i.loggedAt ? ", " + when(i.loggedAt) : ""));
+    kv("Clean date", i.cleanDate ? new Date(i.cleanDate + "T12:00:00").toLocaleDateString("en-AU", { weekday:"short", day:"numeric", month:"short" }) : "");
+    kv("HomHero job", h.job ? "#" + h.job : (i.sentToHomHero ? "Not created, office to check" : "Being created (up to 10 minutes)"));
+    kv("HomHero status", h.job ? statusOf(i)[0] : "");
+    kv("Assigned to", assigned(i));
+    kv("Assigned", h.assignedAt ? hhWhen(h.assignedAt) : "");
+    kv("Finished", h.finishedAt ? hhWhen(h.finishedAt) : "");
+    kv("Handyman notes", h.comments);
+    kv("Contractor notes", h.contractorNotes);
+    kv("Checked with HomHero", h.syncedAt ? when(h.syncedAt) : "");
+    right.appendChild(dl);
+    var acts = el("div", "actions");
+    var a = el("a", "btn ghost small", "Full clean check"); a.href = "view.html?id=" + encodeURIComponent(i.submissionId) + "&from=maint"; acts.appendChild(a);
+    right.appendChild(acts);
+    return tr;
+  }
+
+  function render(){
+    strip();
+    var list = filtered();
+    var tb = $("rows"); tb.innerHTML = "";
+    $("msg").className = "msg";
+    if(!list.length){
+      $("wrap").hidden = true;
+      $("msg").textContent = state.issues.length ? (state.tab === "open" ? "No open maintenance issues. Nice." : "Nothing matches.") : "No maintenance issues logged in Clean Check in the last 60 days.";
+      return;
+    }
+    $("msg").textContent = ""; $("wrap").hidden = false;
+    list.forEach(function(i){
+      var st = statusOf(i), open = !!state.open[i.key];
+      var tr = el("tr", "r"); tr.tabIndex = 0; tr.setAttribute("aria-expanded", open ? "true" : "false"); tr.id = "i-" + i.key.replace(/[^a-z0-9]/gi, "");
+      var c0 = el("td", "st"); var stc = el("div", "stc " + st[1], st[0]); c0.appendChild(stc); tr.appendChild(c0);
+      var c1 = el("td", "nowrap", when(i.loggedAt)); c1.dataset.l = "Logged"; tr.appendChild(c1);
+      var c2 = el("td", "col-prop"); var pn = el("div", "prop", i.property || "Unknown property");
+      var lab = el("span", "stlabel " + st[1], st[0]); pn.appendChild(lab); c2.appendChild(pn); tr.appendChild(c2);
+      var c3 = el("td", "col-flags"); var tx = el("div", "", i.text); c3.appendChild(tx);
+      if(i.urgent){ var ch = el("div", "chips"); ch.appendChild(el("span", "chip warn", "Urgent")); c3.appendChild(ch); }
+      tr.appendChild(c3);
+      var c4 = el("td"); c4.dataset.l = "Photos";
+      if(i.photos && i.photos.length){ var pb = el("button", "btn ghost small", i.photos.length + " photo" + (i.photos.length > 1 ? "s" : "")); pb.type = "button"; pb.addEventListener("click", function(e){ e.stopPropagation(); window.phhViewer.open(photosOf(i), 0); }); c4.appendChild(pb); }
+      else c4.textContent = "None";
+      tr.appendChild(c4);
+      var c5 = el("td", "", i.housekeeper); c5.dataset.l = "Logged by"; tr.appendChild(c5);
+      var c6 = el("td", assigned(i) ? "" : "e", assigned(i)); c6.dataset.l = "Assigned to"; tr.appendChild(c6);
+      function toggle(){ state.open[i.key] = !state.open[i.key]; render(); }
+      tr.addEventListener("click", toggle);
+      tr.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); toggle(); } });
+      tb.appendChild(tr);
+      if(open) tb.appendChild(detail(i));
+    });
+  }
+
+  function load(){
+    $("msg").className = "msg"; if(!state.issues.length) $("msg").textContent = "Loading...";
+    post("maint", { days: 60 }).then(function(j){
+      $("mename").textContent = j.name || "";
+      state.issues = j.issues || [];
+      render();
+      if(FOCUS){ var row = $("i-" + FOCUS.replace(/[^a-z0-9]/gi, "")); if(row) row.scrollIntoView({ block: "center" }); FOCUS = ""; }
+    }).catch(function(e){ $("wrap").hidden = true; $("msg").className = "msg err"; $("msg").textContent = e.message; });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(t){
+    t.setAttribute("aria-selected", t.dataset.tab === state.tab ? "true" : "false");
+    t.addEventListener("click", function(){
+      state.tab = t.dataset.tab;
+      Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(x){ x.setAttribute("aria-selected", x === t ? "true" : "false"); });
+      render();
+    });
+  });
+  $("q").addEventListener("input", function(){ state.q = this.value.trim(); render(); });
+  $("urg").addEventListener("change", function(){ state.urg = this.value; render(); });
+  $("refresh").addEventListener("click", load);
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden) load(); });
+  setInterval(function(){ if(!document.hidden) load(); }, 120000);
+
+  var view = ""; try{ view = localStorage.getItem("phh-staff-view") || ""; }catch(e){}
+  $("toOffice").hidden = view === "maintenance";
+  if(window.phhPush) window.phhPush($("pushbox"), CODE, "new maintenance job alerts");
+  load();
+})();
+</script>
+</body></html>

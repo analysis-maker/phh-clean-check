@@ -10,19 +10,30 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 PAGES = ["index.html", "office.html", "owner.html", "maintenance.html", "result.html", "view.html"]
 BUILD = time.strftime("%Y%m%d%H%M%S", time.gmtime())
 CHECK = """<script>
-/* Self-update (tools/bump_build.py): if this copy is older than the live page, reopen it fresh. */
+/* Self-update (tools/bump_build.py): if this copy is older than the live page, reopen it fresh.
+   Runs on open, whenever the app comes back to the front (iPhone keeps Home Screen apps suspended), and every 10 minutes. */
 (function(){
   try{
     var me = document.querySelector('meta[name="phh-build"]'); if(!me || !window.fetch) return;
-    var b = me.getAttribute("content"), sep = location.search ? "&" : "?";
-    fetch(location.pathname + location.search + sep + "_chk=" + Date.now(), { cache: "no-store", credentials: "same-origin" })
-      .then(function(r){ return r.ok ? r.text() : ""; })
-      .then(function(t){
-        var m = /name="phh-build" content="([0-9]+)"/.exec(t || ""); if(!m || m[1] === b || m[1] < b) return;
-        var key = "phh-upd-" + m[1]; try{ if(sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "1"); }catch(x){}
-        var q = (location.search || "").replace(/([?&])_v=[^&]*&?/, "$1").replace(/[?&]$/, "");
-        location.replace(location.pathname + q + (q ? "&" : "?") + "_v=" + m[1] + location.hash);
-      }).catch(function(){});
+    var b = me.getAttribute("content"), busy = false, last = 0;
+    function check(){
+      if(busy || Date.now() - last < 20000) return; busy = true; last = Date.now();
+      var sep = location.search ? "&" : "?";
+      fetch(location.pathname + location.search + sep + "_chk=" + Date.now(), { cache: "no-store", credentials: "same-origin" })
+        .then(function(r){ return r.ok ? r.text() : ""; })
+        .then(function(t){
+          busy = false;
+          var m = /name="phh-build" content="([0-9]+)"/.exec(t || ""); if(!m || m[1] <= b) return;
+          var key = "phh-upd-" + m[1]; try{ if(sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "1"); }catch(x){}
+          var q = (location.search || "").replace(/([?&])_v=[^&]*&?/, "$1").replace(/[?&]$/, "");
+          location.replace(location.pathname + q + (q ? "&" : "?") + "_v=" + m[1] + location.hash);
+        }).catch(function(){ busy = false; });
+    }
+    check();
+    document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible") check(); });
+    window.addEventListener("pageshow", function(e){ if(e.persisted) check(); });
+    window.addEventListener("focus", check);
+    setInterval(function(){ if(document.visibilityState === "visible") check(); }, 600000);
   }catch(e){}
 })();
 </script>"""
@@ -36,7 +47,11 @@ for folder in ["", "staging/"]:
         else:
             s = s.replace('<meta charset="utf-8">', '<meta charset="utf-8"><meta name="phh-build" content="%s">' % BUILD, 1)
             assert 'name="phh-build"' in s, f
-        if "/* Self-update (tools/bump_build.py)" not in s:
+        if "/* Self-update (tools/bump_build.py)" in s:
+            i = s.rindex("<script>", 0, s.index("/* Self-update (tools/bump_build.py)"))
+            j = s.index("</script>", i) + len("</script>")
+            s = s[:i] + CHECK + s[j:]
+        else:
             i = s.index("</head>")
             s = s[:i] + CHECK + "\n" + s[i:]
         f.write_text(s)

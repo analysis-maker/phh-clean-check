@@ -2,7 +2,13 @@
    Tapping a notification opens its page. iPhone Home Screen apps can ignore the address when they reopen, so the address
    is also left in a small cache ("pending-nav") and sent to any open window; the pages pick it up and go there. */
 self.addEventListener("install", function(){ self.skipWaiting(); });
-self.addEventListener("activate", function(e){ e.waitUntil(self.clients.claim()); });
+/* When a new version of this file takes over, reload every open Clean Check page so phones get the latest pages
+   (an iPhone Home Screen app can otherwise keep an old page open for a long time). Checklist progress is saved on the phone. */
+self.addEventListener("activate", function(e){
+  e.waitUntil(self.clients.claim().then(function(){ return self.clients.matchAll({ type: "window" }); }).then(function(list){
+    list.forEach(function(c){ try{ if("navigate" in c) c.navigate(c.url).catch(function(){}); }catch(x){} });
+  }));
+});
 
 self.addEventListener("push", function(e){
   var d = {};

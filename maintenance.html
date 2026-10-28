@@ -206,7 +206,6 @@ body.lb-open{overflow:hidden}
   function reg(){ return navigator.serviceWorker.register("sw.js", { scope: "./" }).then(function(){ return navigator.serviceWorker.ready; }); }
   window.phhPush = function(box, code, label){
     if(!box) return;
-    if(/professionalholidayhomes\.com\.au$/.test(location.hostname)){ box.hidden = true; return; } /* notifications need the github.io address for now */
     box.innerHTML = ""; box.hidden = false;
     var txt = document.createElement("span"); txt.className = "pushtxt";
     var btn = document.createElement("button"); btn.type = "button"; btn.className = "pushbtn";

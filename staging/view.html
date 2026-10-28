@@ -162,6 +162,7 @@ window.PHH_API = window.PHH_API || "";
   var $ = function(id){ return document.getElementById(id); };
   var qs = new URLSearchParams(location.search);
   var id = qs.get("id") || "";
+  if(qs.get("from") === "officelist"){ var bo = $("back"); bo.href = "./"; bo.hidden = false; bo.style.margin = "0 0 12px"; bo.style.display = "block"; }
   if(qs.get("from") === "maint"){ var bm = $("back"); bm.href = "maintenance.html"; bm.hidden = false; bm.style.margin = "0 0 12px"; bm.style.display = "block"; }
   if(qs.get("from") === "office"){ var bk = $("back"), dt = qs.get("date") || ""; bk.href = "office.html" + (/^\d{4}-\d{2}-\d{2}$/.test(dt) ? "?date=" + dt : ""); bk.hidden = false; bk.style.margin = "0 0 12px"; bk.style.display = "block"; }
   /* Owner view: same record, without the office-only flags, booking number and HomHero job status. */

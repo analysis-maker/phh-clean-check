@@ -54,7 +54,7 @@ h2{font-size:1.2rem;font-weight:800;letter-spacing:-.01em}
 .banner{margin-top:16px;padding:14px 16px;border-radius:var(--radius-md);background:rgba(33,166,199,.10);border:1px solid rgba(33,166,199,.35);color:var(--ink);font-size:.92rem}
 .who{margin-top:20px;display:grid;gap:8px}
 .lbl,.kicker{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
-input[type=text],select{font:inherit;padding:14px 16px;border-radius:var(--radius-md);border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+input[type=text],input[type=date],select{font:inherit;padding:14px 16px;border-radius:var(--radius-md);border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
 input[type=text]::placeholder{color:var(--faint)}
 input[type=text]:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 section.sec{margin-top:28px}
@@ -94,6 +94,11 @@ li.na .nabtn{color:var(--ink);background:var(--offset)}
 .err{color:var(--warn);font-weight:700}
 .pickrow .txt{flex:1}
 .pickrow .sub{display:block;font-size:.8rem;color:var(--muted);font-weight:500}
+.dayrow{display:flex;gap:8px;align-items:center}
+.dayrow input{flex:1;min-width:0}
+.dbtn{flex:none;font:inherit;font-weight:700;min-width:48px;height:48px;border:2px solid var(--teal);border-radius:var(--radius-md);background:#fff;color:var(--teal);cursor:pointer;font-size:1.3rem;padding:0 10px}
+.dbtn.dtoday{font-size:.9rem}
+.tag.none{color:var(--muted);background:var(--offset)}
 .tag{flex:none;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);background:var(--teal-hl);border-radius:9999px;padding:4px 10px}
 .chev{flex:none;color:var(--faint);font-weight:700}
 .go{margin-top:12px;width:100%}
@@ -151,6 +156,15 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
   <div class="who" id="searchbox" hidden>
     <label class="lbl" for="q">Find property</label>
     <input type="text" id="q" autocomplete="off" placeholder="Start typing the property name">
+  </div>
+  <div class="who" id="daybar" hidden>
+    <label class="lbl" for="dpick">Date</label>
+    <div class="dayrow">
+      <button class="dbtn" id="dprev" type="button" aria-label="Previous day">&lsaquo;</button>
+      <input type="date" id="dpick" aria-label="Date">
+      <button class="dbtn" id="dnext" type="button" aria-label="Next day">&rsaquo;</button>
+      <button class="dbtn dtoday" id="dtoday" type="button">Today</button>
+    </div>
   </div>
   <section class="sec"><ul class="items" id="picklist" hidden></ul></section>
   <p class="note" id="pickmsg"></p>
@@ -767,6 +781,36 @@ window.PHH_CHECKLIST = {
     $("app").hidden = true; $("foot").hidden = true; $("pick").hidden = false;
     var KEY = "phh-cleaner-code", all = [], office = false;
     function msg(t, err){ $("pickmsg").textContent = t || ""; $("pickmsg").className = err ? "note err" : "note"; }
+    /* Office code: browse any date (past to check filled-in checklists, future to see what is coming). */
+    var officeDay = "";
+    function todayYmd(off){ return new Intl.DateTimeFormat("en-CA", { timeZone:"Australia/Sydney" }).format(new Date(Date.now() + (off || 0) * 86400000)); }
+    function addDays(ymd, n){ var d = new Date(ymd + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+    function canOpen(ymd){ return ymd >= todayYmd(-2) && ymd <= todayYmd(1); } /* the checklist itself opens from the day before to 2 days after */
+    function dayLabel(ymd){ return ymd === todayYmd() ? "today" : new Date(ymd + "T12:00:00Z").toLocaleDateString("en-AU", { timeZone:"UTC", weekday:"short", day:"numeric", month:"short" }); }
+    function loadOfficeDay(code, ymd){
+      officeDay = ymd; try{ sessionStorage.setItem("phh-office-day", ymd); }catch(e){}
+      $("dpick").value = ymd; $("dtoday").hidden = ymd === todayYmd();
+      $("pickh1").textContent = "All cleans " + dayLabel(ymd);
+      $("picklist").hidden = true; msg("Loading cleans for " + dayLabel(ymd) + "...");
+      return fetch(OFFICE_API + "/office-cleans", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code, date: ymd }) })
+        .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })
+        .then(function(j){
+          if(officeDay !== ymd) return;
+          all = j.cleans || [];
+          $("pickmeta").textContent = all.length + " clean" + (all.length === 1 ? "" : "s") + ", " + all.filter(function(c){ return c.submissionId; }).length + " with a clean check. Tap a done clean to see its checklist and photos.";
+          $("searchbox").hidden = all.length < 6; $("q").value = "";
+          if(!all.length){ $("picklist").hidden = true; msg("No cleans on " + dayLabel(ymd) + "."); return; }
+          show(all);
+        });
+    }
+    function showDayBar(code){
+      $("daybar").hidden = false;
+      if(showDayBar.wired) return; showDayBar.wired = true;
+      $("dprev").addEventListener("click", function(){ loadOfficeDay(code, addDays(officeDay || todayYmd(), -1)).catch(function(e){ msg(e.message, true); }); });
+      $("dnext").addEventListener("click", function(){ loadOfficeDay(code, addDays(officeDay || todayYmd(), 1)).catch(function(e){ msg(e.message, true); }); });
+      $("dtoday").addEventListener("click", function(){ loadOfficeDay(code, todayYmd()).catch(function(e){ msg(e.message, true); }); });
+      $("dpick").addEventListener("change", function(){ if(/^\d{4}-\d{2}-\d{2}$/.test(this.value)) loadOfficeDay(code, this.value).catch(function(e){ msg(e.message, true); }); });
+    }
     function show(list){
       var ul = $("picklist"); ul.innerHTML = "";
       list.forEach(function(c){
@@ -775,8 +819,16 @@ window.PHH_CHECKLIST = {
         b.innerHTML = '<span class="txt"></span><span class="chev" aria-hidden="true">&rsaquo;</span>';
         b.querySelector(".txt").textContent = c.property;
         if(office && c.cleaner){ var sub = document.createElement("span"); sub.className = "sub"; sub.textContent = c.cleaner; b.querySelector(".txt").appendChild(sub); }
-        if(c.submitted){ var tg = document.createElement("span"); tg.className = "tag"; tg.textContent = "Done"; b.insertBefore(tg, b.querySelector(".chev")); }
-        b.addEventListener("click", function(){ location.href = "?res=" + encodeURIComponent(c.res) + "&from=list"; });
+        if(office && c.submissionId){
+          var t1 = document.createElement("span"); t1.className = "tag"; t1.textContent = "Done" + (c.submittedAt ? " " + new Date(c.submittedAt).toLocaleTimeString("en-AU", { timeZone:"Australia/Sydney", hour:"numeric", minute:"2-digit" }).replace(" ", "") : ""); b.insertBefore(t1, b.querySelector(".chev"));
+          b.addEventListener("click", function(){ location.href = "view.html?id=" + encodeURIComponent(c.submissionId) + "&from=officelist"; });
+        } else if(office && officeDay && !canOpen(officeDay)){
+          var t2 = document.createElement("span"); t2.className = "tag none"; t2.textContent = officeDay > todayYmd() ? "Not open yet" : "No check"; b.insertBefore(t2, b.querySelector(".chev"));
+          b.addEventListener("click", function(){ msg(officeDay > todayYmd() ? c.property + ": the clean check opens the day before the clean." : c.property + ": no clean check was done for this clean."); });
+        } else {
+          if(c.submitted){ var tg = document.createElement("span"); tg.className = "tag"; tg.textContent = "Done"; b.insertBefore(tg, b.querySelector(".chev")); }
+          b.addEventListener("click", function(){ location.href = "?res=" + encodeURIComponent(c.res) + "&from=list"; });
+        }
         li.appendChild(b); ul.appendChild(li);
       });
       ul.hidden = !list.length;
@@ -785,6 +837,7 @@ window.PHH_CHECKLIST = {
     function reset(t, err){
       try{ localStorage.removeItem(KEY); }catch(x){}
       $("codebox").hidden = false; $("searchbox").hidden = true; $("picklist").hidden = true; $("notme").hidden = true; if($("me")) $("me").hidden = true;
+      if($("daybar")) $("daybar").hidden = true; officeDay = ""; try{ sessionStorage.removeItem("phh-office-day"); }catch(x){}
       $("pickh1").textContent = "Today's cleans"; $("pickmeta").textContent = "Enter your code to see your cleans for today.";
       msg(t, err);
     }
@@ -816,6 +869,13 @@ window.PHH_CHECKLIST = {
           $("pickmeta").textContent = office ? "Office view. Every clean with a PHH housekeeper." : "Your cleans for today. Pick the property you are cleaning.";
           $("notme").hidden = false;
           $("searchbox").hidden = all.length < 6;
+          if(office){
+            var startDay = ""; try{ startDay = sessionStorage.getItem("phh-office-day") || ""; }catch(e){}
+            if(!/^\d{4}-\d{2}-\d{2}$/.test(startDay)) startDay = todayYmd();
+            /* Falls back to today's plain list if the date view is not reachable (e.g. older proxy). */
+            loadOfficeDay(code, startDay).then(function(){ showDayBar(code); }).catch(function(){ officeDay = ""; $("daybar").hidden = true; $("pickh1").textContent = "All cleans today"; if(all.length) show(all); else msg("No cleans today."); });
+            return;
+          }
           if(!all.length){ $("picklist").hidden = true; msg("No cleans for you today. If this looks wrong, call the PHH office."); return; }
           show(all);
         })

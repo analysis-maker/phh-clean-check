@@ -104,6 +104,7 @@ li.na .nabtn{color:var(--ink);background:var(--offset)}
 .go{margin-top:12px;width:100%}
 .back{display:inline-block;margin-top:14px;color:var(--primary);font-weight:700;font-size:.92rem;text-decoration:none}
 .due{margin-top:14px;padding:10px 14px;border-radius:var(--radius-md);background:var(--warn-soft);border:1px solid rgba(180,84,26,.35);color:var(--ink);font-size:.92rem;font-weight:700}
+.bbqq{margin:0 0 14px}
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .segbtn{font:inherit;font-weight:700;padding:14px;border:2px solid var(--line);border-radius:var(--radius-md);background:var(--surface);color:var(--ink);cursor:pointer;min-height:54px}
 .segbtn[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:#fff}
@@ -457,11 +458,14 @@ window.PHH_CHECKLIST = {
       el.querySelector("h2").textContent = sec.title;
       var ul = document.createElement("ul"); ul.className = "items";
       if(sec.items.some(function(i){ return i.bbq; })){
-        var li = document.createElement("li"); li.className = "item"; li.id = "nobbq";
-        var b = document.createElement("button"); b.type = "button"; b.className = "tick";
-        b.innerHTML = '<span class="box" aria-hidden="true"></span><span class="txt">This property has no BBQ</span>';
-        b.addEventListener("click", function(){ state.noBbq = !state.noBbq; save(); renderPhotos(); update(); });
-        li.appendChild(b); ul.appendChild(li);
+        /* A clear Yes / No BBQ question (28 Oct, Craig): the old "This property has no BBQ" row looked like a checklist item to tick. */
+        var q = document.createElement("div"); q.className = "bbqq"; q.id = "nobbq";
+        q.innerHTML = '<p class="note" style="margin-top:0">Is there a BBQ at this property?</p>' +
+          '<div class="seg"><button type="button" class="segbtn" id="bbq_yes">Yes</button><button type="button" class="segbtn" id="bbq_no">No BBQ</button></div>' +
+          '<p class="note" id="bbq_note" hidden>BBQ tasks and the BBQ photo are skipped and the office is told. Only choose this if there is no BBQ anywhere at the property (check decks, balconies and the garage).</p>';
+        q.querySelector("#bbq_yes").addEventListener("click", function(){ state.noBbq = false; save(); renderPhotos(); update(); });
+        q.querySelector("#bbq_no").addEventListener("click", function(){ state.noBbq = true; save(); renderPhotos(); update(); });
+        el.appendChild(q);
       }
       sec.items.forEach(function(it){ ul.appendChild(itemRow(it)); });
       el.appendChild(ul);
@@ -619,7 +623,7 @@ window.PHH_CHECKLIST = {
       $("t_"+it.id).setAttribute("aria-pressed", v === "done" ? "true" : "false");
       if(v) done++;
     });
-    var nb = $("nobbq"); if(nb){ nb.classList.toggle("done", state.noBbq); nb.querySelector(".box").textContent = state.noBbq ? "✓" : ""; }
+    if($("nobbq")){ $("bbq_yes").setAttribute("aria-pressed", state.noBbq ? "false" : "true"); $("bbq_no").setAttribute("aria-pressed", state.noBbq ? "true" : "false"); $("bbq_note").hidden = !state.noBbq; }
     var req = required(slots());
     CL.sections.forEach(function(sec){
       var rs = req.filter(function(s){ return s.sec === sec.id; });

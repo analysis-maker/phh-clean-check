@@ -75,6 +75,11 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-off
 .note{margin-top:12px;color:var(--muted);font-size:.9rem}
 .err{color:var(--warn);font-weight:700}
 .foot{margin-top:18px;font-size:.8rem;color:var(--faint)}
+.pushbox{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px;padding:12px 14px;border-radius:var(--radius-md);background:var(--teal-hl);border:1px solid rgba(14,124,143,.3);font-size:.9rem}
+.pushbox .pushtxt{flex:1 1 180px}
+.pushbtn{font:inherit;font-weight:700;font-size:.85rem;border:2px solid var(--teal);border-radius:var(--radius-md);padding:8px 14px;background:var(--teal);color:#fff;cursor:pointer}
+.pushbtn.ghost{background:#fff;color:var(--teal)}
+.pushbtn:disabled{opacity:.6}
 </style>
 </head><body>
 <nav class="nav"><div class="wrap"><img src="logo.png" alt="Professional Holiday Homes" width="172" height="32"><div class="me" id="me" hidden><span id="mename"></span><a href="#" id="signout">Sign out</a></div></div></nav>
@@ -84,6 +89,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-off
     <h1 id="hello">Your properties</h1>
     <p class="meta">Every clean after a guest checks out, with the clean report and photos when the housekeeper used PHH Clean Check.</p>
   </header>
+  <div class="pushbox" id="pushbox" hidden></div>
   <div class="cards" id="cards"></div>
   <div class="filters" id="filters" hidden></div>
   <div class="listhead"><h2>Recent cleans</h2><span class="count" id="count"></span></div>
@@ -169,12 +175,83 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-off
         $("hello").textContent = "Hi " + String(j.name || "").split(" ")[0] + ", your properties";
         state.props = j.properties || []; state.cleans = j.cleans || [];
         renderCards(); renderFilters(); renderList();
+        if(window.phhPush && !load.pushed){ load.pushed = true; window.phhPush($("pushbox"), CODE, "notifications"); }
         $("foot").textContent = "Updated " + new Date().toLocaleTimeString("en-AU",{ hour:"numeric", minute:"2-digit" }) + ". Clean reports are being trialled with some PHH housekeepers, so not every clean has one yet.";
       })
       .catch(function(e){ $("msg").className = "note err"; $("msg").textContent = e.message; });
   }
   document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible") load(); });
   load();
+})();
+</script>
+<script>
+/* Phone notifications (26 Oct 2026, every code 28 Oct). window.phhPush(box, code, label) fills box with a Turn on / Send test control.
+   iPhone: only works in the app opened from the Home Screen icon (iOS 16.4+). No caching in sw.js, so pages stay fresh. */
+(function(){
+  "use strict";
+  var PUSH_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/push-api";
+  var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  var standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+  var supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  function post(route, body){
+    return fetch(PUSH_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body || {}) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+  function b64ToBytes(s){ s = s.replace(/-/g, "+").replace(/_/g, "/"); while(s.length % 4) s += "="; var raw = atob(s), out = new Uint8Array(raw.length); for(var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out; }
+  function reg(){ return navigator.serviceWorker.register("sw.js", { scope: "./" }).then(function(){ return navigator.serviceWorker.ready; }); }
+  window.phhPush = function(box, code, label){
+    if(!box) return;
+    box.innerHTML = ""; box.hidden = false;
+    var txt = document.createElement("span"); txt.className = "pushtxt";
+    var btn = document.createElement("button"); btn.type = "button"; btn.className = "pushbtn";
+    var test = document.createElement("button"); test.type = "button"; test.className = "pushbtn ghost"; test.textContent = "Send a test"; test.hidden = true;
+    var offb = document.createElement("button"); offb.type = "button"; offb.className = "pushbtn ghost"; offb.textContent = "Turn off"; offb.hidden = true;
+    box.appendChild(txt); box.appendChild(btn); box.appendChild(test); box.appendChild(offb);
+    function say(t){ txt.textContent = t; }
+    if(!supported){
+      btn.hidden = true;
+      if(ios && !standalone) say("To get " + label + ", open Clean Check from its Home Screen icon.");
+      else box.hidden = true;
+      return;
+    }
+    if(Notification.permission === "denied"){ btn.hidden = true; say("Notifications are blocked for Clean Check in your phone settings."); return; }
+    var current = null;
+    function on(sub){ current = sub; say(label.charAt(0).toUpperCase() + label.slice(1) + " are on for this phone."); btn.hidden = true; test.hidden = false; offb.hidden = false; offb.disabled = false; }
+    function off(){ current = null; say("Get " + label + " on this phone."); btn.textContent = "Turn on"; btn.hidden = false; btn.disabled = false; test.hidden = true; offb.hidden = true; }
+    offb.addEventListener("click", function(){
+      if(!current) return off();
+      offb.disabled = true; say("Turning off...");
+      var ep = current.endpoint;
+      Promise.resolve(current.unsubscribe()).catch(function(){}).then(function(){ return post("unsubscribe", { endpoint: ep }).catch(function(){}); })
+        .then(function(){ off(); say(label.charAt(0).toUpperCase() + label.slice(1) + " are off for this phone. Tap Turn on to get them again."); });
+    });
+    reg().then(function(r){ return r.pushManager.getSubscription(); }).then(function(sub){
+      if(sub && Notification.permission === "granted"){
+        /* re-save in case the code on this phone changed */
+        post("subscribe", { code: code, sub: sub.toJSON() }).then(function(){ on(sub); }).catch(function(){ off(); });
+      } else off();
+    }).catch(function(){ off(); });
+    btn.addEventListener("click", function(){
+      btn.disabled = true; say("Turning on...");
+      /* the permission prompt must come straight from the tap on iPhone */
+      Notification.requestPermission().then(function(p){
+        if(p !== "granted") throw new Error(p === "denied" ? "Notifications are blocked. You can allow them in your phone settings." : "Notifications were not turned on.");
+        return Promise.all([reg(), post("key")]);
+      }).then(function(res){
+        return res[0].pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(res[1].publicKey) });
+      }).then(function(sub){
+        return post("subscribe", { code: code, sub: sub.toJSON() }).then(function(){ on(sub); });
+      }).catch(function(e){ btn.disabled = false; btn.hidden = false; btn.textContent = "Try again"; say(e.message || "That did not work."); });
+    });
+    test.addEventListener("click", function(){
+      if(!current) return;
+      test.disabled = true; say("Sending a test...");
+      post("test", { code: code, endpoint: current.endpoint })
+        .then(function(j){ say(j.sent ? "Test sent. It should appear in a few seconds." : "The test did not go through. Turn notifications off and on in your phone settings, then try again."); })
+        .catch(function(e){ say(e.message); })
+        .then(function(){ test.disabled = false; });
+    });
+  };
 })();
 </script>
 </body></html>

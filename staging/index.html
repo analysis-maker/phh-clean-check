@@ -883,7 +883,7 @@ window.PHH_CHECKLIST = {
           $("pickmeta").textContent = office ? "Office view. Every clean with a PHH housekeeper." : "Your cleans for today. Pick the property you are cleaning.";
           $("notme").hidden = false;
           $("searchbox").hidden = all.length < 6;
-          if(!office && window.phhPush) window.phhPush($("pushbox"), code, "missed clean check reminders");
+          if(window.phhPush) window.phhPush($("pushbox"), code, "notifications");
           if(office){
             var startDay = ""; try{ startDay = sessionStorage.getItem("phh-office-day") || ""; }catch(e){}
             if(!/^\d{4}-\d{2}-\d{2}$/.test(startDay)) startDay = todayYmd();
@@ -925,7 +925,7 @@ window.PHH_CHECKLIST = {
 </script>
 
 <script>
-/* Phone notifications (staging, 26 Oct 2026). window.phhPush(box, code, label) fills box with a Turn on / Send test control.
+/* Phone notifications (26 Oct 2026, every code 28 Oct). window.phhPush(box, code, label) fills box with a Turn on / Send test control.
    iPhone: only works in the app opened from the Home Screen icon (iOS 16.4+). No caching in sw.js, so pages stay fresh. */
 (function(){
   "use strict";

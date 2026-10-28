@@ -194,6 +194,17 @@ body.lb-open{overflow:hidden}
    iPhone: only works in the app opened from the Home Screen icon (iOS 16.4+). No caching in sw.js, so pages stay fresh. */
 (function(){
   "use strict";
+  /* A tapped notification: go to its page (sent by sw.js as a message, or left in the "pending-nav" cache). */
+  function goTo(u){ try{ var t = new URL(u, location.href); if(t.origin === location.origin && t.href !== location.href) location.href = t.href; }catch(x){} }
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.addEventListener("message", function(ev){ if(ev.data && ev.data.phhNav) goTo(ev.data.phhNav); });
+    if(window.caches) caches.open("phh-nav").then(function(c){
+      return c.match("pending-nav").then(function(r){
+        if(!r) return;
+        return r.json().then(function(j){ return c.delete("pending-nav").then(function(){ if(j && j.url && Date.now() - j.at < 120000) goTo(j.url); }); });
+      });
+    }).catch(function(){});
+  }
   var PUSH_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/push-api";
   var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
   var standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;

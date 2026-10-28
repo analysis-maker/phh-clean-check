@@ -117,6 +117,8 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-off
   "use strict";
   var $ = function(id){ return document.getElementById(id); };
   var API = window.PHH_PUSH_API;
+  /* Opened from a notification: clear the address sw.js left, so "Back to my cleans" doesn't bounce back here. */
+  if(window.caches) caches.open("phh-nav").then(function(c){ return c.delete("pending-nav"); }).catch(function(){});
   var id = new URLSearchParams(location.search).get("id") || "";
   var code = ""; try{ code = localStorage.getItem("phh-cleaner-code") || localStorage.getItem("phh-staff-code") || ""; }catch(e){}
   if(!code){ $("msg").textContent = "Open this from the Clean Check app on your phone, signed in with your code."; return; }

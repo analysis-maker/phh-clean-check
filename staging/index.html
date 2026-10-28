@@ -99,6 +99,7 @@ li.na .nabtn{color:var(--ink);background:var(--offset)}
 .dbtn{flex:none;font:inherit;font-weight:700;min-width:48px;height:48px;border:2px solid var(--teal);border-radius:var(--radius-md);background:#fff;color:var(--teal);cursor:pointer;font-size:1.3rem;padding:0 10px}
 .dbtn.dtoday{font-size:.9rem}
 .tag.none{color:var(--muted);background:var(--offset)}
+.callbtn{display:block;text-align:center;text-decoration:none;margin-top:12px}
 .tag{flex:none;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);background:var(--teal-hl);border-radius:9999px;padding:4px 10px}
 .chev{flex:none;color:var(--faint);font-weight:700}
 .go{margin-top:12px;width:100%}
@@ -175,6 +176,7 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
   </div>
   <section class="sec"><ul class="items" id="picklist" hidden></ul></section>
   <p class="note" id="pickmsg"></p>
+  <a class="submit callbtn" id="callphh" href="tel:+61291944411" hidden>Call PHH (02) 9194 4411</a>
   <p class="note" id="notme" hidden><a class="back" href="#" id="switchcode">Not you? Enter a different code</a></p>
 </div>
 
@@ -790,7 +792,7 @@ window.PHH_CHECKLIST = {
   function pick(){
     $("app").hidden = true; $("foot").hidden = true; $("pick").hidden = false;
     var KEY = "phh-cleaner-code", all = [], office = false;
-    function msg(t, err){ $("pickmsg").textContent = t || ""; $("pickmsg").className = err ? "note err" : "note"; }
+    function msg(t, err){ $("pickmsg").textContent = t || ""; $("pickmsg").className = err ? "note err" : "note"; $("callphh").hidden = !/PHH office/.test(t || ""); }
     /* Office code: browse any date (past to check filled-in checklists, future to see what is coming). */
     var officeDay = "";
     function todayYmd(off){ return new Intl.DateTimeFormat("en-CA", { timeZone:"Australia/Sydney" }).format(new Date(Date.now() + (off || 0) * 86400000)); }
@@ -929,6 +931,17 @@ window.PHH_CHECKLIST = {
    iPhone: only works in the app opened from the Home Screen icon (iOS 16.4+). No caching in sw.js, so pages stay fresh. */
 (function(){
   "use strict";
+  /* A tapped notification: go to its page (sent by sw.js as a message, or left in the "pending-nav" cache). */
+  function goTo(u){ try{ var t = new URL(u, location.href); if(t.origin === location.origin && t.href !== location.href) location.href = t.href; }catch(x){} }
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.addEventListener("message", function(ev){ if(ev.data && ev.data.phhNav) goTo(ev.data.phhNav); });
+    if(window.caches) caches.open("phh-nav").then(function(c){
+      return c.match("pending-nav").then(function(r){
+        if(!r) return;
+        return r.json().then(function(j){ return c.delete("pending-nav").then(function(){ if(j && j.url && Date.now() - j.at < 120000) goTo(j.url); }); });
+      });
+    }).catch(function(){});
+  }
   var PUSH_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/push-api";
   var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
   var standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;

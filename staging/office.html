@@ -184,7 +184,8 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
     var txt = document.createElement("span"); txt.className = "pushtxt";
     var btn = document.createElement("button"); btn.type = "button"; btn.className = "pushbtn";
     var test = document.createElement("button"); test.type = "button"; test.className = "pushbtn ghost"; test.textContent = "Send a test"; test.hidden = true;
-    box.appendChild(txt); box.appendChild(btn); box.appendChild(test);
+    var offb = document.createElement("button"); offb.type = "button"; offb.className = "pushbtn ghost"; offb.textContent = "Turn off"; offb.hidden = true;
+    box.appendChild(txt); box.appendChild(btn); box.appendChild(test); box.appendChild(offb);
     function say(t){ txt.textContent = t; }
     if(!supported){
       btn.hidden = true;
@@ -194,8 +195,15 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
     }
     if(Notification.permission === "denied"){ btn.hidden = true; say("Notifications are blocked for Clean Check in your phone settings."); return; }
     var current = null;
-    function on(sub){ current = sub; say(label.charAt(0).toUpperCase() + label.slice(1) + " are on for this phone."); btn.hidden = true; test.hidden = false; }
-    function off(){ say("Get " + label + " on this phone."); btn.textContent = "Turn on"; btn.hidden = false; btn.disabled = false; test.hidden = true; }
+    function on(sub){ current = sub; say(label.charAt(0).toUpperCase() + label.slice(1) + " are on for this phone."); btn.hidden = true; test.hidden = false; offb.hidden = false; offb.disabled = false; }
+    function off(){ current = null; say("Get " + label + " on this phone."); btn.textContent = "Turn on"; btn.hidden = false; btn.disabled = false; test.hidden = true; offb.hidden = true; }
+    offb.addEventListener("click", function(){
+      if(!current) return off();
+      offb.disabled = true; say("Turning off...");
+      var ep = current.endpoint;
+      Promise.resolve(current.unsubscribe()).catch(function(){}).then(function(){ return post("unsubscribe", { endpoint: ep }).catch(function(){}); })
+        .then(function(){ off(); say(label.charAt(0).toUpperCase() + label.slice(1) + " are off for this phone. Tap Turn on to get them again."); });
+    });
     reg().then(function(r){ return r.pushManager.getSubscription(); }).then(function(sub){
       if(sub && Notification.permission === "granted"){
         /* re-save in case the code on this phone changed */

@@ -161,7 +161,7 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
 <header class="bar">
   <div class="brand"><img src="icon-180.png" alt="" width="24" height="24">Clean Check</div>
   <div class="section" id="sectionTitle">Cleaning</div>
-  <div class="me" id="me"><span id="mename"></span><button type="button" id="signout">Sign out</button></div>
+  <div class="me" id="me"><span id="mename"></span><a href="maintenance.html?v=1028m" style="color:var(--teal-ink);font-weight:500;text-decoration:none">Maintenance</a><button type="button" id="signout">Sign out</button></div>
 </header>
 <nav class="tabs" role="tablist" aria-label="Views">
   <button class="tab" role="tab" data-tab="cleans" aria-selected="true">Cleans</button>
@@ -250,7 +250,7 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
     return fetch(API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
       .then(function(r){ return r.json().then(function(j){ if(r.status === 403){ signOut(); throw new Error("Signed out"); } if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
   }
-  function signOut(){ try{ localStorage.removeItem("phh-staff-code"); }catch(e){} location.replace("./"); }
+  function signOut(){ try{ localStorage.removeItem("phh-staff-code"); localStorage.removeItem("phh-staff-view"); }catch(e){} location.replace("./"); }
   $("signout").addEventListener("click", signOut);
 
   var state = { tab:"cleans", date: params.get("date") || sydToday(), rows: [], q:"", status:"", who:"", extra:"", open:{} };

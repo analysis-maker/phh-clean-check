@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261028032510"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261028032745"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -127,7 +127,8 @@ li.na .nabtn{color:var(--ink);background:var(--offset)}
 .dbtn{flex:none;font:inherit;font-weight:700;min-width:48px;height:48px;border:2px solid var(--teal);border-radius:var(--radius-md);background:#fff;color:var(--teal);cursor:pointer;font-size:1.3rem;padding:0 10px}
 .dbtn.dtoday{font-size:.9rem}
 .tag.none{color:var(--muted);background:var(--offset)}
-.callbtn{display:block;text-align:center;text-decoration:none;margin-top:12px}
+.callbtn{display:block;text-align:center;text-decoration:none;margin-top:12px;background:#fff;color:var(--teal)}
+.callbtn:hover{background:var(--teal-hl);color:var(--teal)}
 .tag{flex:none;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);background:var(--teal-hl);border-radius:9999px;padding:4px 10px}
 .chev{flex:none;color:var(--faint);font-weight:700}
 .go{margin-top:12px;width:100%}
@@ -204,7 +205,7 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
   </div>
   <section class="sec"><ul class="items" id="picklist" hidden></ul></section>
   <p class="note" id="pickmsg"></p>
-  <a class="submit callbtn" id="callphh" href="tel:+61291944411" hidden>Need help? Call PHH (02) 9194 4411</a>
+  <a class="submit callbtn" id="callphh" href="tel:+61291944411">Need help? Call PHH (02) 9194 4411</a>
   <p class="note" id="notme" hidden><a class="back" href="#" id="switchcode">Not you? Enter a different code</a></p>
 </div>
 
@@ -820,9 +821,9 @@ window.PHH_CHECKLIST = {
   function pick(){
     $("app").hidden = true; $("foot").hidden = true; $("pick").hidden = false;
     var KEY = "phh-cleaner-code", all = [], office = false;
-    /* Call PHH button: always there once signed in (28 Oct, Ian), and whenever a message says to call the office. */
+    /* Call PHH button: always on this screen, before and after signing in (28 Oct, Ian). */
     var signedIn = false;
-    function msg(t, err){ $("pickmsg").textContent = t || ""; $("pickmsg").className = err ? "note err" : "note"; $("callphh").hidden = !(signedIn || /PHH office/.test(t || "")); }
+    function msg(t, err){ $("pickmsg").textContent = t || ""; $("pickmsg").className = err ? "note err" : "note"; $("callphh").hidden = false; }
     /* Office code: browse any date (past to check filled-in checklists, future to see what is coming). */
     var officeDay = "";
     function todayYmd(off){ return new Intl.DateTimeFormat("en-CA", { timeZone:"Australia/Sydney" }).format(new Date(Date.now() + (off || 0) * 86400000)); }
@@ -877,7 +878,7 @@ window.PHH_CHECKLIST = {
       msg(list.length ? "" : "No property matches. If your clean is missing, call the PHH office.");
     }
     function reset(t, err){
-      signedIn = false;
+      signedIn = false; $("callphh").hidden = false;
       try{ localStorage.removeItem(KEY); }catch(x){}
       $("codebox").hidden = false; $("searchbox").hidden = true; $("picklist").hidden = true; $("notme").hidden = true; if($("me")) $("me").hidden = true;
       if($("daybar")) $("daybar").hidden = true; officeDay = ""; try{ sessionStorage.removeItem("phh-office-day"); }catch(x){}

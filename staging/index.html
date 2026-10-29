@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261029020402"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261029022820"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -191,6 +191,7 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
 #camov .shutter:disabled{opacity:.4}
 #camov .camerr{color:#fff;padding:20px 16px;font-size:.95rem;line-height:1.45}
 #camov .camerr button{display:block;margin-top:14px;font:inherit;font-weight:700;padding:14px 18px;border-radius:10px;border:0;background:#fff;color:#000;min-height:48px;cursor:pointer}
+.namefixed{margin:4px 0 0;font-weight:700;font-size:1.05rem;color:var(--ink)}
 </style>
 
 <nav class="nav"><div class="wrap"><img src="../logo.png" alt="Professional Holiday Homes" width="183" height="34" fetchpriority="high"><div class="me" id="me" hidden><span id="mename"></span><a href="#" id="signout">Sign out</a></div></div></nav>
@@ -653,17 +654,21 @@ window.PHH_CHECKLIST = {
   }
   function maintTodo(){ var n = 0; state.maint.forEach(function(m){ if(String(m.text || "").trim().length < 3) n++; }); return n; }
 
-  /* "Your name": housekeepers with a code plus whoever HomHero has on this clean, then Other (typed name required). */
+  /* "Your name" is locked (Craig, 20 Oct: a housekeeper must not be able to pick another cleaner's name).
+     Signed in with a housekeeper code: that housekeeper. Office code: "PHH office". Opened from a HomHero link with
+     no code: HomHero's assigned cleaner. Only when none of these is known can a name be typed. */
+  function lockedName(){
+    var code = "", name = "";
+    try{ code = localStorage.getItem("phh-cleaner-code") || ""; name = localStorage.getItem("phh-cleaner-name") || ""; }catch(e){}
+    if(code) return name || "PHH office";
+    return (clean && clean.cleaner) ? String(clean.cleaner) : "";
+  }
   function fillNames(){
-    var sel = $("cleanersel"), names = ((clean && clean.cleaners) || []).slice();
-    if(state.cleanerSel && state.cleanerSel !== "__other" && names.indexOf(state.cleanerSel) < 0) names.push(state.cleanerSel);
-    sel.innerHTML = "";
-    sel.appendChild(new Option("Choose your name", ""));
-    names.forEach(function(n){ sel.appendChild(new Option(n, n)); });
-    sel.appendChild(new Option("Other (type your name)", "__other"));
-    sel.value = state.cleanerSel || "";
-    $("cleaner").hidden = state.cleanerSel !== "__other";
-    $("cleaner").value = state.cleaner || "";
+    var sel = $("cleanersel"), n = lockedName(), fx = $("namefixed");
+    if(!fx){ fx = document.createElement("p"); fx.id = "namefixed"; fx.className = "namefixed"; sel.parentNode.insertBefore(fx, sel); }
+    sel.hidden = true;
+    if(n){ state.cleanerSel = n; state.cleaner = ""; fx.hidden = false; fx.textContent = n; $("cleaner").hidden = true; }
+    else { state.cleanerSel = "__other"; fx.hidden = true; $("cleaner").hidden = false; $("cleaner").value = state.cleaner || ""; }
   }
 
   /* Room counts come from HomHero and are locked. Only when HomHero has none can the cleaner set them. */
@@ -874,7 +879,7 @@ window.PHH_CHECKLIST = {
     var ready = done === items.length && state.consumables && pc === req.length && name.length > 1 && !mt;
     $("submit").disabled = !ready;
     var left = items.length - done, lp = req.length - pc, bits = [];
-    if(name.length < 2) bits.push(state.cleanerSel === "__other" ? "type your name" : "choose your name");
+    if(name.length < 2) bits.push("type your name");
     if(left) bits.push(left + " item" + (left>1?"s":"") + " to tick");
     if(lp) bits.push(lp + " photo" + (lp>1?"s":"") + " to take");
     if(!state.consumables) bits.push("answer consumables");

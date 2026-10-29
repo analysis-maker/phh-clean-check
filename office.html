@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261028032745"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261029022820"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -13,6 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://rxhpnowszmetjxbwylil.supabase.co" crossorigin>
 <script>window.PHH_OFFICE_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/office-api";</script>
+<script>window.PHH_CLEAN_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/clean-api";</script>
 <title>Clean Check Office</title>
 <style>
 /* Office view v2 (23 Oct 2026). Laid out like HomHero's Cleaning screen so staff feel at home:
@@ -272,6 +273,7 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
   };
 })();
 </script>
+
 <header class="bar">
   <div class="brand"><img src="icon-180.png" alt="" width="24" height="24">Clean Check</div>
   <div class="section" id="sectionTitle">Cleaning</div>
@@ -348,6 +350,7 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
   "use strict";
   var $ = function(id){ return document.getElementById(id); };
   var API = window.PHH_OFFICE_API || "";
+  var CLEAN_API = window.PHH_CLEAN_API || "";
   var params = new URLSearchParams(location.search);
   var TEST = params.get("test") === "1";
   var CODE = ""; try{ CODE = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
@@ -364,6 +367,57 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
     body.code = CODE;
     return fetch(API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
       .then(function(r){ return r.json().then(function(j){ if(r.status === 403){ signOut(); throw new Error("Signed out"); } if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+  /* "Not at this property" (housekeeper marked e.g. no oven): clean-api routes, office or staff codes only. */
+  function cpost(route, body){
+    body.code = CODE;
+    return fetch(CLEAN_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+  function absentFlags(r){
+    r.flags = (r.flags || []).filter(function(f){ return !f.absent; });
+    (r.absent || []).forEach(function(a){ if(!a.status) r.flags.push({ tone:"warn", label:"No " + a.name + "? Please confirm", absent:true }); });
+  }
+  function loadAbsent(date, my){
+    if(!CLEAN_API) return;
+    cpost("absent-day", { date: date }).then(function(j){
+      if(my !== loading) return;
+      var by = {}; (j.rows || []).forEach(function(x){ by[x.id] = x.items || []; });
+      var hit = false;
+      state.rows.forEach(function(r){ if(r.submissionId && by[r.submissionId]){ r.absent = by[r.submissionId]; absentFlags(r); hit = true; } });
+      if(hit){ renderStrip(); renderRows(); }
+    }).catch(function(){});
+  }
+  function absentBlock(r){
+    var wrap = el("div");
+    wrap.appendChild(el("h3", "", "Not at this property"));
+    (r.absent || []).forEach(function(a){
+      var row = el("div", "agree");
+      var txt = el("span", "", "Housekeeper marked: no " + a.name + ". ");
+      row.appendChild(txt);
+      var said = el("span", "sub");
+      var show = function(){
+        said.textContent = a.status === "confirmed" ? "Confirmed" + (a.by ? " by " + a.by : "") + ". No " + a.name + " photo will be asked for at this property."
+          : a.status === "rejected" ? "Office said there is one" + (a.by ? " (" + a.by + ")" : "") + ". The photo is needed at this property."
+          : "Please confirm.";
+      };
+      show(); row.appendChild(said);
+      if(!a.status){
+        var yes = el("button", "btn small", "Confirm, no " + a.name); yes.type = "button";
+        var no = el("button", "btn ghost small", "There is one"); no.type = "button";
+        var go = function(ok){
+          yes.disabled = no.disabled = true;
+          cpost("absent-decide", { id: r.submissionId, slot: a.slot, ok: ok }).then(function(j){
+            a.status = j.status; a.by = j.by; absentFlags(r); renderStrip(); renderRows();
+          }).catch(function(e){ said.textContent = e.message; yes.disabled = no.disabled = false; });
+        };
+        yes.addEventListener("click", function(e){ e.stopPropagation(); go(true); });
+        no.addEventListener("click", function(e){ e.stopPropagation(); go(false); });
+        row.appendChild(yes); row.appendChild(no);
+      }
+      wrap.appendChild(row);
+    });
+    return wrap;
   }
   function signOut(){ try{ localStorage.removeItem("phh-staff-code"); localStorage.removeItem("phh-staff-view"); }catch(e){} location.replace("./"); }
   $("signout").addEventListener("click", signOut);
@@ -509,6 +563,7 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
         ag.appendChild(note); ag.appendChild(yes); ag.appendChild(no); ag.appendChild(said);
         left.appendChild(ag);
       }
+      if((r.absent || []).length) left.appendChild(absentBlock(r));
       if(r.flags.length){
         left.appendChild(el("h3", "", "Checks"));
         var fl = el("ul"); r.flags.forEach(function(f){ fl.appendChild(el("li", f.tone === "warn" ? "sev-medium" : "", f.label)); }); left.appendChild(fl);
@@ -577,6 +632,7 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
       $("mename").textContent = j.name; $("me").hidden = false;
       state.rows = j.rows || []; fillWho(j.cleaners || []);
       renderStrip(); renderRows();
+      loadAbsent(state.date, my);
     }).catch(function(e){ if(my !== loading) return; $("dayTableWrap").hidden = true; $("msg").className = "msg err"; $("msg").textContent = e.message; });
   }
 

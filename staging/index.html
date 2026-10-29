@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261028060114"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261029020402"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -175,6 +175,22 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
 .pushbtn{font:inherit;font-weight:700;font-size:.85rem;border:2px solid var(--teal);border-radius:var(--radius-md);padding:8px 14px;background:var(--teal);color:#fff;cursor:pointer}
 .pushbtn.ghost{background:#fff;color:var(--teal)}
 .pushbtn:disabled{opacity:.6}
+.phcell{display:flex;flex-direction:column;gap:6px;min-width:0}
+.absbtn{font:inherit;font-size:.8rem;font-weight:600;color:var(--muted);background:none;border:0;padding:6px 2px;text-align:left;text-decoration:underline;cursor:pointer;min-height:36px}
+.ph.absent{border-style:solid;border-color:var(--line);cursor:default}
+.ph.absent .shot{color:var(--muted);font-weight:700}
+.ph .hint{display:block;font-weight:500;color:var(--muted);font-size:.78rem;margin-top:2px}
+.phnote{grid-column:1/-1;font-size:.82rem;color:var(--muted);margin:0}
+#camov{position:fixed;inset:0;z-index:1000;background:#000;display:flex;flex-direction:column}
+#camov[hidden]{display:none}
+#camov video{flex:1;min-height:0;width:100%;object-fit:contain;background:#000}
+#camov .camtop{color:#fff;font-weight:700;padding:calc(12px + env(safe-area-inset-top)) 16px 10px;font-size:1rem}
+#camov .cambar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:16px 16px calc(20px + env(safe-area-inset-bottom));gap:12px}
+#camov .camcancel{font:inherit;font-weight:700;color:#fff;background:none;border:0;padding:12px 4px;text-align:left;min-height:48px;cursor:pointer}
+#camov .shutter{width:76px;height:76px;border-radius:50%;border:5px solid #fff;background:rgba(255,255,255,.25);cursor:pointer}
+#camov .shutter:disabled{opacity:.4}
+#camov .camerr{color:#fff;padding:20px 16px;font-size:.95rem;line-height:1.45}
+#camov .camerr button{display:block;margin-top:14px;font:inherit;font-weight:700;padding:14px 18px;border-radius:10px;border:0;background:#fff;color:#000;min-height:48px;cursor:pointer}
 </style>
 
 <nav class="nav"><div class="wrap"><img src="../logo.png" alt="Professional Holiday Homes" width="183" height="34" fetchpriority="high"><div class="me" id="me" hidden><span id="mename"></span><a href="#" id="signout">Sign out</a></div></div></nav>
@@ -259,7 +275,7 @@ window.PHH_API = window.PHH_API || "";
 // "bbq: true" = marked N/A automatically when the cleaner says the property has no BBQ.
 // Consumables is a separate Yes/No question in the app (Yes opens the Process Street order form).
 window.PHH_CHECKLIST = {
-  version: "2026-10-14-craig-v12",
+  version: "2026-10-29-v13",
   consumablesUrl: "https://app.process.st/workflows/Consumables-Ordering-uYciaTu565lWPqE3m1dEPg/run-link",
   // "Or log it in HomHero Cleaner yourself": the housekeeper's own HomHero Cleaner page for this clean ({res} = booking).
   // Empty = the link is hidden. (Was the staff portal, which housekeepers cannot log into. Fixed 19 Oct 2026.)
@@ -282,7 +298,7 @@ window.PHH_CHECKLIST = {
       { id: "kit_benches", text: "Clean benches and cupboard doors" },
       { id: "kit_dw_filter", text: "Clean the dishwasher filter" },
       { id: "kit_oven", text: "Clean the stovetop and inside the oven" },
-      { id: "kit_micro", text: "Clean inside the microwave" },
+      { id: "kit_micro", text: "Clean inside the microwave", absentWith: "ph_micro" },
       { id: "kit_fridge", text: "Clean the fridge and freezer inside and out, and dispose of any guest food" },
       { id: "kit_sink", text: "Clean the sink" },
       { id: "kit_bin", text: "Clean the bin area" },
@@ -343,11 +359,13 @@ window.PHH_CHECKLIST = {
   // so first photo to Complete = how long the clean took.
   // "per" = one photo per bedroom or per bathroom (count locked to HomHero).
   // "bbq" = skipped when the cleaner says the property has no BBQ. "optional" = not needed to complete.
+  // "absent" = can be marked "Not at this property" (office confirms; confirmed ones are not asked again at that property).
+  // "hint" = one line under the label. Item "absentWith" = becomes N/A when that photo is marked not at the property.
   photos: [
     { id: "ph_keys", sec: "entry", label: "Guest keys in lockbox" },
     { id: "ph_benches", sec: "kitchen", label: "Kitchen benches" },
-    { id: "ph_oven", sec: "kitchen", label: "Inside of oven" },
-    { id: "ph_micro", sec: "kitchen", label: "Inside of microwave" },
+    { id: "ph_oven", sec: "kitchen", label: "Inside of oven", absent: "oven" },
+    { id: "ph_micro", sec: "kitchen", label: "Inside of microwave", absent: "microwave" },
     { id: "ph_fridge", sec: "kitchen", label: "Inside of fridge/freezer" },
     { id: "ph_dining", sec: "kitchen", label: "Dining area" },
     { id: "ph_living", sec: "living", label: "Living room (including couch)" },
@@ -355,10 +373,10 @@ window.PHH_CHECKLIST = {
     { id: "ph_toilet", sec: "bathrooms", label: "Toilet", per: "bathrooms" },
     { id: "ph_vanity", sec: "bathrooms", label: "Vanity and sink", per: "bathrooms" },
     { id: "ph_shower", sec: "bathrooms", label: "Shower and shower floor", per: "bathrooms" },
-    { id: "ph_patio", sec: "outdoor", label: "Patio/deck" },
+    { id: "ph_patio", sec: "outdoor", label: "Patio/deck", absent: "patio or deck" },
     { id: "ph_bbq", sec: "outdoor", label: "Barbecue", bbq: true },
-    { id: "ph_frontgarden", sec: "outdoor", label: "Front garden", optional: true },
-    { id: "ph_backgarden", sec: "outdoor", label: "Back garden", optional: true }
+    { id: "ph_frontgarden", sec: "outdoor", label: "Front garden", optional: true, hint: "One wide photo showing the front yard is tidy (lawn, paths, bins). Skip it if there isn't one." },
+    { id: "ph_backgarden", sec: "outdoor", label: "Back garden", optional: true, hint: "One wide photo showing the back yard is tidy (lawn, paths, bins). Skip it if there isn't one." }
   ]
 };
 
@@ -375,7 +393,9 @@ window.PHH_CHECKLIST = {
   var LIVE = !!(API && RES);
   var PICK = !!(API && !RES && params.get("demo") !== "1");
   var FROM_LIST = params.get("from") === "list";
-  var state = { items:{}, photos:{}, cleaner:"", cleanerSel:"", startedAt:new Date().toISOString(), consumables:"", noBbq:false, rooms:null, roomsEdited:false, maint:[] };
+  var state = { items:{}, photos:{}, cleaner:"", cleanerSel:"", startedAt:new Date().toISOString(), consumables:"", noBbq:false, rooms:null, roomsEdited:false, maint:[], absent:{} };
+  /* Office decisions for this property ("Not at this property"): {ph_oven:"confirmed"|"rejected"}, from /clean. */
+  var officeAbsent = {};
   var MAX_ISSUES = 5, MAX_ISSUE_PHOTOS = 3; /* maintenance: each issue keeps a fixed slot (1-5) for its photo keys mt{slot}_{1-3} */
   var clean = null;
   var $ = function(id){ return document.getElementById(id); };
@@ -454,25 +474,28 @@ window.PHH_CHECKLIST = {
   function save(){
     var ph = {};
     Object.keys(state.photos).forEach(function(k){ var x = state.photos[k]; if(x.path) ph[k] = { path:x.path, stampedAt:x.stampedAt, takenAt:x.takenAt, oldPhoto:x.oldPhoto, label:x.label }; });
-    try{ localStorage.setItem(key, JSON.stringify({ items:state.items, cleaner:state.cleaner, cleanerSel:state.cleanerSel, startedAt:state.startedAt, consumables:state.consumables, noBbq:state.noBbq, rooms:state.rooms, roomsEdited:state.roomsEdited, maint:state.maint, photos: LIVE ? ph : {} })); }catch(e){}
+    try{ localStorage.setItem(key, JSON.stringify({ items:state.items, cleaner:state.cleaner, cleanerSel:state.cleanerSel, startedAt:state.startedAt, consumables:state.consumables, noBbq:state.noBbq, rooms:state.rooms, roomsEdited:state.roomsEdited, maint:state.maint, absent:state.absent, photos: LIVE ? ph : {} })); }catch(e){}
   }
   function load(){
     try{ var s = JSON.parse(localStorage.getItem(key) || "null");
       if(s){ state.items = s.items || {}; state.cleaner = s.cleaner || ""; state.cleanerSel = s.cleanerSel || ""; state.startedAt = s.startedAt || state.startedAt;
-        state.consumables = s.consumables || ""; state.noBbq = !!s.noBbq; state.rooms = s.rooms || null; state.roomsEdited = !!s.roomsEdited; state.photos = s.photos || {}; state.maint = Array.isArray(s.maint) ? s.maint : []; }
+        state.consumables = s.consumables || ""; state.noBbq = !!s.noBbq; state.rooms = s.rooms || null; state.roomsEdited = !!s.roomsEdited; state.photos = s.photos || {}; state.maint = Array.isArray(s.maint) ? s.maint : []; state.absent = (s.absent && typeof s.absent === "object") ? s.absent : {}; }
     }catch(e){}
   }
 
   function fmt(d){ return d.toLocaleString("en-AU",{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}); }
   function allItems(){ var a=[]; CL.sections.forEach(function(s){ s.items.forEach(function(i){ a.push(i); }); }); return a; }
-  function status(it){ return (it.bbq && state.noBbq) ? "na" : state.items[it.id]; }
+  function status(it){ return ((it.bbq && state.noBbq) || (it.absentWith && isAbsent(it.absentWith))) ? "na" : state.items[it.id]; }
+  /* Not at this property: marked by the housekeeper on this clean, or confirmed by the office for this property. */
+  function isAbsent(k){ return !!state.absent[k] || officeAbsent[k] === "confirmed"; }
+  function locked(it){ return (it.bbq && state.noBbq) || (it.absentWith && isAbsent(it.absentWith)); }
   function rooms(){ return state.rooms || { bedrooms:1, bathrooms:1 }; }
 
   /* Photo slots, in section order. Bathrooms go bathroom by bathroom (toilet, vanity, shower). */
   function slots(){
     var r = rooms(), out = [];
     CL.sections.forEach(function(sec){
-      var defs = CL.photos.filter(function(p){ return p.sec === sec.id && !(p.bbq && state.noBbq); });
+      var defs = CL.photos.filter(function(p){ return p.sec === sec.id && !(p.bbq && state.noBbq) && officeAbsent[p.id] !== "confirmed"; });
       var per = defs.filter(function(p){ return p.per; }), single = defs.filter(function(p){ return !p.per; });
       if(per.length){
         var n = r[per[0].per];
@@ -483,11 +506,11 @@ window.PHH_CHECKLIST = {
           });
         }
       }
-      single.forEach(function(p){ out.push({ key:p.id, label:p.label, sec:sec.id, group:"", optional:!!p.optional }); });
+      single.forEach(function(p){ out.push({ key:p.id, label:p.label, sec:sec.id, group:"", optional:!!p.optional, hint:p.hint || "", absent: (p.absent && officeAbsent[p.id] !== "rejected") ? p.absent : "" }); });
     });
     return out;
   }
-  function required(sl){ return sl.filter(function(s){ return !s.optional; }); }
+  function required(sl){ return sl.filter(function(s){ return !s.optional && !state.absent[s.key]; }); }
   function hasPhoto(s){ var x = state.photos[s.key]; return !!(x && (x.path || x.blob)); }
   function cleanerName(){ return state.cleanerSel === "__other" ? String(state.cleaner || "").trim() : (state.cleanerSel || ""); }
 
@@ -496,12 +519,12 @@ window.PHH_CHECKLIST = {
     var b = document.createElement("button"); b.type = "button"; b.className = "tick"; b.id = "t_"+it.id;
     b.innerHTML = '<span class="box" aria-hidden="true"></span><span class="txt"></span>';
     b.querySelector(".txt").textContent = it.text;
-    b.addEventListener("click", function(){ if(it.bbq && state.noBbq) return; state.items[it.id] = state.items[it.id] === "done" ? undefined : "done"; if(!state.items[it.id]) delete state.items[it.id]; save(); update(); });
+    b.addEventListener("click", function(){ if(locked(it)) return; state.items[it.id] = state.items[it.id] === "done" ? undefined : "done"; if(!state.items[it.id]) delete state.items[it.id]; save(); update(); });
     li.appendChild(b);
     if(it.na){
       var n = document.createElement("button"); n.type = "button"; n.className = "nabtn"; n.textContent = "N/A"; n.id = "n_"+it.id;
       n.setAttribute("aria-label", "Not applicable: " + it.text);
-      n.addEventListener("click", function(){ if(it.bbq && state.noBbq) return; state.items[it.id] = state.items[it.id] === "na" ? undefined : "na"; if(!state.items[it.id]) delete state.items[it.id]; save(); update(); });
+      n.addEventListener("click", function(){ if(locked(it)) return; state.items[it.id] = state.items[it.id] === "na" ? undefined : "na"; if(!state.items[it.id]) delete state.items[it.id]; save(); update(); });
       li.appendChild(n);
     }
     return li;
@@ -621,10 +644,7 @@ window.PHH_CHECKLIST = {
       var card = document.querySelector('.issue[data-slot="'+m.slot+'"]'); if(!card) return;
       var ph = card.querySelector(".photos"); ph.innerHTML = "";
       issueSlots(m).forEach(function(s){
-        var d = document.createElement("label"); d.className = "ph"; d.dataset.id = s.key; d.htmlFor = "f_"+s.key;
-        d.innerHTML = '<div class="shot">Tap to add photo</div><div class="cap"></div><input type="file" accept="image/*" capture="environment" id="f_'+s.key+'">';
-        capText(d.querySelector(".cap"), s);
-        d.querySelector("input").addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; if(f) addPhoto(s, f, d); e.target.value = ""; });
+        var d = photoTile(s, "Tap to add photo");
         ph.appendChild(d);
         var x = state.photos[s.key];
         if(x && (x.path || x.blob)) showPhoto(s, d, x);
@@ -680,20 +700,127 @@ window.PHH_CHECKLIST = {
       var ph = $("photos_" + s.sec); if(!ph) return;
       if(s.group && s.group !== lastGroup[s.sec]){ var g = document.createElement("div"); g.className = "phgroup"; g.textContent = s.group; ph.appendChild(g); }
       lastGroup[s.sec] = s.group;
-      var d = document.createElement("label"); d.className = "ph"; d.dataset.id = s.key; d.htmlFor = "f_"+s.key;
-      d.innerHTML = '<div class="shot">Tap to take photo</div><div class="cap"></div><input type="file" accept="image/*" capture="environment" id="f_'+s.key+'">';
-      capText(d.querySelector(".cap"), s);
-      d.querySelector("input").addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; if(f) addPhoto(s, f, d); e.target.value = ""; });
-      ph.appendChild(d);
       var x = state.photos[s.key];
+      /* Marked "Not at this property": a plain box instead of the camera, with Undo. */
+      if(s.absent && state.absent[s.key] && !(x && (x.path || x.blob))){
+        var cell = document.createElement("div"); cell.className = "phcell";
+        var box = document.createElement("div"); box.className = "ph absent"; box.dataset.id = s.key;
+        box.innerHTML = '<div class="shot"></div><div class="cap"></div>';
+        box.querySelector(".shot").textContent = "No " + s.absent + " here";
+        capText(box.querySelector(".cap"), s);
+        var hn = document.createElement("span"); hn.className = "hint"; hn.textContent = "Marked not at this property. The office will check."; box.querySelector(".cap").appendChild(hn);
+        var undo = document.createElement("button"); undo.type = "button"; undo.className = "absbtn"; undo.textContent = "Undo, there is one";
+        undo.addEventListener("click", function(){ delete state.absent[s.key]; save(); renderPhotos(); update(); });
+        cell.appendChild(box); cell.appendChild(undo); ph.appendChild(cell);
+        return;
+      }
+      var d = photoTile(s, "Tap to take photo");
+      if(s.absent && !(x && (x.path || x.blob))){
+        var c2 = document.createElement("div"); c2.className = "phcell";
+        var ab = document.createElement("button"); ab.type = "button"; ab.className = "absbtn"; ab.textContent = "No " + s.absent + " at this property";
+        ab.addEventListener("click", function(){ state.absent[s.key] = true; save(); renderPhotos(); update(); });
+        c2.appendChild(d); c2.appendChild(ab); ph.appendChild(c2);
+      } else ph.appendChild(d);
       if(x && (x.path || x.blob)) showPhoto(s, d, x);
     });
+    /* Items the office has confirmed this property does not have: not asked for, just noted. */
+    CL.photos.forEach(function(p){
+      if(!p.absent || officeAbsent[p.id] !== "confirmed") return;
+      var h = $("photos_" + p.sec); if(!h) return;
+      var n = document.createElement("p"); n.className = "phnote"; n.textContent = "No " + p.absent + " at this property (confirmed by the office), so no photo is needed.";
+      h.appendChild(n);
+    });
     renderMaintPhotos();
+  }
+  /* One photo tile. The file input (phone camera app) stays as the fallback; on Android the in-app camera opens instead,
+     so Chrome never goes to the background (Android was closing it while the camera app was open, 29 Oct, DEW). */
+  function photoTile(s, prompt){
+    var d = document.createElement("label"); d.className = "ph"; d.dataset.id = s.key; d.htmlFor = "f_"+s.key;
+    d.innerHTML = '<div class="shot"></div><div class="cap"></div><input type="file" accept="image/*" capture="environment" id="f_'+s.key+'">';
+    d.querySelector(".shot").textContent = prompt;
+    capText(d.querySelector(".cap"), s);
+    var inp = d.querySelector("input");
+    inp.addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; if(f) addPhoto(s, f, d); e.target.value = ""; });
+    d.addEventListener("click", function(e){ if(!useCam()) return; e.preventDefault(); openCam(s, d, inp); });
+    return d;
   }
   function capText(cap, s){
     cap.innerHTML = ""; cap.appendChild(document.createTextNode(s.label));
     if(s.optional){ var o = document.createElement("span"); o.className = "opt"; o.textContent = "Optional"; cap.appendChild(o); }
+    if(s.hint){ var h = document.createElement("span"); h.className = "hint"; h.textContent = s.hint; cap.appendChild(h); }
   }
+
+  /* ---------- In-app camera (Android) ---------- */
+  var IS_ANDROID = /Android/i.test(navigator.userAgent || "");
+  var CAM_PARAM = new URLSearchParams(location.search).get("cam");
+  var camStream = null, camStopTimer = null, camTarget = null;
+  function useCam(){
+    if(CAM_PARAM === "0") return false;
+    if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return false;
+    try{ if(sessionStorage.getItem("phh-cam-off")) return false; }catch(e){}
+    return CAM_PARAM === "1" || IS_ANDROID;
+  }
+  function camEl(){
+    var ov = $("camov"); if(ov) return ov;
+    ov = document.createElement("div"); ov.id = "camov"; ov.hidden = true; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
+    ov.innerHTML = '<div class="camtop" id="camlabel"></div><video id="camvid" playsinline autoplay muted></video><div class="camerr" id="camerr" hidden></div>' +
+      '<div class="cambar"><button type="button" class="camcancel" id="camcancel">Cancel</button><button type="button" class="shutter" id="camshot" aria-label="Take photo"></button><span></span></div>';
+    document.body.appendChild(ov);
+    $("camcancel").addEventListener("click", closeCam);
+    $("camshot").addEventListener("click", camCapture);
+    return ov;
+  }
+  function stopCam(){ clearTimeout(camStopTimer); camStopTimer = null; if(camStream){ camStream.getTracks().forEach(function(t){ t.stop(); }); camStream = null; } var v = $("camvid"); if(v) v.srcObject = null; }
+  function closeCam(){
+    var ov = $("camov"); if(ov) ov.hidden = true;
+    camTarget = null; document.body.style.overflow = "";
+    /* Keep the camera warm for a minute so the next photo opens straight away, then let it go. */
+    clearTimeout(camStopTimer); camStopTimer = setTimeout(stopCam, 60000);
+  }
+  function camFallback(why){
+    var t = camTarget, err = $("camerr");
+    $("camvid").hidden = true; $("camshot").disabled = true;
+    err.hidden = false; err.innerHTML = "";
+    err.appendChild(document.createTextNode(why));
+    var b = document.createElement("button"); b.type = "button"; b.textContent = "Use the phone camera instead";
+    b.addEventListener("click", function(){ try{ sessionStorage.setItem("phh-cam-off", "1"); }catch(e){} closeCam(); stopCam(); if(t) t.input.click(); });
+    err.appendChild(b);
+  }
+  function openCam(s, tile, input){
+    var ov = camEl();
+    camTarget = { s:s, tile:tile, input:input };
+    $("camlabel").textContent = s.label;
+    $("camerr").hidden = true; $("camvid").hidden = false; $("camshot").disabled = true;
+    ov.hidden = false; document.body.style.overflow = "hidden";
+    clearTimeout(camStopTimer);
+    var ready = camStream && camStream.active ? Promise.resolve(camStream) :
+      navigator.mediaDevices.getUserMedia({ audio:false, video:{ facingMode:{ ideal:"environment" }, width:{ ideal:1920 }, height:{ ideal:1440 } } });
+    ready.then(function(st){
+      camStream = st; var v = $("camvid");
+      if(v.srcObject !== st) v.srcObject = st;
+      var p = v.play(); if(p && p.catch) p.catch(function(){});
+      $("camshot").disabled = false;
+    }).catch(function(e){
+      var denied = e && (e.name === "NotAllowedError" || e.name === "SecurityError");
+      camFallback(denied ? "The camera is blocked for this app. You can allow it in your browser settings, or use the phone camera." : "The camera did not start.");
+    });
+  }
+  function camCapture(){
+    var t = camTarget, v = $("camvid"); if(!t || !v.videoWidth){ return; }
+    $("camshot").disabled = true;
+    var sc = Math.min(1, 1280 / Math.max(v.videoWidth, v.videoHeight));
+    var c = document.createElement("canvas"); c.width = Math.round(v.videoWidth*sc); c.height = Math.round(v.videoHeight*sc);
+    c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+    c.toBlob(function(blob){
+      c.width = c.height = 0;
+      closeCam();
+      if(!blob) return;
+      var f; try{ f = new File([blob], "camera.jpg", { type:"image/jpeg", lastModified: Date.now() }); }catch(e){ f = blob; f.lastModified = Date.now(); }
+      addPhoto(t.s, f, t.tile);
+    }, "image/jpeg", 0.9);
+  }
+  document.addEventListener("visibilitychange", function(){ if(document.hidden){ stopCam(); var ov = $("camov"); if(ov && !ov.hidden) closeCam(); } });
+  window.addEventListener("pagehide", stopCam);
 
   function showPhoto(s, tile, x){
     tile.classList.add("has");
@@ -793,26 +920,43 @@ window.PHH_CHECKLIST = {
       var nowCheck = new Date();
       var when = takenAt || (file.lastModified > 1577836800000 ? new Date(file.lastModified) : null);
       if(when && (nowCheck - when) > MAX_PHOTO_AGE_MIN*60000){ photoError(tile, "This photo was taken more than " + MAX_PHOTO_AGE_MIN + " minutes ago. Take a new photo now with the camera."); return; }
-      var url = URL.createObjectURL(file), img = new Image();
-      img.onload = function(){
-        var max = 1280, sc = Math.min(1, max / Math.max(img.width, img.height));
-        var w = Math.round(img.width*sc), h = Math.round(img.height*sc);
+      decodePhoto(file).then(function(pic){
+        var max = 1280, sc = Math.min(1, max / Math.max(pic.w, pic.h));
+        var w = Math.round(pic.w*sc), h = Math.round(pic.h*sc);
         var c = document.createElement("canvas"); c.width = w; c.height = h;
-        var g = c.getContext("2d"); g.drawImage(img, 0, 0, w, h);
+        var g = c.getContext("2d"); g.drawImage(pic.src, 0, 0, w, h);
+        pic.done(); /* free the full-size picture straight away (phone memory) */
         var now = new Date(), band = Math.max(36, Math.round(h*0.07));
         g.fillStyle = "rgba(0,0,0,.62)"; g.fillRect(0, h-band, w, band);
         g.fillStyle = "#fff"; g.font = "bold " + Math.round(band*0.38) + "px sans-serif"; g.textBaseline = "middle";
         g.fillText((s.stamp || s.label) + "  |  " + fmt(now), Math.round(band*0.3), h - band/2);
-        URL.revokeObjectURL(url);
         c.toBlob(function(blob){
+          c.width = c.height = 0;
           state.photos[s.key] = { blob:blob, thumb:URL.createObjectURL(blob), label:s.label, stampedAt: now.toISOString(), takenAt: takenAt ? takenAt.toISOString() : null, oldPhoto: false, path:null };
           if(LIVE){ var xk = state.photos[s.key]; xk.kept = photoPut({ res:RES, k:s.key, blob:blob, label:s.label, stampedAt:xk.stampedAt, takenAt:xk.takenAt, path:null }).catch(function(){}); }
           showPhoto(s, tile, state.photos[s.key]);
           if(LIVE){ upload(s.key); } update();
         }, "image/jpeg", 0.72);
-      };
-      img.src = url;
+      }).catch(function(){ photoError(tile, "That photo could not be read. Tap to take it again."); });
     });
+  }
+  /* Decode a photo for resizing. Android: createImageBitmap, closed straight after drawing (an Image of a 50 MP photo
+     can hold 200 MB until the browser gets round to freeing it). iPhone keeps the Image route (EXIF rotation is reliable there). */
+  function decodePhoto(file){
+    function viaImg(){
+      return new Promise(function(ok, bad){
+        var url = URL.createObjectURL(file), img = new Image();
+        img.onload = function(){ ok({ src:img, w:img.naturalWidth || img.width, h:img.naturalHeight || img.height, done:function(){ URL.revokeObjectURL(url); img.src = ""; } }); };
+        img.onerror = function(){ URL.revokeObjectURL(url); bad(new Error("decode")); };
+        img.src = url;
+      });
+    }
+    if(IS_ANDROID && window.createImageBitmap){
+      return createImageBitmap(file, { imageOrientation:"from-image" })
+        .then(function(b){ return { src:b, w:b.width, h:b.height, done:function(){ try{ b.close(); }catch(e){} } }; })
+        .catch(viaImg);
+    }
+    return viaImg();
   }
 
   function api(path, body){ return apiAt(RES, TOKEN, path, body); }
@@ -866,6 +1010,7 @@ window.PHH_CHECKLIST = {
       startedAt: state.startedAt,
       consumables: state.consumables,
       noBbq: state.noBbq,
+      absent: Object.keys(state.absent).filter(function(k){ return state.absent[k]; }),
       rooms: rooms(),
       items: allItems().map(function(i){ return { id:i.id, text:i.text, status: status(i) }; }),
       photos: sl.map(function(s){ var x = state.photos[s.key]; return { id:s.key, label:s.label, path:x.path, stampedAt:x.stampedAt, takenAt:x.takenAt, oldPhoto:x.oldPhoto }; }),
@@ -905,6 +1050,8 @@ window.PHH_CHECKLIST = {
 
   function start(c){
     clean = c;
+    officeAbsent = (c.absent && typeof c.absent === "object") ? c.absent : {};
+    Object.keys(state.absent).forEach(function(k){ if(officeAbsent[k]) delete state.absent[k]; }); /* the office has decided: confirmed = not asked, rejected = photo needed */
     $("prop").textContent = c.property;
     $("cdate").textContent = "Clean " + c.cleanDate;
     $("cres").textContent = "Booking " + c.res;

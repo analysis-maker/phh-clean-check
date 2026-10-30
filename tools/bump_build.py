@@ -7,7 +7,7 @@ build id differs, reopens itself at a new address, which forces the fresh copy. 
 """
 import re, sys, time, pathlib
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PAGES = ["index.html", "office.html", "owner.html", "maintenance.html", "result.html", "view.html"]
+PAGES = ["index.html", "office.html", "owner.html", "maintenance.html", "result.html", "view.html", "admin.html", "message.html"]
 BUILD = time.strftime("%Y%m%d%H%M%S", time.gmtime())
 CHECK = """<script>
 /* Self-update (tools/bump_build.py): if this copy is older than the live page, reopen it fresh.

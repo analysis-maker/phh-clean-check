@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030015435"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030033252"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://rxhpnowszmetjxbwylil.supabase.co" crossorigin>
 <script>window.PHH_OFFICE_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/office-api";</script>
+<script>window.PHH_CLEAN_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/clean-api";</script>
 <title>Clean Check Maintenance</title>
 <style>
 /* Office view v2 (23 Oct 2026). Laid out like HomHero's Cleaning screen so staff feel at home:
@@ -188,6 +189,15 @@ body.lb-open{overflow:hidden}
 .thumb{padding:0;border:1px solid var(--line);border-radius:4px;background:#fff;cursor:pointer;aspect-ratio:1;overflow:hidden}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .me a{color:var(--teal-ink);font-weight:500;text-decoration:none}
+.gasbox{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:4px;padding:12px 14px;margin:0 0 14px}
+.gasbox h2{font-size:15px;margin:0 0 8px;font-weight:600}
+.gasbox ul{list-style:none;margin:0;padding:0}
+.gasbox li{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:8px 0;border-top:1px solid var(--line-2)}
+.gasbox li:first-child{border-top:0}
+.gasbox .g{font-weight:600}
+.gasbox .w{color:var(--muted);font-size:12px}
+.gasbox .done{color:var(--muted)}
+.gasbox li .btn{margin-left:auto}
 </style>
 <script>
 /* Self-update (tools/bump_build.py): if this copy is older than the live page, reopen it fresh.
@@ -317,7 +327,7 @@ html,body{overflow-x:clip}
 <header class="bar">
   <div class="brand"><img src="icon-180.png" alt="" width="24" height="24">Clean Check</div>
   <div class="section">Maintenance</div>
-  <div class="me" id="me"><span id="mename"></span><a href="office.html?v=1030b" id="toOffice" hidden>Cleaning</a><a href="admin.html?v=1030b" id="toAdmin" hidden>Admin<span class="adn" id="adminN" hidden></span></a><button type="button" id="signout">Sign out</button></div>
+  <div class="me" id="me"><span id="mename"></span><a href="office.html?v=1030c" id="toOffice" hidden>Cleaning</a><a href="admin.html?v=1030b" id="toAdmin" hidden>Admin<span class="adn" id="adminN" hidden></span></a><button type="button" id="signout">Sign out</button></div>
 </header>
 <nav class="tabs" role="tablist" aria-label="Views">
   <button class="tab" role="tab" data-tab="open" aria-selected="true">Open<span class="n" id="openN" hidden></span></button>
@@ -327,6 +337,7 @@ html,body{overflow-x:clip}
 <main>
   <p class="trial">Maintenance issues housekeepers log in Clean Check, with their photos. Each one is also a HomHero maintenance job: assign and update it in HomHero as usual. Status here follows HomHero (checked every 10 minutes).</p>
   <div class="pushbox" id="pushbox" hidden></div>
+  <section class="gasbox" id="gasbox" hidden aria-labelledby="gash"><h2 id="gash">Gas requests from housekeepers</h2><ul id="gaslist"></ul></section>
   <div class="filters">
     <input type="search" id="q" placeholder="Search property or issue" aria-label="Search property or issue" autocomplete="off">
     <select id="urg" aria-label="Priority"><option value="">All priorities</option><option value="urgent">Urgent only</option></select>
@@ -427,6 +438,35 @@ html,body{overflow-x:clip}
       .then(function(r){ return r.json().then(function(j){ if(r.status === 403){ signOut(); throw new Error("Signed out."); } if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
   }
   function signOut(){ try{ localStorage.removeItem("phh-staff-code"); localStorage.removeItem("phh-staff-view"); }catch(e){} location.replace("./"); }
+
+  /* Gas requests (Sharon, 30 Oct): BBQ or house gas a housekeeper asked for in Clean Check "Anything else". Open ones first; Done hides it. */
+  var CLEAN_API = window.PHH_CLEAN_API || "";
+  function cpost(route, body){
+    return fetch(CLEAN_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(Object.assign({ code: CODE }, body || {})) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+  function gasLabel(g){ return g.map(function(x){ return x === "bbq" ? "BBQ gas" : "House gas"; }).join(" and "); }
+  function loadGas(){
+    if(!CLEAN_API) return;
+    cpost("gas-requests", { days: 14 }).then(function(j){
+      var rows = (j.rows || []).filter(function(r){ return !r.doneAt || Date.now() - Date.parse(r.doneAt) < 2 * 86400000; });
+      var box = $("gasbox"), ul = $("gaslist"); ul.innerHTML = "";
+      rows.forEach(function(r){
+        var li = el("li", r.doneAt ? "done" : "");
+        li.appendChild(el("span", "g", r.property));
+        li.appendChild(el("span", "", gasLabel(r.gas || [])));
+        var when = new Date(r.at).toLocaleString("en-AU", { timeZone: TZ, weekday:"short", day:"numeric", month:"short", hour:"numeric", minute:"2-digit" });
+        li.appendChild(el("span", "w", (r.housekeeper || "") + ", " + when + (r.doneAt ? ". Done" + (r.doneBy ? " by " + r.doneBy : "") : "")));
+        if(!r.doneAt){
+          var b = el("button", "btn small", "Done"); b.type = "button";
+          b.addEventListener("click", function(){ b.disabled = true; cpost("gas-done", { id: r.id }).then(loadGas).catch(function(e){ b.disabled = false; b.textContent = e.message; }); });
+          li.appendChild(b);
+        }
+        ul.appendChild(li);
+      });
+      box.hidden = !rows.length;
+    }).catch(function(){});
+  }
   $("signout").addEventListener("click", signOut);
 
   function when(iso){
@@ -554,6 +594,7 @@ html,body{overflow-x:clip}
   }
 
   function load(){
+    loadGas();
     $("msg").className = "msg"; if(!state.issues.length) $("msg").textContent = "Loading...";
     post("maint", { days: 60 }).then(function(j){
       $("mename").textContent = j.name || "";

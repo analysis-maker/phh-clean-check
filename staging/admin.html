@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030000806"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030001539"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -425,7 +425,7 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
     });
     $("hkbody").innerHTML = html || '<tr><td colspan="7" class="empty">Nobody matches.</td></tr>';
     var ow = D.owners || [];
-    $("ownlist").innerHTML = ow.length ? ow.map(function(o){ return esc(o.name) + (o.hasCode ? ' <span class="bad">(has a code, pause it)</span>' : "") + (o.nextWeek ? ' <span class="sub">' + o.nextWeek + " cleans next 7 days</span>" : ""); }).join("<br>") : "None in HomHero right now.";
+    $("ownlist").innerHTML = ow.length ? ow.map(function(o){ return esc(o.name) + (o.hasCode ? ' <span class="bad">(has a code, pause it)</span>' : "") + (o.nextWeek ? ' <span class="sub">' + o.nextWeek + (o.nextWeek === 1 ? " clean" : " cleans") + " next 7 days</span>" : ""); }).join("<br>") : "None in HomHero right now.";
   }
   function detail(h){
     if(!h.code) return '<div class="detail"><div><h3>No code yet</h3><p>Create a code for ' + esc(first(h.name)) + '. It works straight away but nothing is counted until you set a start date.</p><div class="actions"><button class="btn" data-act="create" data-id="' + esc(h.id) + '">Create code</button></div></div></div>';
@@ -515,7 +515,7 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
     call("msg", { id: id }).then(function(j){
       var cell = $("md-" + id); if(!cell) return;
       var rs = j.recipients || [], unread = rs.filter(function(r){ return !r.opened_at; }).length;
-      cell.innerHTML = '<div class="detail"><div><h3>Message</h3><p style="white-space:pre-wrap">' + esc(j.msg.body) + '</p><p class="sub">By ' + esc(j.msg.by) + "</p>" + (unread ? '<div class="actions"><button class="btn small" data-remind="' + esc(id) + '">Remind the ' + unread + " who have not read it</button></div>" : '<p class="ok">Everyone has read it.</p>') + "</div><div><h3>Who has read it</h3><ul style=\"list-style:none;padding:0\">" +
+      cell.innerHTML = '<div class="detail"><div><h3>Message</h3><p style="white-space:pre-wrap">' + esc(j.msg.body) + '</p><p class="sub">By ' + esc(j.msg.by) + "</p>" + (unread ? '<div class="actions"><button class="btn small" data-remind="' + esc(id) + '">' + (unread === 1 ? "Remind the 1 who has not read it" : "Remind the " + unread + " who have not read it") + "</button></div>" : '<p class="ok">Everyone has read it.</p>') + "</div><div><h3>Who has read it</h3><ul style=\"list-style:none;padding:0\">" +
         rs.map(function(r){
           var s = r.opened_at ? '<span class="ok">Read ' + esc(fmtTime(r.opened_at)) + "</span> <span class=\"sub\">" + (r.opened_via === "app" ? "in the app" : "from the notification") + "</span>"
             : r.delivered ? '<span class="muted">Delivered ' + esc(fmtTime(r.delivered_at)) + ", not opened</span>"

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030041318"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030060412"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -124,6 +124,16 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
 .issues{background:#fff;border:1px solid var(--line);border-radius:4px;padding:12px 16px;margin-bottom:12px}
 .issues h3{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-ink)}
 .issues ol{margin:0;padding-left:20px}
+.hknotes{background:#fff;border:1px solid var(--line);border-radius:4px;padding:12px 16px;margin-top:14px}
+.hknotes h3{margin:0 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-ink)}
+.hknotes .hint{margin:0 0 10px;color:var(--muted);font-size:13px}
+.hknotes input{width:100%;max-width:420px;box-sizing:border-box;padding:8px 10px;border:1px solid var(--line);border-radius:4px;font:inherit;margin-bottom:8px}
+.hknotes ul{list-style:none;margin:0;padding:0}
+.hknotes li{padding:10px 0;border-top:1px solid var(--line-2)}
+.hknotes li:first-child{border-top:0}
+.hknotes .pn{margin:0 0 4px;font-weight:600}
+.hknotes .nt{margin:2px 0;font-size:14px;white-space:pre-wrap}
+.hknotes .nt .w{color:var(--muted);font-size:12px}
 .bar100{height:6px;background:var(--line-2);border-radius:3px;overflow:hidden;width:80px;display:inline-block;vertical-align:middle;margin-left:6px}
 .bar100 i{display:block;height:100%;background:var(--teal)}
 
@@ -358,6 +368,13 @@ html,body{overflow-x:clip}
     <div class="issues" id="issues" hidden></div>
     <div class="tablewrap"><table class="hk"><thead id="insHead"></thead><tbody id="insRows"></tbody></table></div>
     <p class="msg" id="insMsg"></p>
+    <div class="hknotes" id="hknotes" hidden>
+      <h3>Housekeeper notes</h3>
+      <p class="hint">What housekeepers wrote for the office or for the next clean, last 90 days. Search a property or a word like "coffee".</p>
+      <input type="search" id="hkNotesQ" placeholder="Search property or note" aria-label="Search housekeeper notes">
+      <ul id="hkNotesList"></ul>
+      <p class="msg" id="hkNotesMsg"></p>
+    </div>
   </section>
 </main>
 
@@ -808,10 +825,43 @@ html,body{overflow-x:clip}
       var ol = el("ol"); j.topIssues.forEach(function(t){ ol.appendChild(el("li", "", t.label + " (" + t.n + ")")); }); iss.appendChild(ol);
       iss.hidden = false;
     } else iss.hidden = true;
+    if(hk) $("hknotes").hidden = true; else loadNotes();
     $("insMsg").textContent = list.length ? "From " + j.from + " to " + j.to + ". Typical check time is the median from the first photo to Complete." : "No clean checks in this period yet.";
   }
 
   /* ---------- Tabs ---------- */
+  /* Housekeeper notes by property (Sharon, 30 Oct): notes to the office and for the next clean, so staff can look up things
+     like which coffee machine a property has. Grouped by property, newest first, searchable. */
+  var notesCache = null;
+  function loadNotes(){
+    $("hknotes").hidden = false;
+    if(!CLEAN_API){ $("hkNotesMsg").textContent = "Notes are not available here."; return; }
+    if(!notesCache) $("hkNotesMsg").textContent = "Loading notes...";
+    var go = notesCache ? Promise.resolve(notesCache) : cpost("property-notes", { days: 90 }).then(function(j){ notesCache = j.rows || []; return notesCache; });
+    go.then(renderNotes).catch(function(e){ $("hkNotesMsg").className = "msg err"; $("hkNotesMsg").textContent = e.message; });
+  }
+  function renderNotes(){
+    var q = ($("hkNotesQ").value || "").trim().toLowerCase(), ul = $("hkNotesList"); ul.innerHTML = "";
+    var rows = (notesCache || []).filter(function(r){ return !q || [r.property, r.note, r.nextNote, r.housekeeper].join(" ").toLowerCase().indexOf(q) >= 0; });
+    var by = {}, order = [];
+    rows.forEach(function(r){ var k = r.property || "Unknown property"; if(!by[k]){ by[k] = []; order.push(k); } by[k].push(r); });
+    order.sort(function(a, b){ return a.localeCompare(b); });
+    order.forEach(function(k){
+      var li = el("li"); li.appendChild(el("p", "pn", k));
+      by[k].forEach(function(r){
+        var w = " (" + (r.housekeeper || "") + ", " + new Date(r.at).toLocaleDateString("en-AU", { timeZone:"Australia/Sydney", day:"numeric", month:"short" }) + ")";
+        [[r.note, ""], [r.nextNote, "For the next clean: "]].forEach(function(n){
+          if(!n[0]) return;
+          var p = el("p", "nt", n[1] + n[0]); p.appendChild(el("span", "w", w)); li.appendChild(p);
+        });
+      });
+      ul.appendChild(li);
+    });
+    $("hkNotesMsg").className = "msg";
+    $("hkNotesMsg").textContent = !(notesCache || []).length ? "No housekeeper notes in the last 90 days yet." : (rows.length ? "" : "No notes match.");
+  }
+  $("hkNotesQ").addEventListener("input", function(){ if(notesCache) renderNotes(); });
+
   var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties" };
   function setTab(t){
     state.tab = t;

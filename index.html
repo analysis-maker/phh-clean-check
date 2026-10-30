@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030055801"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030060412"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -670,7 +670,7 @@ window.PHH_CHECKLIST = {
       '<div class="anyq"><p class="lbl2">Gas needed?</p><div class="gasrow"><button type="button" class="segbtn" id="gas_bbq">BBQ gas</button><button type="button" class="segbtn" id="gas_house">House gas</button></div></div>' +
       '<div class="anyq"><p class="lbl2">Extra photos</p><p class="note" style="margin-top:0">For example the BBQ before you cleaned it, stained towels or extra beds used. Add a few words to each.</p><div class="photos" id="exphotos"></div>' +
       '<button type="button" class="segbtn addissue" id="exadd">+ Add an extra photo</button></div>' +
-      '<div class="anyq"><p class="lbl2"><label for="ex_note">Note to the office</label></p><textarea id="ex_note" maxlength="1000" placeholder="Anything the office should know about this clean"></textarea></div>' +
+      '<div class="anyq"><p class="lbl2"><label for="ex_note">Note to the office</label></p><textarea id="ex_note" maxlength="1000" placeholder="Anything the office should know, e.g. the coffee machine type, something missing"></textarea></div>' +
       '<div class="anyq"><p class="lbl2"><label for="ex_next">Note for the next clean here</label></p><textarea id="ex_next" maxlength="500" placeholder="For example: windows due, check the mould absorbers"></textarea><p class="note">Shown at the top of the next clean at this property.</p></div>';
     el.querySelector("#gu_no").addEventListener("click", function(){ state.extra.guests = "no"; save(); updExtra(); });
     el.querySelector("#gu_yes").addEventListener("click", function(){ state.extra.guests = "yes"; save(); updExtra(); var g = $("gu_note"); if(g) g.focus(); });
@@ -1296,7 +1296,7 @@ window.PHH_CHECKLIST = {
           /* Staff: office view, or the maintenance dashboard for a maintenance code (staging asks office-api-v2 which one). */
           return fetch(OFFICE_API + "-v2/login", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
             .then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
-            .then(function(v){ var mv = v && v.view === "maintenance"; try{ localStorage.setItem("phh-staff-view", mv ? "maintenance" : "office"); }catch(e){} location.href = mv ? "maintenance.html?v=1030d" : "office.html?v=1030d"; });
+            .then(function(v){ var mv = v && v.view === "maintenance"; try{ localStorage.setItem("phh-staff-view", mv ? "maintenance" : "office"); }catch(e){} location.href = mv ? "maintenance.html?v=1030d" : "office.html?v=1030e"; });
         })
         .catch(function(e){ reset(e.message, true); });
     }
@@ -1369,7 +1369,7 @@ window.PHH_CHECKLIST = {
     $("switchcode").addEventListener("click", function(e){ e.preventDefault(); $("code").value = ""; reset(""); });
     var staffSaved = ""; try{ staffSaved = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
     var staffView = ""; try{ staffView = localStorage.getItem("phh-staff-view") || ""; }catch(e){}
-    if(staffSaved){ location.replace(staffView === "maintenance" ? "maintenance.html?v=1030d" : "office.html?v=1030d"); return; }
+    if(staffSaved){ location.replace(staffView === "maintenance" ? "maintenance.html?v=1030d" : "office.html?v=1030e"); return; }
     var ownerSaved = ""; try{ ownerSaved = localStorage.getItem("phh-owner-code") || ""; }catch(e){}
     if(ownerSaved){ location.replace("owner.html"); return; }
     var saved = ""; try{ saved = localStorage.getItem(KEY) || ""; }catch(e){}

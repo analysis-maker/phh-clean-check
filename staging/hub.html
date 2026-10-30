@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#1a3a4a">
+<link rel="icon" type="image/png" href="../icon-180.png">
+<link rel="preconnect" href="https://rxhpnowszmetjxbwylil.supabase.co" crossorigin>
+<title>Ask PHH Hub (staging)</title>
+<style>
+/* Ask PHH Hub, staging page (Phase 1). Built from tools/ask_panel.html: same Raleway, PHH navy ink and PHH blue,
+   same answer, report and draft cards. Full-width chat instead of a side panel. */
+@font-face{font-family:"Raleway";font-style:normal;font-weight:100 900;font-display:swap;src:url("../raleway-latin.woff2") format("woff2")}
+:root{color-scheme:light;--a-ink:#1a3a4a;--a-muted:#4f5c6b;--a-faint:#8a9bb0;--a-line:#dce5ec;--a-soft:#f4f8fb;--a-q:#eef3f7;--a-blue:#2275b0;--a-blue-d:#1b5f90;--a-accent:#21a6c7;--a-hl:#d6edf4;--a-teal:#0e7c8f;--a-warn:#b4541a;--a-warn-soft:#fbeee4;--a-amber:#f2b33d;--a-amber-ink:#7a4d00;--a-amber-soft:#fdf3df}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0;height:100%}
+body{background:#fff;color:var(--a-ink);font-family:"Raleway","Helvetica Neue",Arial,sans-serif;font-size:15px;line-height:1.55;font-variant-numeric:lining-nums;-webkit-text-size-adjust:100%}
+button,input,textarea{font:inherit;color:inherit}
+button:focus-visible,textarea:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--a-accent);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* Top bar */
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+.bar{flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;background:var(--a-ink);color:#fff;padding:8px max(16px,env(safe-area-inset-right)) 8px max(16px,env(safe-area-inset-left));padding-top:max(8px,env(safe-area-inset-top));min-height:52px}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.brand img{width:30px;height:30px;border-radius:7px;background:#fff;padding:3px;object-fit:contain;flex:0 0 auto}
+.brand b{font-weight:800;font-size:16px;letter-spacing:-.01em;white-space:nowrap}
+.pill{display:inline-block;background:var(--a-amber);color:#3d2700;font-size:10.5px;font-weight:800;letter-spacing:.12em;padding:3px 8px 2px;border-radius:9999px;line-height:1.4}
+.me{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px;font-weight:600;min-width:0}
+.me .name{color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.me .spend{color:#cfe3ee;white-space:nowrap;font-variant-numeric:tabular-nums}
+.me .spend.hi{color:var(--a-amber)}
+.me button{border:0;background:none;color:#fff;font-weight:700;font-size:13px;cursor:pointer;padding:6px 2px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(255,255,255,.4)}
+.me button:hover{text-decoration-color:#fff}
+.bar button:focus-visible{outline-color:var(--a-amber)}
+
+/* Sign in */
+.signin{flex:1;display:flex;align-items:flex-start;justify-content:center;padding:56px 16px 24px;background:var(--a-soft)}
+.sbox{width:100%;max-width:380px;background:#fff;border:1px solid var(--a-line);border-radius:14px;padding:22px 20px;box-shadow:0 2px 8px rgba(26,58,74,.06)}
+.sbox h1{margin:0 0 4px;font-size:21px;font-weight:800;letter-spacing:-.01em}
+.sbox p{margin:0 0 14px;color:var(--a-muted);font-weight:500}
+.sbox label{display:block;font-size:13px;font-weight:700;color:var(--a-muted);margin-bottom:5px}
+.sbox input{width:100%;border:1px solid var(--a-line);border-radius:10px;padding:10px 12px;font-size:20px;letter-spacing:.25em;margin-bottom:12px;background:#fff}
+.sbox .err{color:var(--a-warn);font-weight:600;font-size:14px;margin:10px 0 0;min-height:1em}
+
+/* Chat */
+.log{flex:1;overflow-y:auto;overscroll-behavior:contain}
+.inner{max-width:860px;margin:0 auto;padding:22px 16px 10px;display:flex;flex-direction:column;gap:18px}
+.hi h2{margin:6px 0 4px;font-size:24px;font-weight:800;letter-spacing:-.015em}
+.hi>p{margin:0 0 16px;color:var(--a-muted);font-weight:500}
+.grp{margin:0 0 14px}
+.grp h3{margin:0 0 7px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--a-teal);font-weight:800}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.chip{border:1px solid var(--a-line);background:#fff;color:var(--a-ink);border-radius:10px;padding:10px 12px;font:600 14px/1.35 "Raleway",Arial,sans-serif;cursor:pointer;text-align:left}
+.chip:hover{border-color:rgba(34,117,176,.45);background:var(--a-soft)}
+.chip:disabled{opacity:.5;cursor:default}
+.setup{background:var(--a-amber-soft);color:var(--a-amber-ink);border-radius:10px;padding:9px 12px;font-weight:600;font-size:14px}
+.q{align-self:flex-end;max-width:82%;background:var(--a-q);color:var(--a-ink);border-radius:14px;padding:9px 14px;font-weight:600;white-space:pre-wrap;overflow-wrap:anywhere}
+.a{align-self:stretch;overflow-wrap:anywhere}
+.a p{margin:0 0 10px}.a p:last-child{margin:0}
+.a ul,.a ol{margin:4px 0 10px;padding-left:22px}.a li{margin:3px 0}
+.a a{color:var(--a-blue);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.a.err{background:var(--a-warn-soft);color:var(--a-warn);border-radius:10px;padding:10px 12px}
+.meta{font-size:11.5px;color:var(--a-faint);font-weight:600;margin-top:-12px;font-variant-numeric:tabular-nums}
+.wait{color:var(--a-muted);font-weight:600;font-size:14px}
+.wait i{display:inline-block;width:6px;height:6px;margin-left:3px;border-radius:50%;background:var(--a-accent);animation:hb 1.2s infinite ease-in-out}
+.wait i:nth-child(2){animation-delay:.15s}.wait i:nth-child(3){animation-delay:.3s}
+@keyframes hb{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+@media (prefers-reduced-motion:reduce){.wait i{animation:none;opacity:.7}}
+
+/* Draft card */
+.card{background:#fff;border:1px solid rgba(34,117,176,.35);border-radius:12px;padding:12px 14px}
+.card h4{margin:0 0 2px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--a-teal);font-weight:800}
+.card .head{font-weight:700;margin-bottom:6px}
+.card .stg{background:var(--a-amber-soft);color:var(--a-amber-ink);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;margin:4px 0 8px}
+.card dl{display:grid;grid-template-columns:minmax(0,max-content) minmax(0,1fr);gap:3px 12px;margin:4px 0 6px;font-size:13.5px}
+.card dt{color:var(--a-muted);font-weight:700}
+.card dd{margin:0;overflow-wrap:anywhere}
+.card label{display:block;font-size:12px;font-weight:700;color:var(--a-muted);margin:8px 0 3px}
+.card input,.card textarea{width:100%;border:1px solid var(--a-line);border-radius:8px;padding:8px 10px;font:500 14px/1.45 "Raleway",Arial,sans-serif;color:var(--a-ink);background:#fff}
+.card input[readonly],.card textarea[readonly]{background:var(--a-soft);border-color:transparent}
+.card textarea{min-height:96px;resize:vertical}
+.note{font-size:12.5px;color:var(--a-muted);margin-top:8px}
+.note.warn{color:var(--a-warn);font-weight:600}
+.btns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.btn{border:0;border-radius:9999px;padding:10px 18px;min-height:40px;font:700 14px/1 "Raleway",Arial,sans-serif;cursor:pointer;background:var(--a-blue);color:#fff}
+.btn:hover{background:var(--a-blue-d)}
+.btn.ghost{background:#fff;color:var(--a-blue);border:1px solid rgba(34,117,176,.35)}
+.btn.ghost:hover{background:var(--a-soft)}
+.btn:disabled{opacity:.5;cursor:default}
+.done{font-weight:700;color:var(--a-teal);margin-top:8px}
+.adminonly{font-size:13px;color:var(--a-muted);font-weight:600;font-style:italic}
+
+/* Report card */
+.rep{border:1px solid var(--a-line);border-radius:12px;padding:12px 14px;background:#fff}
+.rep h4{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em}
+.rep .sub{font-size:12px;color:var(--a-muted);font-weight:600;margin:2px 0 8px}
+.rep svg{display:block;width:100%;height:auto;margin:4px 0 8px}
+.tw{max-height:260px;overflow:auto;border:1px solid var(--a-line);border-radius:8px}
+.tw table{border-collapse:collapse;width:100%;font-size:12px}
+.tw th,.tw td{padding:5px 8px;border-bottom:1px solid var(--a-line);text-align:left;white-space:nowrap}
+.tw th{position:sticky;top:0;background:var(--a-soft);font-weight:700;color:var(--a-muted)}
+.tw td.n,.tw th.n{text-align:right}
+.rep .more{font-size:12px;color:var(--a-muted);margin-top:6px}
+
+/* Input */
+.dock{flex:0 0 auto;background:linear-gradient(rgba(255,255,255,0),#fff 14px)}
+.dinner{max-width:860px;margin:0 auto;padding:4px 16px max(10px,env(safe-area-inset-bottom))}
+.tools{display:flex;justify-content:flex-end;min-height:0}
+.newchat{border:0;background:none;color:var(--a-blue);font-weight:700;font-size:13px;cursor:pointer;padding:4px 2px;margin-bottom:2px}
+.form{border:1px solid var(--a-line);border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(26,58,74,.06);display:flex;align-items:flex-end;gap:6px;padding:6px 6px 6px 12px}
+.form:focus-within{border-color:rgba(34,117,176,.6);box-shadow:0 0 0 3px rgba(33,166,199,.18)}
+.form textarea:focus-visible{outline:0}
+.form textarea{flex:1;min-width:0;min-height:40px;max-height:180px;resize:none;border:0;outline:0;padding:9px 0;font:500 16px/1.45 "Raleway",Arial,sans-serif;color:var(--a-ink);background:transparent}
+.form textarea::placeholder{color:var(--a-faint)}
+.send{width:40px;height:40px;flex:0 0 40px;border:0;border-radius:10px;background:var(--a-blue);color:#fff;cursor:pointer;display:grid;place-items:center}
+.send:disabled{opacity:.4;cursor:default}
+.foot{padding:6px 0 0;font-size:11px;color:var(--a-faint);font-weight:600;text-align:center}
+
+@media (max-width:520px){
+  .me .name{display:none}
+  .hi h2{font-size:21px}
+  .q{max-width:90%}
+  .chips{grid-template-columns:1fr}
+}
+@media print{.bar,.dock{display:none}.app{height:auto}.log{overflow:visible}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <div class="brand"><img src="../logo.png" alt="Professional Holiday Homes" width="30" height="30"><b>Ask PHH Hub</b><span class="pill" title="Staging: test version">STAGING</span></div>
+    <div class="me" id="me" hidden>
+      <span class="name" id="meName"></span>
+      <span class="spend" id="meSpend" hidden title="Ask PHH Hub spend this month, against the monthly cap"></span>
+      <button type="button" id="signout">Sign out</button>
+    </div>
+  </header>
+
+  <main class="signin" id="signin" hidden>
+    <form class="sbox" id="sform" autocomplete="off" novalidate>
+      <h1>Ask PHH Hub</h1>
+      <p>Enter your staff code to sign in.</p>
+      <label for="scode">Staff code</label>
+      <input type="password" inputmode="numeric" autocomplete="off" id="scode" maxlength="12" required>
+      <button class="btn" type="submit" id="sgo">Sign in</button>
+      <p class="err" id="serr" role="alert"></p>
+    </form>
+  </main>
+
+  <main class="log" id="log" aria-live="polite" aria-label="Conversation" hidden><div class="inner" id="inner"></div></main>
+
+  <div class="dock" id="dock" hidden>
+    <div class="dinner">
+      <div class="tools"><button type="button" class="newchat" id="newchat" hidden>New chat</button></div>
+      <form class="form" id="form" autocomplete="off">
+        <label for="in" class="sr">Your question</label>
+        <textarea id="in" rows="1" maxlength="600" placeholder="Ask about cleans, housekeepers, maintenance, the inbox..."></textarea>
+        <button type="submit" class="send" id="go" aria-label="Send question"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+      </form>
+      <div class="foot" id="foot">Staging. Answers come from PHH systems. Questions are logged with their cost.</div>
+    </div>
+  </div>
+</div>
+<script>
+/* Ask PHH Hub (hub-api). Staff codes only; the server checks every call. The conversation lives in memory only. */
+(function(){
+  "use strict";
+  var API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/hub-api/";
+  var CODE_KEY = "phhHubCode";
+  var $ = function(id){ return document.getElementById(id); };
+  var CODE = "", ME = null, busy = false, H = [];
+  var ls = {
+    get: function(k){ try{ return localStorage.getItem(k) || ""; }catch(e){ return ""; } },
+    set: function(k, v){ try{ localStorage.setItem(k, v); }catch(e){} },
+    del: function(k){ try{ localStorage.removeItem(k); }catch(e){} }
+  };
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]; }); }
+  function el(t, c, txt){ var e = document.createElement(t); if(c) e.className = c; if(txt != null) e.textContent = txt; return e; }
+  function post(route, body, retried){
+    body.code = CODE;
+    return fetch(API + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){
+        /* The function can fail to start when many requests arrive at once: try once more after a short pause. */
+        if(r.status === 503 && j.code === "BOOT_ERROR" && !retried) return new Promise(function(ok){ setTimeout(ok, 1500); }).then(function(){ return post(route, body, true); });
+        if(!r.ok) { var e = new Error(j.error || ("Something went wrong (" + r.status + ")")); e.status = r.status; throw e; } return j; }); });
+  }
+
+  /* Answers: escape everything, then allow **bold**, lists, line breaks and [label](url) links to known places only. */
+  var SAFE_PAGE = /^(office|maintenance|admin|view)\.html(\?[^\s"'<>]*)?(#[^\s"'<>]*)?$/;
+  var SAFE_HOSTS = { "secure.helpscout.net":1, "app.process.st":1, "docs.google.com":1, "app.homhero.com.au":1 };
+  function safeUrl(u){
+    if(SAFE_PAGE.test(u)) return u;
+    try{ var x = new URL(u); if(x.protocol === "https:" && SAFE_HOSTS[x.hostname] && !x.username && !x.password) return x.href; }catch(e){}
+    return "";
+  }
+  function inline(t){
+    return esc(t).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function(m, label, url){
+      var u = safeUrl(url.replace(/&amp;/g, "&"));
+      return u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + label + "</a>" : label;
+    });
+  }
+  function md(t){
+    var out = [], list = [], ordered = false, para = [];
+    function flushP(){ if(para.length){ out.push("<p>" + para.map(inline).join("<br>") + "</p>"); para = []; } }
+    function flush(){ if(list.length){ var tag = ordered ? "ol" : "ul"; out.push("<" + tag + ">" + list.map(function(x){ return "<li>" + inline(x) + "</li>"; }).join("") + "</" + tag + ">"); list = []; } }
+    String(t || "").replace(/\r/g, "").split(/\n/).forEach(function(line){
+      var m = /^\s*([-*•]|\d+[.)])\s+(.*)$/.exec(line);
+      if(m){ flushP(); var o = /\d/.test(m[1]); if(list.length && o !== ordered) flush(); ordered = o; list.push(m[2]); return; }
+      flush();
+      if(!line.trim()){ flushP(); return; }
+      var h = /^\s*#{1,6}\s+(.*)$/.exec(line);
+      if(h){ flushP(); out.push("<p><b>" + inline(h[1].replace(/\*\*/g, "")) + "</b></p>"); return; }
+      para.push(line);
+    });
+    flush(); flushP(); return out.join("");
+  }
+
+  var GROUPS = [
+    { t: "Cleans and coverage", q: ["Which cleans tomorrow have no housekeeper?", "Who could cover a clean at Sea Breeze on Sunday?", "Missed clean checks this week", "Make me a PDF of next week's coverage"] },
+    { t: "Maintenance", q: ["What maintenance is open at Bluewater?", "Any power outages at properties with cleans today?", "Repeat maintenance issues in the last 60 days"] },
+    { t: "Housekeeping inbox", q: ["What's in the Housekeeping inbox that needs a person?"] }
+  ];
+  function hello(){
+    var box = el("div", "hi");
+    box.appendChild(el("h2", "", "Hi " + String(ME.name || "").split(" ")[0] + ", what do you need?"));
+    box.appendChild(el("p", "", "Ask about cleans, housekeepers, maintenance, properties or the Housekeeping inbox. Answers link to the right page."));
+    if(!ME.enabled) box.appendChild(el("p", "setup", "PHH Hub is being set up. Questions will work soon."));
+    GROUPS.forEach(function(g){
+      var sec = el("div", "grp"); sec.appendChild(el("h3", "", g.t));
+      var chips = el("div", "chips");
+      g.q.forEach(function(q){ var b = el("button", "chip", q); b.type = "button"; b.disabled = busy; b.addEventListener("click", function(){ ask(q); }); chips.appendChild(b); });
+      sec.appendChild(chips); box.appendChild(sec);
+    });
+    return box;
+  }
+
+  /* ---------- Draft card (generic action) ---------- */
+  function card(h){
+    var a = h.action, c = el("div", "card");
+    var ed = Array.isArray(a.editable) ? a.editable : [];
+    c.appendChild(el("h4", "", "Draft"));
+    c.appendChild(el("div", "head", a.heading || "Draft"));
+    if(a.staging_note) c.appendChild(el("div", "stg", a.staging_note));
+    if(Array.isArray(a.fields) && a.fields.length){
+      var dl = el("dl");
+      a.fields.forEach(function(f){ dl.appendChild(el("dt", "", f.label)); dl.appendChild(el("dd", "", f.value == null ? "" : f.value)); });
+      c.appendChild(dl);
+    }
+    var ti = null, tb;
+    if(a.title != null){
+      var lt = el("label", "", "Title"); ti = el("input"); ti.value = a.title; ti.maxLength = 120; ti.readOnly = true; lt.appendChild(ti); c.appendChild(lt);
+    }
+    var lb = el("label", "", a.type === "hs_note" ? "Note" : a.type === "maint_job" ? "Details" : "Message");
+    tb = el("textarea"); tb.value = a.body || ""; tb.maxLength = 2000; tb.readOnly = true; lb.appendChild(tb); c.appendChild(lb);
+    if(h.status){ c.appendChild(el("div", "done", h.status)); [ti, tb].forEach(function(x){ if(x) x.readOnly = true; }); return c; }
+    if(!ME.admin){ c.appendChild(el("div", "note adminonly", "An admin can do this.")); return c; }
+    var row = el("div", "btns");
+    var ok = el("button", "btn", a.confirm_label || "Send"), edit = el("button", "btn ghost", "Edit"), cancel = el("button", "btn ghost", "Cancel");
+    [ok, edit, cancel].forEach(function(b){ b.type = "button"; row.appendChild(b); });
+    var canTitle = ti && ed.indexOf("title") >= 0, canBody = ed.indexOf("body") >= 0;
+    if(!canTitle && !canBody) edit.hidden = true;
+    edit.addEventListener("click", function(){ if(canTitle) ti.readOnly = false; if(canBody) tb.readOnly = false; edit.hidden = true; (canBody ? tb : ti).focus(); });
+    var msg = el("div", "note warn"); msg.setAttribute("role", "status");
+    function act(decision){
+      ok.disabled = edit.disabled = cancel.disabled = true; msg.textContent = "";
+      var body = { id: h.id, decision: decision };
+      if(ti) body.title = ti.value;
+      body.body = tb.value;
+      post("act", body).then(function(j){
+        if(ti) a.title = ti.value; a.body = tb.value;
+        h.status = j.message || (decision === "cancel" ? "Cancelled. Nothing was sent." : (j.staged ? "Staged for review: " : "") + (j.status || "Done."));
+        render(false);
+      }).catch(function(e){
+        if(e.status === 403 && !ME) return;
+        ok.disabled = edit.disabled = cancel.disabled = false; msg.textContent = e.message;
+      });
+    }
+    ok.addEventListener("click", function(){ if((ti && !ti.value.trim()) || !tb.value.trim()){ msg.textContent = "Fill in the " + (ti && !ti.value.trim() ? "title" : "text") + " first."; return; } act("send"); });
+    cancel.addEventListener("click", function(){ act("cancel"); });
+    c.appendChild(row); c.appendChild(msg); return c;
+  }
+
+  /* ---------- Reports: chart, Download Excel, Save PDF (same as Ask PHH) ---------- */
+  function fmtDate(d){ return d ? new Date(d + "T12:00:00+10:00").toLocaleDateString("en-AU", { day:"numeric", month:"short", year:"numeric", timeZone:"Australia/Sydney" }) : ""; }
+  function fmtCell(v, type){ if(v === null || v === undefined || v === "") return type === "num" ? "-" : ""; if(type === "date") return fmtDate(v); return String(v); }
+  function repSub(r){ return fmtDate(r.from) + (r.to !== r.from ? " to " + fmtDate(r.to) : "") + " | " + r.rows.length + " row" + (r.rows.length === 1 ? "" : "s"); }
+  /* Horizontal bar chart as SVG (works on the page, the PDF and print). */
+  function chartSvg(c, w, labelChars){
+    if(!c || !c.values || !c.values.length) return "";
+    var n = c.values.length, rowH = 26, top = 24, lw = Math.round(w * 0.38), bw = w - lw - 46;
+    var max = c.max || Math.max.apply(null, c.values.concat([1])), h = top + n * rowH + 6;
+    var s = '<svg viewBox="0 0 ' + w + " " + h + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + esc(c.label) + '" font-family="Raleway, Helvetica, Arial, sans-serif">';
+    s += '<text x="0" y="14" font-size="12" font-weight="700" fill="#4f5c6b">' + esc(c.label) + "</text>";
+    c.values.forEach(function(v, i){
+      var y = top + i * rowH, len = Math.max(2, Math.round(bw * (Number(v) || 0) / max));
+      var lab = String((c.labels || [])[i] || ""); if(lab.length > labelChars) lab = lab.slice(0, labelChars - 1) + "…";
+      s += '<text x="' + (lw - 8) + '" y="' + (y + 15) + '" font-size="12" text-anchor="end" fill="#1a3a4a">' + esc(lab) + "</text>";
+      s += '<rect x="' + lw + '" y="' + (y + 4) + '" width="' + len + '" height="16" rx="3" fill="' + (i === 0 ? "#2275b0" : "#21a6c7") + '"/>';
+      var val = (Math.round(Number(v) * 10) / 10) + (c.extra && c.extra[i] ? " (" + c.extra[i] + ")" : "");
+      s += '<text x="' + (lw + len + 6) + '" y="' + (y + 15) + '" font-size="11" fill="#1a3a4a">' + esc(val) + "</text>";
+    });
+    return s + "</svg>";
+  }
+  function tableHtml(r, limit){
+    var cols = r.columns, rows = limit ? r.rows.slice(0, limit) : r.rows;
+    return "<table><thead><tr>" + cols.map(function(c){ return '<th class="' + (c.type === "num" ? "n" : "") + '">' + esc(c.label) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+      rows.map(function(x){ return "<tr>" + cols.map(function(c){ return '<td class="' + (c.type === "num" ? "n" : "") + '">' + esc(fmtCell(x[c.key], c.type)) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
+  }
+  function fileName(r, ext){ return ("PHH " + r.title).replace(/[^A-Za-z0-9 ,-]+/g, "").replace(/\s+/g, " ").trim().slice(0, 80) + "." + ext; }
+  function aoa(r){
+    var out = [[r.title], ["Professional Holiday Homes | PHH Hub | " + repSub(r)], [], r.columns.map(function(c){ return c.label; })];
+    r.rows.forEach(function(x){ out.push(r.columns.map(function(c){ var v = x[c.key]; return v === null || v === undefined ? "" : (c.type === "date" ? fmtDate(v) : v); })); });
+    out.push([]); (r.notes || []).forEach(function(n){ out.push([n]); });
+    return out;
+  }
+  var xlsxLoad = null;
+  function downloadExcel(r, btn){
+    btn.disabled = true;
+    xlsxLoad = xlsxLoad || new Promise(function(ok, no){
+      if(window.XLSX) return ok(window.XLSX);
+      var sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+      sc.onload = function(){ window.XLSX ? ok(window.XLSX) : no(); }; sc.onerror = no; document.head.appendChild(sc);
+    });
+    xlsxLoad.then(function(X){
+      var ws = X.utils.aoa_to_sheet(aoa(r));
+      ws["!cols"] = r.columns.map(function(c){ return { wch: c.type === "text" ? 30 : c.type === "date" ? 14 : 12 }; });
+      var wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, "Report");
+      if(r.chart){ X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([[r.chart.label, "Value"]].concat(r.chart.labels.map(function(l, i){ return [l, r.chart.values[i]]; }))), "Chart data"); }
+      X.writeFile(wb, fileName(r, "xlsx"));
+    }).catch(function(){
+      /* Fallback: CSV opens in Excel too. */
+      xlsxLoad = null;
+      var csv = aoa(r).map(function(row){ return row.map(function(v){ v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(","); }).join("\n");
+      var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type:"text/csv" })); a.download = fileName(r, "csv"); document.body.appendChild(a); a.click(); a.remove();
+    }).then(function(){ btn.disabled = false; });
+  }
+  /* One-page report in a new window, then the browser's Print / Save as PDF. */
+  function savePdf(r){
+    var logo = ""; try{ logo = new URL("../logo.png", location.href).href; }catch(e){}
+    var html = '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(fileName(r, "pdf").replace(/\.pdf$/, "")) + '</title>' +
+      '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700;800&display=swap">' +
+      "<style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{margin:0;font-family:Raleway,Helvetica,Arial,sans-serif;color:#1a3a4a;font-size:11.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}" +
+      ".top{display:flex;align-items:center;gap:10px;border-bottom:2px solid #2275b0;padding-bottom:8px;margin-bottom:12px}.top img{width:34px;height:34px;object-fit:contain}.top b{font-size:13px}.top span{display:block;color:#4f5c6b;font-size:11px}" +
+      "h1{font-size:20px;margin:0 0 2px;letter-spacing:-.01em}.sub{color:#4f5c6b;font-weight:600;margin-bottom:10px}svg{width:100%;height:auto;margin:6px 0 12px}" +
+      "table{border-collapse:collapse;width:100%}th,td{padding:4px 6px;border-bottom:1px solid #dce5ec;text-align:left}th{background:#e8f0f6;font-weight:700}td.n,th.n{text-align:right}" +
+      ".notes{margin-top:10px;color:#4f5c6b;font-size:10.5px}.notes p{margin:2px 0}.foot{margin-top:14px;border-top:1px solid #dce5ec;padding-top:6px;color:#8a9bb0;font-size:10px}" +
+      ".bar{position:fixed;top:0;left:0;right:0;background:#2275b0;color:#fff;padding:10px;text-align:center;font-weight:700}.bar button{margin-left:10px;font:inherit;padding:6px 14px;border-radius:999px;border:0;background:#fff;color:#2275b0;cursor:pointer}" +
+      "@media print{.bar{display:none}}@media screen{body{padding:60px 24px 24px;max-width:840px;margin:0 auto}}</style></head><body>" +
+      '<div class="bar">Choose Save as PDF in the print window<button onclick="print()">Print / Save PDF</button></div>' +
+      '<div class="top"><img src="' + esc(logo) + '" alt=""><div><b>Professional Holiday Homes</b><span>PHH Hub report | Internal, staff only</span></div></div>' +
+      "<h1>" + esc(r.title) + '</h1><div class="sub">' + esc(repSub(r)) + "</div>" + chartSvg(r.chart, 720, 34) + tableHtml(r, 0) +
+      '<div class="notes">' + (r.notes || []).map(function(n){ return "<p>" + esc(n) + "</p>"; }).join("") + "</div>" +
+      '<div class="foot">Generated ' + esc(new Date(r.generatedAt).toLocaleString("en-AU", { timeZone:"Australia/Sydney", day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit" })) + " by " + esc(r.by) + " with Ask PHH Hub. Figures from PHH systems.</div>" +
+      "<script>window.addEventListener('load',function(){setTimeout(function(){try{print();}catch(e){}},600);});<\/script></body></html>";
+    var w = window.open("", "_blank");
+    if(w){ w.document.open(); w.document.write(html); w.document.close(); return; }
+    /* Pop-ups blocked: download the report page instead. */
+    var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type:"text/html" })); a.download = fileName(r, "html"); document.body.appendChild(a); a.click(); a.remove();
+  }
+  function reportCard(r){
+    var c = el("div", "rep");
+    r.rows = Array.isArray(r.rows) ? r.rows : []; r.columns = Array.isArray(r.columns) ? r.columns : [];
+    c.appendChild(el("h4", "", r.title)); c.appendChild(el("div", "sub", repSub(r)));
+    var wide = window.innerWidth >= 640;
+    if(r.chart){ var ch = el("div"); ch.innerHTML = chartSvg(r.chart, wide ? 640 : 380, wide ? 30 : 18); c.appendChild(ch); }
+    if(r.rows.length){ var tw = el("div", "tw"); tw.innerHTML = tableHtml(r, 8); c.appendChild(tw); }
+    else c.appendChild(el("div", "more", "No rows for these dates."));
+    if(r.rows.length > 8) c.appendChild(el("div", "more", "Showing 8 of " + r.rows.length + ". Excel and PDF have every row."));
+    var row = el("div", "btns");
+    var x = el("button", "btn", "Download Excel"), p = el("button", "btn ghost", "Save one-page PDF");
+    x.type = p.type = "button"; x.disabled = p.disabled = !r.rows.length;
+    x.addEventListener("click", function(){ downloadExcel(r, x); });
+    p.addEventListener("click", function(){ savePdf(r); });
+    row.appendChild(x); row.appendChild(p); c.appendChild(row);
+    return c;
+  }
+
+  /* ---------- Spend (admins) ---------- */
+  function money(v, dp){ var n = Number(v) || 0; return "US$" + (dp != null ? n.toFixed(dp) : (n % 1 ? n.toFixed(2) : String(n))); }
+  function setSpend(month, cap){
+    if(!ME || !ME.admin || month == null) return;
+    ME.monthUsd = Number(month); if(cap != null) ME.capUsd = Number(cap);
+    var s = $("meSpend"); s.hidden = false;
+    s.textContent = money(ME.monthUsd, 2) + (ME.capUsd ? " of " + money(ME.capUsd) : "");
+    s.classList.toggle("hi", !!ME.capUsd && ME.monthUsd >= ME.capUsd * 0.8);
+  }
+
+  /* ---------- Chat ---------- */
+  function render(scroll){
+    var log = $("log"), box = $("inner"); box.innerHTML = "";
+    if(!H.length) box.appendChild(hello());
+    H.forEach(function(h){
+      box.appendChild(el("div", "q", h.q));
+      if(h.err){ box.appendChild(el("div", "a err", h.err)); return; }
+      if(h.a == null) return;
+      var a = el("div", "a"); a.innerHTML = md(h.a); box.appendChild(a);
+      var bits = [];
+      if(h.cost != null) bits.push("US$" + Number(h.cost).toFixed(4));
+      if(h.ms != null) bits.push((h.ms / 1000).toFixed(1) + " s");
+      if(bits.length) box.appendChild(el("div", "meta", bits.join(" · ")));
+      if(h.report) box.appendChild(reportCard(h.report));
+      if(h.action) box.appendChild(card(h));
+    });
+    if(busy){ var w = el("div", "wait", "Looking that up"); w.appendChild(el("i")); w.appendChild(el("i")); w.appendChild(el("i")); box.appendChild(w); }
+    $("newchat").hidden = !H.length || busy;
+    if(scroll !== false) log.scrollTop = log.scrollHeight;
+  }
+  function ask(q){
+    q = String(q || "").trim(); if(!q || busy || !ME) return;
+    var hist = H.filter(function(h){ return h.a != null && !h.err; }).slice(-4).map(function(h){ return { q: h.q, a: h.a }; });
+    var h = { q: q }; H.push(h); busy = true; $("in").value = ""; size(); $("go").disabled = true; render();
+    var t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+    post("ask", { page: "hub", question: q, history: hist }).then(function(j){
+      h.ms = ((window.performance && performance.now) ? performance.now() : Date.now()) - t0;
+      h.a = String(j.answer || ""); h.id = j.id; h.cost = j.costUsd; h.action = j.action || null; h.report = j.report || null;
+      if(j.monthUsd != null) setSpend(j.monthUsd, j.capUsd);
+    }).catch(function(e){
+      if(e.status === 403){ h.err = "PHH Hub is for PHH staff. Sign in again with your code."; return; }
+      h.err = e.message;
+    }).then(function(){
+      busy = false; $("go").disabled = false; render(); $("in").focus();
+    });
+  }
+  function size(){ var t = $("in"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 180) + "px"; }
+
+  /* ---------- Sign in ---------- */
+  function showSignin(msg){
+    ME = null; H = []; busy = false;
+    $("me").hidden = true; $("log").hidden = true; $("dock").hidden = true; $("signin").hidden = false;
+    $("serr").textContent = msg || ""; $("sgo").disabled = false;
+    setTimeout(function(){ $("scode").focus(); }, 30);
+  }
+  function hello2(code, fromForm){
+    CODE = code; $("sgo").disabled = true; $("serr").textContent = fromForm ? "Checking..." : "";
+    post("hello", {}).then(function(j){
+      ls.set(CODE_KEY, CODE);
+      ME = { name: j.name || "", role: j.role, admin: !!j.admin, enabled: j.enabled !== false, sendMode: j.sendMode, writesLive: j.writesLive };
+      $("meName").textContent = ME.name; $("me").hidden = false;
+      $("meSpend").hidden = true; setSpend(j.monthUsd, j.capUsd);
+      var foot = "Staging. Answers come from PHH systems. Questions are logged with their cost.";
+      if(ME.admin && ME.sendMode && ME.sendMode !== "real") foot += " Sends go to the testers only.";
+      if(ME.admin && ME.writesLive === false) foot += " HomHero changes are staged, not written.";
+      $("foot").textContent = foot;
+      $("signin").hidden = true; $("log").hidden = false; $("dock").hidden = false; $("scode").value = "";
+      H = []; render(); $("in").focus();
+    }).catch(function(e){
+      if(e.status === 403 || e.status === 401){ ls.del(CODE_KEY); CODE = ""; showSignin(fromForm ? "That code didn't work. Check it and try again." : ""); }
+      else showSignin(e.message || "Couldn't reach PHH Hub. Try again.");
+    });
+  }
+  $("sform").addEventListener("submit", function(e){
+    e.preventDefault(); var c = $("scode").value.trim();
+    if(!c){ $("serr").textContent = "Enter your staff code."; return; }
+    hello2(c, true);
+  });
+  $("signout").addEventListener("click", function(){ ls.del(CODE_KEY); CODE = ""; showSignin(""); });
+  $("newchat").addEventListener("click", function(){ if(busy) return; H = []; render(); $("in").focus(); });
+  $("form").addEventListener("submit", function(e){ e.preventDefault(); ask($("in").value); });
+  $("in").addEventListener("input", size);
+  $("in").addEventListener("keydown", function(e){ if(e.key === "Enter" && !e.shiftKey && !e.isComposing){ e.preventDefault(); ask(this.value); } });
+
+  if(!window.fetch){ showSignin("This browser is too old for PHH Hub."); return; }
+  var saved = ls.get(CODE_KEY);
+  if(saved) hello2(saved, false); else showSignin("");
+})();
+</script>
+</body>
+</html>

@@ -4,13 +4,13 @@
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#1a3a4a">
-<link rel="icon" type="image/png" href="../icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
 <link rel="preconnect" href="https://rxhpnowszmetjxbwylil.supabase.co" crossorigin>
-<title>Ask PHH Hub (staging)</title>
+<title>PHH Hub (staging)</title>
 <style>
 /* Ask PHH Hub, staging page (Phase 1). Built from tools/ask_panel.html: same Raleway, PHH navy ink and PHH blue,
    same answer, report and draft cards. Full-width chat instead of a side panel. */
-@font-face{font-family:"Raleway";font-style:normal;font-weight:100 900;font-display:swap;src:url("../raleway-latin.woff2") format("woff2")}
+@font-face{font-family:"Raleway";font-style:normal;font-weight:100 900;font-display:swap;src:url("raleway-latin.woff2") format("woff2")}
 :root{color-scheme:light;--a-ink:#1a3a4a;--a-muted:#4f5c6b;--a-faint:#8a9bb0;--a-line:#dce5ec;--a-soft:#f4f8fb;--a-q:#eef3f7;--a-blue:#2275b0;--a-blue-d:#1b5f90;--a-accent:#21a6c7;--a-hl:#d6edf4;--a-teal:#0e7c8f;--a-warn:#b4541a;--a-warn-soft:#fbeee4;--a-amber:#f2b33d;--a-amber-ink:#7a4d00;--a-amber-soft:#fdf3df}
 *{box-sizing:border-box}
 [hidden]{display:none !important}
@@ -130,7 +130,7 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,a:focus-visible{
 <body>
 <div class="app">
   <header class="bar">
-    <div class="brand"><img src="../logo.png" alt="Professional Holiday Homes" width="30" height="30"><b>Ask PHH Hub</b><span class="pill" title="Staging: test version">STAGING</span></div>
+    <div class="brand"><img src="logo.png" alt="Professional Holiday Homes" width="30" height="30"><b>PHH Hub</b><span class="pill" title="Staging: test version">STAGING</span></div>
     <div class="me" id="me" hidden>
       <span class="name" id="meName"></span>
       <span class="spend" id="meSpend" hidden title="Ask PHH Hub spend this month, against the monthly cap"></span>
@@ -141,7 +141,7 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,a:focus-visible{
   <main class="signin" id="signin" hidden>
     <form class="sbox" id="sform" autocomplete="off" novalidate>
       <h1>Ask PHH Hub</h1>
-      <p>Enter your staff code to sign in.</p>
+      <p>Enter your PHH Hub staff code to sign in.</p>
       <label for="scode">Staff code</label>
       <input type="password" inputmode="numeric" autocomplete="off" id="scode" maxlength="12" required>
       <button class="btn" type="submit" id="sgo">Sign in</button>
@@ -168,7 +168,7 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,a:focus-visible{
 (function(){
   "use strict";
   var API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/hub-api/";
-  var CODE_KEY = "phhHubCode";
+  var CODE_KEY = "phhHubStaffCode";
   var $ = function(id){ return document.getElementById(id); };
   var CODE = "", ME = null, busy = false, H = [];
   var ls = {
@@ -188,11 +188,19 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,a:focus-visible{
   }
 
   /* Answers: escape everything, then allow **bold**, lists, line breaks and [label](url) links to known places only. */
-  var SAFE_PAGE = /^(office|maintenance|admin|view)\.html(\?[^\s"'<>]*)?(#[^\s"'<>]*)?$/;
+  /* PHH Hub is its own site: Clean Check pages are linked as a separate app (absolute links to Clean Check only). */
   var SAFE_HOSTS = { "secure.helpscout.net":1, "app.process.st":1, "docs.google.com":1, "app.homhero.com.au":1 };
+  var SAFE_PREFIX = { "analysis-maker.github.io": "/phh-clean-check/", "sites.google.com": "/professionalholidayhomes.com.au/" };
+  /* Relative Clean Check page links from the Hub open the live Clean Check app (a separate site). */
+  var CC_BASE = "https://analysis-maker.github.io/phh-clean-check/";
+  var CC_PAGE = /^(office|maintenance|admin|view)\.html(\?[^\s"'<>]*)?(#[^\s"'<>]*)?$/;
   function safeUrl(u){
-    if(SAFE_PAGE.test(u)) return u;
-    try{ var x = new URL(u); if(x.protocol === "https:" && SAFE_HOSTS[x.hostname] && !x.username && !x.password) return x.href; }catch(e){}
+    if(CC_PAGE.test(u)) return CC_BASE + u;
+    try{ var x = new URL(u);
+      if(x.protocol !== "https:" || x.username || x.password) return "";
+      if(SAFE_HOSTS[x.hostname]) return x.href;
+      if(SAFE_PREFIX[x.hostname] && x.pathname.indexOf(SAFE_PREFIX[x.hostname]) === 0) return x.href;
+    }catch(e){}
     return "";
   }
   function inline(t){
@@ -338,7 +346,7 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,a:focus-visible{
   }
   /* One-page report in a new window, then the browser's Print / Save as PDF. */
   function savePdf(r){
-    var logo = ""; try{ logo = new URL("../logo.png", location.href).href; }catch(e){}
+    var logo = ""; try{ logo = new URL("logo.png", location.href).href; }catch(e){}
     var html = '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(fileName(r, "pdf").replace(/\.pdf$/, "")) + '</title>' +
       '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700;800&display=swap">' +
       "<style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{margin:0;font-family:Raleway,Helvetica,Arial,sans-serif;color:#1a3a4a;font-size:11.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}" +
@@ -440,8 +448,7 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,a:focus-visible{
       $("meName").textContent = ME.name; $("me").hidden = false;
       $("meSpend").hidden = true; setSpend(j.monthUsd, j.capUsd);
       var foot = "Staging. Answers come from PHH systems. Questions are logged with their cost.";
-      if(ME.admin && ME.sendMode && ME.sendMode !== "real") foot += " Sends go to the testers only.";
-      if(ME.admin && ME.writesLive === false) foot += " HomHero changes are staged, not written.";
+      if(ME.admin && ME.writesLive === false) foot += " Notes and maintenance jobs are staged, nothing is written.";
       $("foot").textContent = foot;
       $("signin").hidden = true; $("log").hidden = false; $("dock").hidden = false; $("scode").value = "";
       H = []; render(); $("in").focus();

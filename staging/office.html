@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030033301"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030035202"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1136,8 +1136,15 @@ html.aphh-open body{margin-right:var(--aphh-w,400px)}
     var h = { q: q }; H.push(h); busy = true; $("aphhIn").value = ""; size(); $("aphhGo").disabled = true; render(); save();
     post("ask", { page: PAGE, question: q, history: hist }).then(function(j){
       h.a = j.answer; h.id = j.id; h.action = j.action || null; h.report = j.report || null;
+      if(j.navigate && SAFE.test(String(j.navigate.link || ""))) h.nav = j.navigate.link;
     }).catch(function(e){ h.err = e.status === 403 ? "Ask PHH is for PHH staff. Sign in again with your code." : e.message; })
-      .then(function(){ busy = false; $("aphhGo").disabled = false; save(); render(); $("aphhIn").focus(); });
+      .then(function(){
+        busy = false; $("aphhGo").disabled = false; save(); render();
+        /* "Take me to ...": move the page there. The chat stays (this tab) and the panel stays open on a computer;
+           on a phone it closes so the page is visible. */
+        if(h.nav){ var go = h.nav; h.nav = null; save(); ls.set(OPEN, window.innerWidth >= 900 ? "1" : ""); setTimeout(function(){ location.assign(go); }, 700); }
+        else $("aphhIn").focus();
+      });
   }
   function size(){ var t = $("aphhIn"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 160) + "px"; }
   function setWidth(w){ w = Math.max(340, Math.min(Math.round(w), 680, window.innerWidth - 320)); document.documentElement.style.setProperty("--aphh-w", w + "px"); return w; }

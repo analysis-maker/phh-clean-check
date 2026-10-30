@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030005252"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030013631"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -250,6 +250,20 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
   }catch(e){}
 })();
 </script>
+<style>
+/* Phones: header on two rows (brand, then links) so nothing runs off the side; page never scrolls sideways. */
+html,body{overflow-x:clip}
+.tabs{justify-content:safe center}
+@media (max-width:760px){
+  .bar{flex-wrap:wrap}
+  .brand{flex:1 1 100%;min-height:46px;padding:0 16px;font-size:17px}
+  .me{flex:1 1 100%;margin-left:0;padding:0 10px;gap:4px;justify-content:space-between;min-height:44px;font-size:14px}
+  .me > a,.me > button,.me > span{padding:10px 6px}
+  .me > span{overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .tabs{flex-wrap:wrap;justify-content:center;gap:0 2px;overflow:visible;padding:2px 4px}
+  .tab{padding:10px 9px 8px;font-size:12px;letter-spacing:.02em}
+}
+</style>
 </head>
 <body>
 <header class="bar">

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030015435"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030023249"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -511,6 +511,12 @@ html,body{overflow-x:clip}
 
   var state = { tab:"cleans", date: params.get("date") || sydToday(), rows: [], q:"", status:"", who:"", extra:"", open:{} };
   if(!/^\d{4}-\d{2}-\d{2}$/.test(state.date)) state.date = sydToday();
+  /* Deep links (Ask PHH): ?tab=cleans|attention|hk|props &status= &who= &q= &open=<booking> */
+  var LINK = { tab: params.get("tab") || "", open: params.get("open") || "" };
+  if(["cleans","attention","hk","props"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
+  if(["checked","missing","cleaned","waiting"].indexOf(params.get("status") || "") >= 0) state.status = params.get("status");
+  state.who = (params.get("who") || "").slice(0, 120); state.q = (params.get("q") || "").slice(0, 120);
+  if(/^[A-Za-z0-9-]{3,40}$/.test(LINK.open)) state.open[LINK.open] = true; else LINK.open = "";
 
   var STATUS = { checked:["Checked","st-checked"], missing:["Missing","st-missing"], cleaned:["Done in HomHero","st-cleaned"], waiting:["Not done","st-waiting"] };
   function statusLabel(r){ if(r.status === "waiting") return state.date < sydToday() ? "Not done" : "Pending"; return STATUS[r.status][0]; }
@@ -588,7 +594,7 @@ html,body{overflow-x:clip}
   }
 
   function rowEls(r){
-    var tr = el("tr", "r"); tr.tabIndex = 0; tr.setAttribute("aria-expanded", String(!!state.open[r.res]));
+    var tr = el("tr", "r"); tr.id = "r-" + String(r.res).replace(/[^A-Za-z0-9-]/g, ""); tr.tabIndex = 0; tr.setAttribute("aria-expanded", String(!!state.open[r.res]));
     var st = el("td", "st"); st.appendChild(el("div", "stc " + STATUS[r.status][1], statusLabel(r))); tr.appendChild(st);
     var p = el("td", "col-prop"); var pn = el("div", "prop", r.property + (r.test ? " (test)" : ""));
     var sl = el("span", "stlabel " + STATUS[r.status][1], statusLabel(r)); pn.appendChild(sl);
@@ -705,6 +711,7 @@ html,body{overflow-x:clip}
     var sel = $("who"), cur = state.who;
     sel.innerHTML = '<option value="">All housekeepers</option>';
     list.forEach(function(n){ var o = el("option", "", n); o.value = n; sel.appendChild(o); });
+    if(cur && list.indexOf(cur) < 0){ var lc = cur.toLowerCase(); cur = list.filter(function(n){ return n.toLowerCase().indexOf(lc) >= 0 || lc.indexOf(n.toLowerCase()) >= 0; })[0] || ""; }
     sel.value = list.indexOf(cur) >= 0 ? cur : ""; state.who = sel.value;
   }
 
@@ -719,6 +726,7 @@ html,body{overflow-x:clip}
       $("mename").textContent = j.name; $("me").hidden = false;
       state.rows = j.rows || []; fillWho(j.cleaners || []);
       renderStrip(); renderRows();
+      if(LINK.open){ var or = $("r-" + LINK.open.replace(/[^A-Za-z0-9-]/g, "")); if(or) or.scrollIntoView({ block:"center" }); LINK.open = ""; }
       loadAbsent(state.date, my);
     }).catch(function(e){ if(my !== loading) return; $("dayTableWrap").hidden = true; $("msg").className = "msg err"; $("msg").textContent = e.message; });
   }
@@ -798,7 +806,238 @@ html,body{overflow-x:clip}
   document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible" && (state.tab === "cleans" || state.tab === "attention")) loadDay(); });
   setInterval(function(){ if(document.visibilityState === "visible" && (state.tab === "cleans" || state.tab === "attention")) loadDay(); }, 5 * 60000);
   if(window.phhPush) window.phhPush($("pushbox"), CODE, "notifications");
+  $("status").value = state.status; $("q").value = state.q;
+  if(state.tab !== "cleans") setTab(state.tab);
   loadDay();
 })();
 </script>
+<!-- ASK-PHH START (tools/ask_panel.html, injected by tools/inject_ask.py: edit the source, not this copy) -->
+<style>
+/* Ask PHH chat panel. PHH website look (Raleway, navy ink, PHH blue), scoped to .aphh so it never touches the page. */
+@font-face{font-family:"Raleway";font-style:normal;font-weight:100 900;font-display:swap;src:url("../raleway-latin.woff2") format("woff2")}
+.aphh{--a-ink:#1a3a4a;--a-muted:#4f5c6b;--a-faint:#8a9bb0;--a-line:#dce5ec;--a-soft:#f4f8fb;--a-blue:#2275b0;--a-blue-d:#1b5f90;--a-accent:#21a6c7;--a-hl:#d6edf4;--a-teal:#0e7c8f;--a-warn:#b4541a;--a-warn-soft:#fbeee4;
+  font-family:"Raleway","Helvetica Neue",Arial,sans-serif;font-size:15px;line-height:1.5;color:var(--a-ink);font-variant-numeric:lining-nums}
+.aphh *{box-sizing:border-box}
+.aphh [hidden]{display:none !important}
+.aphh-fab{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));z-index:60;display:flex;align-items:center;gap:8px;
+  padding:10px 18px 10px 10px;min-height:48px;border:0;border-radius:9999px;background:var(--a-blue);color:#fff;font:700 15px/1 "Raleway",Arial,sans-serif;letter-spacing:.01em;cursor:pointer;
+  box-shadow:0 6px 18px rgba(34,117,176,.28),0 2px 4px rgba(34,117,176,.18)}
+.aphh-fab:hover{background:var(--a-blue-d)}
+.aphh-fab img{width:28px;height:28px;border-radius:50%;background:#fff;padding:3px}
+.aphh-fab:focus-visible,.aphh button:focus-visible,.aphh textarea:focus-visible,.aphh input:focus-visible,.aphh a:focus-visible{outline:3px solid var(--a-accent);outline-offset:2px}
+.aphh-panel{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));z-index:61;width:min(420px,calc(100vw - 32px));height:min(640px,calc(100vh - 32px));
+  display:flex;flex-direction:column;background:#fff;border:1px solid var(--a-line);border-radius:16px;overflow:hidden;
+  box-shadow:0 18px 48px rgba(26,58,74,.18),0 4px 12px rgba(34,117,176,.10)}
+.aphh-head{display:flex;align-items:center;gap:10px;padding:14px 14px 12px 16px;border-bottom:1px solid var(--a-line);background:#fff}
+.aphh-head img{width:30px;height:30px}
+.aphh-title{display:flex;flex-direction:column;line-height:1.15}
+.aphh-title b{font-weight:800;font-size:17px;letter-spacing:-.01em}
+.aphh-title span{font-size:12px;color:var(--a-muted);font-weight:600}
+.aphh-head .aphh-sp{flex:1}
+.aphh-icon{border:0;background:none;color:var(--a-muted);width:40px;height:40px;border-radius:10px;cursor:pointer;font:600 22px/1 Arial,sans-serif}
+.aphh-icon:hover{background:var(--a-soft);color:var(--a-ink)}
+.aphh-new{border:1px solid var(--a-line);background:#fff;color:var(--a-blue);font:700 12px/1 "Raleway",Arial,sans-serif;padding:8px 10px;border-radius:9999px;cursor:pointer}
+.aphh-log{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;background:var(--a-soft);overscroll-behavior:contain}
+.aphh-hi{background:#fff;border:1px solid var(--a-line);border-radius:12px;padding:14px}
+.aphh-hi p{margin:0 0 10px;font-weight:600}
+.aphh-badge{display:inline-block;background:var(--a-hl);border:1px solid rgba(33,166,199,.35);color:var(--a-blue);padding:3px 10px;border-radius:9999px;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+.aphh-chips{display:flex;flex-wrap:wrap;gap:6px}
+.aphh-chip{border:1px solid rgba(34,117,176,.3);background:#fff;color:var(--a-blue);border-radius:9999px;padding:7px 12px;font:600 13px/1.25 "Raleway",Arial,sans-serif;cursor:pointer;text-align:left}
+.aphh-chip:hover{background:var(--a-hl)}
+.aphh-q{align-self:flex-end;max-width:85%;background:var(--a-blue);color:#fff;border-radius:14px 14px 4px 14px;padding:9px 13px;font-weight:600;white-space:pre-wrap;overflow-wrap:anywhere}
+.aphh-a{align-self:flex-start;max-width:94%;background:#fff;border:1px solid var(--a-line);border-radius:14px 14px 14px 4px;padding:11px 14px;overflow-wrap:anywhere}
+.aphh-a p{margin:0 0 8px}.aphh-a p:last-child{margin:0}
+.aphh-a ul{margin:4px 0 8px;padding-left:20px}.aphh-a li{margin:2px 0}
+.aphh-a a{color:var(--a-blue);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.aphh-a.err{border-color:#f0c8b0;background:var(--a-warn-soft);color:var(--a-warn)}
+.aphh-cost{display:block;margin-top:6px;font-size:11px;color:var(--a-faint);font-weight:600}
+.aphh-wait{align-self:flex-start;color:var(--a-muted);font-weight:600;font-size:14px;padding:4px 2px}
+.aphh-wait i{display:inline-block;width:6px;height:6px;margin-left:3px;border-radius:50%;background:var(--a-accent);animation:aphhb 1.2s infinite ease-in-out}
+.aphh-wait i:nth-child(2){animation-delay:.15s}.aphh-wait i:nth-child(3){animation-delay:.3s}
+@keyframes aphhb{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+@media (prefers-reduced-motion:reduce){.aphh-wait i{animation:none;opacity:.7}}
+.aphh-card{align-self:stretch;background:#fff;border:1px solid rgba(34,117,176,.35);border-radius:12px;padding:12px 14px}
+.aphh-card h4{margin:0 0 2px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-teal);font-weight:800}
+.aphh-to{font-weight:700;margin-bottom:8px}
+.aphh-card label{display:block;font-size:12px;font-weight:700;color:var(--a-muted);margin:8px 0 3px}
+.aphh-card input,.aphh-card textarea{width:100%;border:1px solid var(--a-line);border-radius:8px;padding:8px 10px;font:500 14px/1.45 "Raleway",Arial,sans-serif;color:var(--a-ink);background:#fff}
+.aphh-card input[readonly],.aphh-card textarea[readonly]{background:var(--a-soft);border-color:transparent}
+.aphh-card textarea{min-height:84px;resize:vertical}
+.aphh-note{font-size:12.5px;color:var(--a-muted);margin-top:8px}
+.aphh-note.warn{color:var(--a-warn);font-weight:600}
+.aphh-btns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.aphh-btn{border:0;border-radius:9999px;padding:10px 18px;min-height:42px;font:700 14px/1 "Raleway",Arial,sans-serif;cursor:pointer;background:var(--a-blue);color:#fff}
+.aphh-btn:hover{background:var(--a-blue-d)}
+.aphh-btn.ghost{background:#fff;color:var(--a-blue);border:1px solid rgba(34,117,176,.35)}
+.aphh-btn:disabled{opacity:.5;cursor:default}
+.aphh-done{font-weight:700;color:var(--a-teal);margin-top:8px}
+.aphh-form{display:flex;gap:8px;align-items:flex-end;padding:12px;border-top:1px solid var(--a-line);background:#fff}
+.aphh-form textarea{flex:1;min-height:44px;max-height:120px;resize:none;border:1px solid var(--a-line);border-radius:12px;padding:11px 12px;font:500 15px/1.4 "Raleway",Arial,sans-serif;color:var(--a-ink);background:#fff}
+.aphh-form textarea::placeholder{color:var(--a-faint)}
+.aphh-send{width:44px;height:44px;flex:0 0 44px;border:0;border-radius:50%;background:var(--a-blue);color:#fff;cursor:pointer;display:grid;place-items:center}
+.aphh-send:disabled{opacity:.45;cursor:default}
+.aphh-foot{padding:0 14px 10px;background:#fff;font-size:11px;color:var(--a-faint);font-weight:600}
+@media (max-width:640px){
+  .aphh-panel{right:0;left:0;bottom:0;width:100%;height:calc(100% - 40px - env(safe-area-inset-top));border-radius:16px 16px 0 0;border-bottom:0}
+  .aphh-fab{padding-right:16px}
+  .aphh-form{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+}
+@media print{.aphh{display:none}}
+</style>
+<div class="aphh" id="aphh" hidden>
+  <button type="button" class="aphh-fab" id="aphhFab" aria-haspopup="dialog" aria-controls="aphhPanel" aria-expanded="false"><img src="icon-180.png" alt="" width="28" height="28">Ask PHH</button>
+  <section class="aphh-panel" id="aphhPanel" role="dialog" aria-modal="false" aria-labelledby="aphhTitle" hidden>
+    <header class="aphh-head">
+      <img src="icon-180.png" alt="" width="30" height="30">
+      <div class="aphh-title"><b id="aphhTitle">Ask PHH</b><span>Clean Check assistant</span></div>
+      <span class="aphh-sp"></span>
+      <button type="button" class="aphh-new" id="aphhNew">New chat</button>
+      <button type="button" class="aphh-icon" id="aphhClose" aria-label="Close Ask PHH">&times;</button>
+    </header>
+    <div class="aphh-log" id="aphhLog" aria-live="polite"></div>
+    <form class="aphh-form" id="aphhForm" autocomplete="off">
+      <textarea id="aphhIn" rows="1" maxlength="600" placeholder="Ask about cleans, scores, maintenance..." aria-label="Your question"></textarea>
+      <button type="submit" class="aphh-send" id="aphhGo" aria-label="Send question"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12.6 2-12.6 2z"/></svg></button>
+    </form>
+    <div class="aphh-foot" id="aphhFoot">Answers come from Clean Check data. Questions are logged.</div>
+  </section>
+</div>
+<script>
+/* Ask PHH (assistant-api). Staff codes only; the server checks every call. Chat kept for this browser tab (sessionStorage). */
+(function(){
+  "use strict";
+  var API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/assistant-api/";
+  var root = document.getElementById("aphh"); if(!root || !window.fetch) return;
+  var $ = function(id){ return document.getElementById(id); };
+  var PAGE = (location.pathname.split("/").pop() || "office").replace(/\.html$/, "") || "office";
+  var CODE = "", ME = null, busy = false, H = [];
+  var KEY = "phh-ask-chat", OPEN = "phh-ask-open";
+  function load(){ try{ H = JSON.parse(sessionStorage.getItem(KEY) || "[]") || []; }catch(e){ H = []; } }
+  function save(){ try{ sessionStorage.setItem(KEY, JSON.stringify(H.slice(-30))); }catch(e){} }
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]; }); }
+  function el(t, c, txt){ var e = document.createElement(t); if(c) e.className = c; if(txt != null) e.textContent = txt; return e; }
+  function post(route, body){
+    body.code = CODE;
+    return fetch(API + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if(!r.ok) { var e = new Error(j.error || ("Something went wrong (" + r.status + ")")); e.status = r.status; throw e; } return j; }); });
+  }
+  /* Answers: escape everything, then allow **bold**, "- " lists and [label](page.html?...) links to our own pages only. */
+  var SAFE = /^(office|maintenance|admin|view)\.html(\?[^\s"'<>]*)?$/;
+  function inline(t){
+    return esc(t).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function(m, label, url){
+      var u = url.replace(/&amp;/g, "&");
+      return SAFE.test(u) ? '<a href="' + esc(u) + '">' + label + "</a>" : label;
+    });
+  }
+  function md(t){
+    var out = [], list = [];
+    function flush(){ if(list.length){ out.push("<ul>" + list.map(function(x){ return "<li>" + inline(x) + "</li>"; }).join("") + "</ul>"); list = []; } }
+    String(t || "").split(/\n/).forEach(function(line){
+      var m = /^\s*(?:[-*•]|\d+[.)])\s+(.*)$/.exec(line);
+      if(m){ list.push(m[1]); return; }
+      flush(); if(line.trim()) out.push("<p>" + inline(line) + "</p>");
+    });
+    flush(); return out.join("");
+  }
+  var CHIPS = {
+    admin: ["How many cleans did Sharon do last week?", "Who has the best housekeeping score this week?", "Show me missed checks yesterday", "Take me to Bluetongue's last clean", "Who has phone notifications on?", "How do I change a housekeeper's code?"],
+    office: ["How many cleans did Sharon do last week?", "Who has the best housekeeping score this week?", "Show me missed checks yesterday", "Take me to Bluetongue's last clean", "Which cleans need attention today?", "What does Missing check mean?"],
+    maintenance: ["What maintenance is open?", "Anything urgent this week?", "Show maintenance for Bluewater", "How do maintenance alerts work?"]
+  };
+  function hello(){
+    var box = el("div", "aphh-hi");
+    box.appendChild(el("span", "aphh-badge", "Ask PHH"));
+    box.appendChild(el("p", "", "Hi " + String(ME.name).split(" ")[0] + ". Ask me about cleans, clean checks, AI scores" + (ME.role === "maintenance" ? ", maintenance or how something works." : ", maintenance or how something works. I'll link you to the right page.")));
+    var chips = el("div", "aphh-chips");
+    (CHIPS[ME.role] || CHIPS.office).forEach(function(q){ var b = el("button", "aphh-chip", q); b.type = "button"; b.addEventListener("click", function(){ ask(q); }); chips.appendChild(b); });
+    box.appendChild(chips); return box;
+  }
+  function costLine(h){
+    if(h.cost == null) return null;
+    var t = "US$" + (h.cost < 0.01 ? h.cost.toFixed(3) : h.cost.toFixed(2)) + " for this answer";
+    if(ME.admin && h.month != null) t += " | this month US$" + h.month.toFixed(2) + " of US$" + ME.cap;
+    return el("span", "aphh-cost", t);
+  }
+  function card(h){
+    var a = h.action, c = el("div", "aphh-card");
+    c.appendChild(el("h4", "", "Draft message"));
+    c.appendChild(el("div", "aphh-to", "To: " + a.names.join(", ")));
+    var lt = el("label", "", "Title"); var ti = el("input"); ti.value = a.title; ti.maxLength = 60; ti.readOnly = true; lt.appendChild(ti);
+    var lb = el("label", "", "Message"); var tb = el("textarea"); tb.value = a.body; tb.maxLength = 600; tb.readOnly = true; lb.appendChild(tb);
+    c.appendChild(lt); c.appendChild(lb);
+    if(a.phonesOff && a.phonesOff.length) c.appendChild(el("div", "aphh-note warn", "No phone notifications: " + a.phonesOff.join(", ") + ". They'll see it next time they open Clean Check, so call or text for anything urgent."));
+    if(a.phonesOn && a.phonesOn.length) c.appendChild(el("div", "aphh-note", "Phone notification to: " + a.phonesOn.join(", ") + "."));
+    c.appendChild(el("div", "aphh-note", a.testersOnly ? "Staging: Send goes to the testers only (Ian, Craig, Marson)." : "Ian, Craig and Marson get a copy. Comes from Professional Holiday Homes."));
+    if(h.status){ c.appendChild(el("div", "aphh-done", h.status)); return c; }
+    var row = el("div", "aphh-btns");
+    var send = el("button", "aphh-btn", "Send"), edit = el("button", "aphh-btn ghost", "Edit"), cancel = el("button", "aphh-btn ghost", "Cancel");
+    [send, edit, cancel].forEach(function(b){ b.type = "button"; row.appendChild(b); });
+    edit.addEventListener("click", function(){ ti.readOnly = tb.readOnly = false; edit.hidden = true; tb.focus(); });
+    function act(decision){
+      send.disabled = edit.disabled = cancel.disabled = true;
+      post("act", { id: h.id, decision: decision, title: ti.value, body: tb.value }).then(function(j){
+        h.status = decision === "cancel" ? "Cancelled. Nothing was sent." : (j.testersOnly ? "Sent to the testers only (staging)." : "Sent. Track it in Admin, Messages.");
+        a.title = ti.value; a.body = tb.value; save(); render();
+      }).catch(function(e){ send.disabled = edit.disabled = cancel.disabled = false; row.appendChild(el("div", "aphh-note warn", e.message)); });
+    }
+    send.addEventListener("click", function(){ if(!ti.value.trim() || !tb.value.trim()) return; act("send"); });
+    cancel.addEventListener("click", function(){ act("cancel"); });
+    c.appendChild(row); return c;
+  }
+  function render(){
+    var log = $("aphhLog"); log.innerHTML = "";
+    log.appendChild(hello());
+    H.forEach(function(h){
+      log.appendChild(el("div", "aphh-q", h.q));
+      if(h.err){ log.appendChild(el("div", "aphh-a err", h.err)); return; }
+      if(h.a == null) return;
+      var a = el("div", "aphh-a"); a.innerHTML = md(h.a); var cl = costLine(h); if(cl) a.appendChild(cl); log.appendChild(a);
+      if(h.action && ME.admin) log.appendChild(card(h));
+    });
+    if(busy){ var w = el("div", "aphh-wait", "Looking that up"); w.appendChild(el("i")); w.appendChild(el("i")); w.appendChild(el("i")); log.appendChild(w); }
+    log.scrollTop = log.scrollHeight;
+  }
+  function ask(q){
+    q = String(q || "").trim(); if(!q || busy) return;
+    var hist = H.filter(function(h){ return h.a && !h.err; }).slice(-4).map(function(h){ return { q: h.q, a: h.a }; });
+    var h = { q: q }; H.push(h); busy = true; $("aphhIn").value = ""; size(); $("aphhGo").disabled = true; render(); save();
+    post("ask", { page: PAGE, question: q, history: hist }).then(function(j){
+      h.a = j.answer; h.id = j.id; h.cost = j.costUsd; h.month = j.monthUsd; h.action = j.action || null;
+    }).catch(function(e){ h.err = e.status === 403 ? "Ask PHH is for PHH staff. Sign in again with your code." : e.message; })
+      .then(function(){ busy = false; $("aphhGo").disabled = false; save(); render(); $("aphhIn").focus(); });
+  }
+  function size(){ var t = $("aphhIn"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 120) + "px"; }
+  function setOpen(o){
+    $("aphhPanel").hidden = !o; $("aphhFab").hidden = o; $("aphhFab").setAttribute("aria-expanded", String(o));
+    try{ sessionStorage.setItem(OPEN, o ? "1" : ""); }catch(e){}
+    if(o){ render(); setTimeout(function(){ $("aphhIn").focus(); }, 30); } else $("aphhFab").focus();
+  }
+  function start(){
+    post("hello", {}).then(function(j){
+      ME = { name: j.name, role: j.role, admin: !!j.admin, cap: j.capUsd };
+      root.hidden = false; load();
+      if(!j.enabled) $("aphhFoot").textContent = "Ask PHH is being set up. Questions will work soon.";
+      var o = ""; try{ o = sessionStorage.getItem(OPEN) || ""; }catch(e){}
+      if(o) setOpen(true);
+    }).catch(function(){ /* not a staff code: stay hidden */ });
+  }
+  $("aphhFab").addEventListener("click", function(){ setOpen(true); });
+  $("aphhClose").addEventListener("click", function(){ setOpen(false); });
+  $("aphhNew").addEventListener("click", function(){ H = []; save(); render(); $("aphhIn").focus(); });
+  $("aphhForm").addEventListener("submit", function(e){ e.preventDefault(); ask($("aphhIn").value); });
+  /* Following a link: keep the chat open on a computer, close it on a phone so the page is visible. */
+  $("aphhLog").addEventListener("click", function(e){ var a = e.target.closest ? e.target.closest("a") : null; if(a){ try{ sessionStorage.setItem(OPEN, window.innerWidth <= 640 ? "" : "1"); }catch(x){} } });
+  $("aphhIn").addEventListener("input", size);
+  $("aphhIn").addEventListener("keydown", function(e){ if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); ask(this.value); } });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape" && !$("aphhPanel").hidden) setOpen(false); });
+  /* Wait for a staff code (admin.html signs in on the page itself). */
+  var tries = 0;
+  (function wait(){
+    try{ CODE = localStorage.getItem("phh-staff-code") || ""; }catch(e){ CODE = ""; }
+    if(CODE) return start();
+    if(++tries < 200) setTimeout(wait, 3000);
+  })();
+})();
+</script>
+<!-- ASK-PHH END -->
 </body></html>

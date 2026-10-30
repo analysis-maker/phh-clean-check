@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
-<meta name="theme-color" content="#08375C">
+<meta name="theme-color" content="#FFFFFF">
 <link rel="preconnect" href="https://rxhpnowszmetjxbwylil.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,7 +18,7 @@ const BRAND = {
 (function(){ var l = document.createElement("link"); l.rel = "icon"; l.type = "image/svg+xml"; l.href = BRAND.favicon; document.head.appendChild(l); })();
 </script>
 <style>
-/* PHH Hub (staging). PHH Coastal theme in the Professional Holiday Homes brand. */
+/* PHH Hub (staging). simple theme in the Professional Holiday Homes brand. */
 :root{color-scheme:light;
   --navy:#0873B5;--navy-7:#08609A;--navy-8:#074C7C;--deep:#08375C;--deep-2:#062C4A;--deep-3:#0B4470;
   --cyan:#50B7D6;--cyan-3:#9ED6E8;--cyan-1:#E4F4FA;--teal:#0F7B7F;--teal-1:#E2F1F0;
@@ -266,85 +266,24 @@ svg{flex:0 0 auto}
   .dots i{opacity:.7}
 }
 
-/* ===== PHH Coastal theme: own look, not a chat-app clone ===== */
-body,.main{background:#F2F7FA}
-:root{--mainbg:#F2F7FA}
-/* Navy sidebar */
-.side{background:linear-gradient(180deg,var(--deep) 0%,var(--deep-2) 100%);border-right:0;color:#fff}
-.sh{padding:6px 2px 16px 4px}
-.sh .logo{background:#fff;padding:5px 9px;height:36px;border-radius:9px}
-.sh .nm{color:#fff;font-size:15px}
-.side .ib{color:#BFD8E8}.side .ib:hover{background:rgba(255,255,255,.1);color:#fff}
-.newc{background:var(--cyan);color:var(--deep);border:0;box-shadow:none;border-radius:12px;padding:11px 12px}
-.newc:hover{background:#6CC6E0;border:0}
-.newc .plus{background:var(--deep);color:#fff}
-.chats h2{color:var(--cyan-3);text-transform:uppercase;letter-spacing:.1em;font-size:11px;margin-left:10px}
-.chats .hint,.cempty{color:#A9C3D6}
-.crow .co{color:#D8E7F1}
-.crow:hover,.crow:focus-within{background:rgba(255,255,255,.08)}
-.crow.on{background:rgba(80,183,214,.18);box-shadow:inset 3px 0 0 var(--cyan)}
-.crow.on .co{color:#fff}
-.crow .cd{color:#A9C3D6}.crow .cd:hover{background:rgba(255,255,255,.12);color:#FFB8A6}
-.sf{border-top-color:rgba(255,255,255,.14)}
-.av{background:var(--cyan);color:var(--deep)}
-.who b{color:#fff}.spend{color:#A9C3D6}.spend.hi{color:#F3C76B}
-.meter{background:rgba(255,255,255,.16)}.meter i{background:var(--cyan)}
-.so{color:#A9C3D6;text-decoration-color:rgba(255,255,255,.3)}.so:hover{color:#fff}
-/* Top bar */
-.top{background:#fff;border-bottom:1px solid #DCE7EE}
-.app.home .top{background:var(--deep);border-bottom:0}
-.app.home .top .ib{color:#BFD8E8}.app.home .top .ib:hover{background:rgba(255,255,255,.1);color:#fff}
-.app.home .srcb{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22);color:#fff}
-.top .mlogo{background:#fff;border-radius:6px;padding:3px 6px;height:28px}
-/* Hero: ocean band with a wave edge */
-.hero{padding:0 0 32px;align-items:stretch}
-.hero .hin{max-width:none;margin:0}
-.band{position:relative;background:linear-gradient(130deg,var(--deep) 0%,var(--deep-3) 45%,var(--navy) 85%,#2A9BC9 100%);color:#fff;padding:40px 16px 70px}
-.band .bin{max-width:780px;margin:0 auto}
-.eyebrow{margin:0;font:600 12px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--cyan-3)}
-.greet{justify-content:flex-start;text-align:left;color:#fff;margin:12px 0 6px;font-size:clamp(28px,4.6vw,42px)}
-.greet img{width:46px;height:46px;background:#fff;border-radius:12px;padding:7px}
-.lede{margin:0 0 24px;color:#D3E8F3;font-size:16px;max-width:560px}
-.band .composer{border:0;box-shadow:0 18px 40px rgba(2,24,42,.35)}
-.wave{position:absolute;left:0;right:0;bottom:-1px;width:100%;height:46px;display:block;color:var(--mainbg)}
-.below{max-width:780px;margin:6px auto 0;padding:0 16px}
-.lbl{font:700 12px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--teal);margin:18px 2px 10px}
-.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;justify-content:stretch;margin:0 0 6px}
-.cat{display:flex;align-items:center;gap:10px;text-align:left;background:#fff;border:1px solid #DCE7EE;border-radius:12px;padding:10px 12px;font-weight:600;font-size:14px;color:var(--deep);box-shadow:var(--sh1)}
-.cat .ci{display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border-radius:9px;background:var(--cyan-1);color:var(--navy)}
-.cat:hover{border-color:var(--cyan);background:#fff}
-.cat[aria-pressed="true"]{background:var(--deep);border-color:var(--deep);color:#fff}
-.cat[aria-pressed="true"] .ci{background:rgba(255,255,255,.14);color:var(--cyan-3)}
-.sugs{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px;max-width:none}
-.sugs li + li{border-top:0}
-.sug{display:flex;align-items:center;justify-content:space-between;gap:12px;height:100%;background:#fff;border:1px solid #DCE7EE;border-left:3px solid var(--cyan);border-radius:10px;padding:12px 14px;font-size:14.5px;color:var(--ink-2)}
-.sug::after{content:"\2192";color:var(--teal);font-weight:700}
-.sug:hover{background:#fff;border-left-color:var(--teal);box-shadow:var(--sh2);color:var(--ink)}
-/* Conversation */
-.thread{max-width:800px}
-.q{background:var(--deep);color:#fff;border-radius:16px 16px 4px 16px;padding:10px 16px}
-.ah{display:flex;align-items:center;gap:8px;font:700 13px/1 var(--display);color:var(--deep);margin-bottom:-4px}
-.ah img{width:24px;height:24px;border-radius:7px;background:#fff;border:1px solid #DCE7EE;padding:3px}
-.a,.turn > .card,.turn > .rchip,.turn > .acts,.turn > .wait{margin-left:32px}
-.a{background:#fff;border:1px solid #DCE7EE;border-radius:4px 16px 16px 16px;padding:14px 18px;box-shadow:var(--sh1)}
-.a.err{border-color:#F0C9BD}
-.a a{color:var(--teal);text-decoration-color:#9FCFCF}
-.a code{background:var(--cyan-1)}
-.dots i{background:var(--teal)}
-/* Composer */
-.composer{border-radius:16px;border:1.5px solid #D3E1EA}
-.composer:focus-within{border-color:var(--navy);box-shadow:var(--sh2),0 0 0 3px var(--cyan-1)}
-.mpb{background:var(--cyan-1);border-color:var(--cyan-3);color:var(--deep)}
-.mpb:hover{background:#D3EEF7}
-.send{border-radius:12px;background:var(--teal)}
-.send:hover{background:#0B6467}
-.send:disabled{background:#C9D9E2}
-.dock{background:linear-gradient(180deg,rgba(242,247,250,0),var(--mainbg) 40%)}
-@media (max-width:520px){
-  .band{padding:28px 16px 60px}.greet img{width:38px;height:38px}
-  .a,.turn > .card,.turn > .rchip,.turn > .acts,.turn > .wait{margin-left:0}
-  .a{padding:12px 14px}
-}
+/* ===== PHH Hub simple theme: white, navy accents ===== */
+body,.main{background:#fff}
+.side{background:#F4F7F9;border-right:1px solid #E3EAEF}
+.crow:hover,.crow:focus-within,.crow.on{background:#E6EEF3}
+.newc{border-color:#DCE5EB}
+.top{background:#fff}
+.hero{padding:0 16px 24px;justify-content:center}
+.hero .hin{max-width:720px}
+.greet{color:var(--deep);margin:0 0 22px}
+.greet img{width:36px;height:36px}
+.q{background:var(--deep);color:#fff;border-radius:16px 16px 4px 16px}
+.composer{border-radius:16px;border:1.5px solid #D7E2E9;box-shadow:0 4px 14px rgba(8,55,92,.07)}
+.composer:focus-within{border-color:var(--navy);box-shadow:0 0 0 3px var(--cyan-1)}
+.mpb{background:#F4F7F9;border-color:#E3EAEF}
+.send{background:var(--navy)}
+.send:disabled{background:#C9D6DE}
+.meter{background:#DCE5EB}
+.a code,.a.err{border-radius:var(--r2)}
 @media print{.side,.top,.dock,.panel,.acts{display:none !important}.app,body{height:auto;overflow:visible}.log{overflow:visible}}
 </style>
 </head>
@@ -398,20 +337,9 @@ body,.main{background:#F2F7FA}
 
     <section class="hero" id="hero" aria-label="New chat">
       <div class="hin">
-        <div class="band"><div class="bin">
-          <p class="eyebrow" id="eyebrow"></p>
-          <h1 class="greet"><img id="gmark" alt="" width="46" height="46"><span id="greet">Hello</span></h1>
-          <p class="lede">Ask across HomHero, Clean Check, PriceLabs, HelpScout, Drive and the rest of PHH.</p>
-          <p class="setup" id="setup" hidden>PHH Hub is being set up. Questions will work soon.</p>
-          <div id="heroSlot"></div>
-        </div>
-        <svg class="wave" viewBox="0 0 1440 46" preserveAspectRatio="none" aria-hidden="true"><path fill="currentColor" d="M0 26C180 46 360 6 600 18s420 28 600 14 240-22 240-22V46H0Z"/></svg></div>
-        <div class="below">
-          <h2 class="lbl">Explore</h2>
-          <div class="cats" id="cats" role="group" aria-label="Suggestion areas"></div>
-          <h2 class="lbl">Try asking</h2>
-          <ul class="sugs" id="sugs" aria-label="Suggestions"></ul>
-        </div>
+        <h1 class="greet"><img id="gmark" alt="" width="36" height="36"><span id="greet">Hello</span></h1>
+        <p class="setup" id="setup" hidden>PHH Hub is being set up. Questions will work soon.</p>
+        <div id="heroSlot"></div>
       </div>
     </section>
 
@@ -929,9 +857,8 @@ body,.main{background:#F2F7FA}
     var rt = btn("ib retry", "Retry", I.retry); rt.title = "Retry";
     rt.addEventListener("click", function(){ retry(h); });
     if(h.err){
-      t.appendChild(ahEl()); t.appendChild(el("div", "a err", h.err)); acts.appendChild(rt); t.appendChild(acts); return t;
+      t.appendChild(el("div", "a err", h.err)); acts.appendChild(rt); t.appendChild(acts); return t;
     }
-    t.appendChild(ahEl());
     var a = el("div", "a"); a.innerHTML = md(h.a); t.appendChild(a);
     if(h.report) t.appendChild(repChip(h.report));
     if(h.action) t.appendChild(card(h));
@@ -956,7 +883,7 @@ body,.main{background:#F2F7FA}
     $("hero").hidden = !empty; $("log").hidden = empty; $("dock").hidden = empty;
     placeComposer(empty);
     $("ttl").textContent = empty ? "" : (CUR.title || (CUR.H[0] && CUR.H[0].q) || "");
-    if(empty){ $("greet").textContent = greeting(); $("eyebrow").textContent = sydLong() + " · Sydney"; buildCats(); }
+    if(empty){ $("greet").textContent = greeting(); }
     var box = $("thread"); box.innerHTML = "";
     if(CUR.loading) box.appendChild(el("div", "loading", "Opening chat..."));
     if(CUR.loadErr) box.appendChild(el("div", "a err", CUR.loadErr));
@@ -969,7 +896,7 @@ body,.main{background:#F2F7FA}
     if(scroll !== false){ var log = $("log"); log.scrollTop = log.scrollHeight; }
   }
   function pendingEl(h){
-    var t = el("article", "turn"); t.appendChild(el("div", "q", h.q)); t.appendChild(ahEl());
+    var t = el("article", "turn"); t.appendChild(el("div", "q", h.q));
     var w = el("div", "wait"); w.setAttribute("role", "status");
     var d = el("span", "dots"); d.innerHTML = "<i></i><i></i><i></i>"; d.setAttribute("aria-hidden", "true");
     w.appendChild(d); w.appendChild(el("span", "", "Looking that up")); t.appendChild(w); return t;

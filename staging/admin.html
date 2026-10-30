@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030004137"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030004634"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -262,6 +262,7 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
   <button class="tab" role="tab" data-tab="roll" aria-selected="false">Rollout</button>
   <button class="tab" role="tab" data-tab="msg" aria-selected="false">Messages</button>
   <button class="tab" role="tab" data-tab="thanks" aria-selected="false">Thank you</button>
+  <button class="tab" role="tab" data-tab="ai" aria-selected="false">AI notes</button>
   <button class="tab" role="tab" data-tab="codes" aria-selected="false">Staff &amp; testers</button>
   <button class="tab" role="tab" data-tab="health" aria-selected="false">System health<span class="n" id="healthN" hidden></span></button>
   <button class="tab" role="tab" data-tab="log" aria-selected="false">Activity</button>
@@ -378,6 +379,22 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
     </div>
   </section>
 
+  <!-- AI notes -->
+  <section id="v-ai" hidden>
+    <div class="box">
+      <h3>Teach the AI photo review</h3>
+      <p class="muted">The AI reads these before every review. Use a property note for things like permanent stains, rust or a keypad instead of keys. "AI was wrong" notes from the office view are added here automatically.</p>
+      <div class="compose">
+        <div class="grid2">
+          <div><label for="nprop">Property</label><select id="nprop"><option value="">All properties</option></select></div>
+          <div><label for="nnote">Note for the AI</label><input type="text" id="nnote" maxlength="400" placeholder="e.g. Bathroom 2 basin marks are permanent rust stains"></div>
+        </div>
+        <div class="row2"><button class="btn" type="button" id="nadd">Add note</button><span id="nres" class="muted"></span></div>
+      </div>
+    </div>
+    <div class="tablewrap"><table><thead><tr><th>Property</th><th>Note</th><th>From</th><th></th></tr></thead><tbody id="nbody"></tbody></table></div>
+  </section>
+
   <!-- Staff, testers, owner and phones -->
   <section id="v-codes" hidden>
     <div class="box"><h3>Testers</h3><p class="muted">Ian, Craig and Marson. They see exactly what a housekeeper sees, get a copy of every housekeeper message, and are never counted in reports or sent to HomHero. Each tester signs in with their code on their phone and taps Turn on.</p><div id="testlist"></div></div>
@@ -461,9 +478,10 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
   function show(t){
     tab = t;
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(x){ x.setAttribute("aria-selected", x.getAttribute("data-tab") === t ? "true" : "false"); });
-    ["hk","roll","msg","thanks","codes","health","log"].forEach(function(k){ $("v-" + k).hidden = k !== t; });
+    ["hk","roll","msg","thanks","ai","codes","health","log"].forEach(function(k){ $("v-" + k).hidden = k !== t; });
     if(t === "msg") loadMsgs();
     if(t === "log") loadLog();
+    if(t === "ai") loadNotes();
     if(t === "roll" && !$("rbody").children.length) loadPlan();
   }
   Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(b){ b.addEventListener("click", function(){ show(b.getAttribute("data-tab")); }); });
@@ -782,8 +800,33 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
     $("healthN").hidden = !bad; $("healthN").textContent = bad;
   }
 
+  /* ---------- AI notes ---------- */
+  var propsLoaded = false;
+  function loadNotes(){
+    call("notes").then(function(j){
+      if(!propsLoaded){ $("nprop").innerHTML = '<option value="">All properties</option>' + (j.properties || []).map(function(p){ return '<option>' + esc(p) + "</option>"; }).join(""); propsLoaded = true; }
+      var ns = (j.notes || []).slice().sort(function(a, b){ return String(a.property || "").localeCompare(String(b.property || "")); });
+      $("nbody").innerHTML = ns.map(function(n){
+        return '<tr><td class="col-prop" data-l="Property"><span class="prop">' + esc(n.property || "All properties") + '</span></td><td data-l="Note">' + esc(n.note) + '</td><td data-l="From" class="sub">' + esc(n.by) + (n.kind === "ai_wrong" ? " (AI was wrong)" : "") + ", " + esc(fmtDate(n.at)) +
+          '</td><td><button class="btn ghost small" ' + (n.id ? 'data-noff="' + esc(n.id) + '"' : 'data-soff="' + esc(n.sub) + '"') + ">Remove</button></td></tr>";
+      }).join("") || '<tr><td colspan="4" class="empty">No notes yet.</td></tr>';
+    }).catch(function(e){ $("nbody").innerHTML = '<tr><td colspan="4" class="empty err">' + esc(e.message) + "</td></tr>"; });
+  }
+  $("nadd").addEventListener("click", function(){
+    var note = $("nnote").value.trim(); if(note.length < 5) return toast("Write the note first.");
+    $("nadd").disabled = true;
+    call("note-add", { property: $("nprop").value || null, note: note }).then(function(){ $("nadd").disabled = false; $("nnote").value = ""; $("nres").textContent = "Saved. The next reviews will follow it."; loadNotes(); })
+      .catch(function(e){ $("nadd").disabled = false; $("nres").innerHTML = '<span class="err">' + esc(e.message) + "</span>"; });
+  });
+  $("nbody").addEventListener("click", function(e){
+    var b = e.target.closest("[data-noff],[data-soff]"); if(!b) return;
+    if(!confirm("Remove this note? The AI will stop using it.")) return;
+    b.disabled = true;
+    call("note-off", b.hasAttribute("data-noff") ? { id: b.getAttribute("data-noff") } : { sub: b.getAttribute("data-soff") }).then(function(){ toast("Removed"); loadNotes(); }).catch(function(x){ b.disabled = false; toast(x.message); });
+  });
+
   /* ---------- activity ---------- */
-  var ACT = { code_change:"Changed code", code_create:"Created code", code_pause:"Paused code", code_resume:"Turned code back on", code_sent:"Code sent", code_unsent:"Code not sent", start_date:"Start date", rollout:"Rollout", msg_send:"Sent message", msg_remind:"Sent reminder", msg_schedule:"Scheduled message", msg_cancel:"Cancelled message", request_done:"Code request sorted" };
+  var ACT = { code_change:"Changed code", ai_note:"AI note added", ai_note_off:"AI note removed", code_create:"Created code", code_pause:"Paused code", code_resume:"Turned code back on", code_sent:"Code sent", code_unsent:"Code not sent", start_date:"Start date", rollout:"Rollout", msg_send:"Sent message", msg_remind:"Sent reminder", msg_schedule:"Scheduled message", msg_cancel:"Cancelled message", request_done:"Code request sorted" };
   function loadLog(){
     call("log").then(function(j){
       $("logbody").innerHTML = (j.log || []).map(function(l){

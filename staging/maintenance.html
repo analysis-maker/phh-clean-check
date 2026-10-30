@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030023249"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030030312"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -764,10 +764,13 @@ html,body{overflow-x:clip}
   function save(){ try{ sessionStorage.setItem(KEY, JSON.stringify(H.slice(-30))); }catch(e){} }
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]; }); }
   function el(t, c, txt){ var e = document.createElement(t); if(c) e.className = c; if(txt != null) e.textContent = txt; return e; }
-  function post(route, body){
+  function post(route, body, retried){
     body.code = CODE;
     return fetch(API + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
-      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if(!r.ok) { var e = new Error(j.error || ("Something went wrong (" + r.status + ")")); e.status = r.status; throw e; } return j; }); });
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){
+        /* The function can fail to start when many requests arrive at once: try once more after a short pause. */
+        if(r.status === 503 && j.code === "BOOT_ERROR" && !retried) return new Promise(function(ok){ setTimeout(ok, 1500); }).then(function(){ return post(route, body, true); });
+        if(!r.ok) { var e = new Error(j.error || ("Something went wrong (" + r.status + ")")); e.status = r.status; throw e; } return j; }); });
   }
   /* Answers: escape everything, then allow **bold**, "- " lists and [label](page.html?...) links to our own pages only. */
   var SAFE = /^(office|maintenance|admin|view)\.html(\?[^\s"'<>]*)?$/;

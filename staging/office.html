@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030030312"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030031659"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -391,18 +391,46 @@ html,body{overflow-x:clip}
       .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
   }
   function absentFlags(r){
-    r.flags = (r.flags || []).filter(function(f){ return !f.absent; });
+    r.flags = (r.flags || []).filter(function(f){ return !f.absent && !f.extra; });
     (r.absent || []).forEach(function(a){ if(!a.status) r.flags.push({ tone:"warn", label:"No " + a.name + "? Please confirm", absent:true }); });
+    /* Anything else from the housekeeper (Sharon, 30 Oct). Guests and open gas requests need someone to act, so they count for Needs attention. */
+    var x = r.extra; if(!x) return;
+    if(x.guestsOver) r.flags.push({ tone:"warn", label:"More guests than booked", extra:true });
+    if((x.gas || []).length && !x.gasDoneAt) r.flags.push({ tone:"warn", label:"Gas needed: " + x.gas.map(function(g){ return g === "bbq" ? "BBQ" : "house"; }).join(", "), extra:true });
+    if(x.note) r.flags.push({ tone:"info", label:"Note from housekeeper", extra:true });
+    if(x.photoCount) r.flags.push({ tone:"info", label:x.photoCount + " extra photo" + (x.photoCount > 1 ? "s" : ""), extra:true });
   }
   function loadAbsent(date, my){
     if(!CLEAN_API) return;
     cpost("absent-day", { date: date }).then(function(j){
       if(my !== loading) return;
-      var by = {}; (j.rows || []).forEach(function(x){ by[x.id] = x.items || []; });
+      var by = {}; (j.rows || []).forEach(function(x){ by[x.id] = x; });
       var hit = false;
-      state.rows.forEach(function(r){ if(r.submissionId && by[r.submissionId]){ r.absent = by[r.submissionId]; absentFlags(r); hit = true; } });
+      state.rows.forEach(function(r){ var x = r.submissionId && by[r.submissionId]; if(x){ r.absent = x.items || []; r.extra = x.extra || null; absentFlags(r); hit = true; } });
       if(hit){ renderStrip(); renderRows(); }
     }).catch(function(){});
+  }
+  function extraBlock(r){
+    var x = r.extra, wrap = el("div");
+    wrap.appendChild(el("h3", "", "From the housekeeper"));
+    var ul = el("ul");
+    if(x.guestsOver) ul.appendChild(el("li", "sev-medium", "More guests than booked" + (x.guestsNote ? ": " + x.guestsNote : "")));
+    if((x.gas || []).length){
+      var li = el("li", x.gasDoneAt ? "" : "sev-medium", "Gas needed: " + x.gas.map(function(g){ return g === "bbq" ? "BBQ gas" : "house gas"; }).join(" and ") + (x.gasDoneAt ? " (done" + (x.gasDoneBy ? " by " + x.gasDoneBy : "") + ")" : ""));
+      if(!x.gasDoneAt){
+        var b = el("button", "btn small", "Mark gas done"); b.type = "button"; b.style.marginLeft = "8px";
+        b.addEventListener("click", function(e){ e.stopPropagation(); b.disabled = true;
+          cpost("gas-done", { id: r.submissionId }).then(function(j){ x.gasDoneAt = new Date().toISOString(); x.gasDoneBy = j.by; absentFlags(r); renderStrip(); renderRows(); })
+            .catch(function(er){ b.disabled = false; b.textContent = er.message; }); });
+        li.appendChild(b);
+      }
+      ul.appendChild(li);
+    }
+    if(x.note) ul.appendChild(el("li", "", "Note: " + x.note));
+    if(x.nextNote) ul.appendChild(el("li", "", "Note for the next clean: " + x.nextNote));
+    if(x.photoCount) ul.appendChild(el("li", "", x.photoCount + " extra photo" + (x.photoCount > 1 ? "s" : "") + " (open Photos and checklist)"));
+    wrap.appendChild(ul);
+    return wrap;
   }
   function absentBlock(r){
     var wrap = el("div");
@@ -657,6 +685,7 @@ html,body{overflow-x:clip}
         left.appendChild(ag);
       }
       if((r.absent || []).length) left.appendChild(absentBlock(r));
+      if(r.extra) left.appendChild(extraBlock(r));
       if(r.flags.length){
         left.appendChild(el("h3", "", "Checks"));
         var fl = el("ul"); r.flags.forEach(function(f){ fl.appendChild(el("li", f.tone === "warn" ? "sev-medium" : "", f.label)); }); left.appendChild(fl);

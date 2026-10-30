@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030030312"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030031659"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -193,6 +193,31 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
 #camov .camerr{color:#fff;padding:20px 16px;font-size:.95rem;line-height:1.45}
 #camov .camerr button{display:block;margin-top:14px;font:inherit;font-weight:700;padding:14px 18px;border-radius:10px;border:0;background:#fff;color:#000;min-height:48px;cursor:pointer}
 .namefixed{margin:4px 0 0;font-weight:700;font-size:1.05rem;color:var(--ink)}
+.pmbar{display:flex;gap:8px;margin-top:8px}
+.pmbtn{flex:1;font:inherit;font-size:.9rem;font-weight:700;padding:10px 12px;min-height:44px;border:2px solid var(--primary);border-radius:var(--radius-md);background:var(--surface);color:var(--primary);cursor:pointer}
+.pmbtn[aria-pressed="true"]{background:var(--primary);color:#fff}
+.pmnote{display:none;margin:12px 0 0;padding:10px 12px;border-radius:var(--radius-md);background:var(--surface-2);border:1px solid var(--line);font-size:.9rem;color:var(--ink)}
+body.photomode .pmnote{display:block}
+body.photomode section.sec:not(.hasph){display:none}
+body.photomode section.sec .items, body.photomode .maint, body.photomode .who, body.photomode .rooms .room{display:none}
+body.photomode section.sec{margin-top:18px}
+body.photomode .photos{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+body.photomode .ph{min-height:112px}
+body.photomode .ph .cap{padding:6px 8px;font-size:.78rem}
+body.photomode .ph .shot{padding:10px 4px;font-size:.82rem}
+body.photomode .ph .hint, body.photomode .ph .stamp{display:none}
+@media (max-width:360px){ body.photomode .photos{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.anyq{margin-top:14px}
+.anyq .lbl2{font-weight:700;margin:0 0 6px}
+.anyq textarea, .anyq input[type=text], .excap{width:100%;font:inherit;font-size:1rem;padding:12px;border:1.5px solid var(--line);border-radius:var(--radius-md);background:var(--surface);color:var(--ink)}
+.anyq textarea{min-height:72px;resize:vertical}
+.gasrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.excell{display:flex;flex-direction:column;gap:6px;min-width:0}
+.excap{font-size:.9rem;padding:10px}
+.notesbox{margin-top:14px;padding:12px 14px;border-radius:var(--radius-md);background:#fff8e6;border:1px solid #f0d58a;font-size:.92rem;color:var(--ink)}
+.notesbox b{display:block;margin-bottom:4px}
+.notesbox p{margin:6px 0 0;white-space:pre-wrap}
+.notesbox .by{color:var(--muted);font-size:.8rem}
 </style>
 
 <nav class="nav"><div class="wrap"><img src="../logo.png" alt="Professional Holiday Homes" width="183" height="34" fetchpriority="high"><div class="me" id="me" hidden><span id="mename"></span><a href="#" id="signout">Sign out</a></div></div></nav>
@@ -246,6 +271,7 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
     <span class="badge">Clean check</span>
     <h1 id="prop">Loading clean...</h1>
     <div class="meta"><span id="cdate"></span><span id="cres"></span></div>
+    <div class="notesbox" id="notesbox" hidden><b>Notes from earlier cleans here</b><div id="noteslist"></div></div>
     <div class="hhinfo" id="hhinfo" hidden><span class="b2b" id="hhb2b" hidden></span><span id="hhnext" hidden></span><span class="hhnote" id="hhnote" hidden></span><span class="wifitip">Tip: join the property Wi-Fi (scan the QR code) so photos send straight away.</span><a class="hhlink" id="hhlink" target="_blank" rel="noopener">Open this clean in HomHero Cleaner (entry codes and notes)</a></div>
     <div class="due">Complete by 3pm.</div>
     <div class="banner" id="howto">Take the first photo (guest keys) when you arrive. Then tick each section and take its photos as you go. Photos are time-stamped. No photos, no payment.</div>
@@ -254,6 +280,8 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
   <div class="prog">
     <div class="bar" aria-hidden="true"><i id="barfill"></i></div>
     <div class="count"><span id="counttxt">0 of 0 ticked</span><span id="phototxt">0 photos</span></div>
+    <div class="pmbar"><button type="button" class="pmbtn" id="pmbtn" aria-pressed="false">All photos on one screen</button></div>
+    <p class="pmnote" id="pmnote">Every photo on one screen. Take them in any order as you move through the house. Tap the button again to go back to the checklist.</p>
   </div>
 
   <div class="banner" id="demobanner" hidden>Demo clean with example data. Nothing you tick or photograph here is saved to PHH.</div>
@@ -406,7 +434,7 @@ window.PHH_CHECKLIST = {
   var LIVE = !!(API && RES);
   var PICK = !!(API && !RES && params.get("demo") !== "1");
   var FROM_LIST = params.get("from") === "list";
-  var state = { items:{}, photos:{}, cleaner:"", cleanerSel:"", startedAt:new Date().toISOString(), consumables:"", noBbq:false, rooms:null, roomsEdited:false, maint:[], absent:{} };
+  var state = { items:{}, photos:{}, cleaner:"", cleanerSel:"", startedAt:new Date().toISOString(), consumables:"", noBbq:false, rooms:null, roomsEdited:false, maint:[], absent:{}, extra:{ guests:"", guestsNote:"", gas:{}, slots:[], captions:{}, note:"", nextNote:"" } };
   /* Office decisions for this property ("Not at this property"): {ph_oven:"confirmed"|"rejected"}, from /clean. */
   var officeAbsent = {};
   var MAX_ISSUES = 5, MAX_ISSUE_PHOTOS = 3; /* maintenance: each issue keeps a fixed slot (1-5) for its photo keys mt{slot}_{1-3} */
@@ -441,7 +469,7 @@ window.PHH_CHECKLIST = {
   function outbox(){ try{ return JSON.parse(localStorage.getItem(OUTBOX) || "{}") || {}; }catch(e){ return {}; } }
   function setOutbox(o){ try{ localStorage.setItem(OUTBOX, JSON.stringify(o)); }catch(e){} }
   function saveEntry(e){ var o = outbox(); if(o[e.res]){ o[e.res] = e; setOutbox(o); } }
-  function entryPhotos(e){ var ph = (e.payload.photos || []).slice(); (e.payload.maintenance || []).forEach(function(m){ ph = ph.concat(m.photos || []); }); return ph; }
+  function entryPhotos(e){ var ph = (e.payload.photos || []).slice(); (e.payload.maintenance || []).forEach(function(m){ ph = ph.concat(m.photos || []); }); if(e.payload.extra && e.payload.extra.photos) ph = ph.concat(e.payload.extra.photos); return ph; }
   function unsentCount(e){ return entryPhotos(e).filter(function(p){ return !p.path; }).length; }
   function apiAt(res, t, path, body){
     return fetch(API + path, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(Object.assign({ res:res, t:t }, body || {})) })
@@ -487,12 +515,12 @@ window.PHH_CHECKLIST = {
   function save(){
     var ph = {};
     Object.keys(state.photos).forEach(function(k){ var x = state.photos[k]; if(x.path) ph[k] = { path:x.path, stampedAt:x.stampedAt, takenAt:x.takenAt, oldPhoto:x.oldPhoto, label:x.label }; });
-    try{ localStorage.setItem(key, JSON.stringify({ items:state.items, cleaner:state.cleaner, cleanerSel:state.cleanerSel, startedAt:state.startedAt, consumables:state.consumables, noBbq:state.noBbq, rooms:state.rooms, roomsEdited:state.roomsEdited, maint:state.maint, absent:state.absent, photos: LIVE ? ph : {} })); }catch(e){}
+    try{ localStorage.setItem(key, JSON.stringify({ items:state.items, cleaner:state.cleaner, cleanerSel:state.cleanerSel, startedAt:state.startedAt, consumables:state.consumables, noBbq:state.noBbq, rooms:state.rooms, roomsEdited:state.roomsEdited, maint:state.maint, absent:state.absent, extra:state.extra, photos: LIVE ? ph : {} })); }catch(e){}
   }
   function load(){
     try{ var s = JSON.parse(localStorage.getItem(key) || "null");
       if(s){ state.items = s.items || {}; state.cleaner = s.cleaner || ""; state.cleanerSel = s.cleanerSel || ""; state.startedAt = s.startedAt || state.startedAt;
-        state.consumables = s.consumables || ""; state.noBbq = !!s.noBbq; state.rooms = s.rooms || null; state.roomsEdited = !!s.roomsEdited; state.photos = s.photos || {}; state.maint = Array.isArray(s.maint) ? s.maint : []; state.absent = (s.absent && typeof s.absent === "object") ? s.absent : {}; }
+        state.consumables = s.consumables || ""; state.noBbq = !!s.noBbq; state.rooms = s.rooms || null; state.roomsEdited = !!s.roomsEdited; state.photos = s.photos || {}; state.maint = Array.isArray(s.maint) ? s.maint : []; state.absent = (s.absent && typeof s.absent === "object") ? s.absent : {}; if(s.extra && typeof s.extra === "object") state.extra = Object.assign(state.extra, s.extra); }
     }catch(e){}
   }
 
@@ -584,8 +612,8 @@ window.PHH_CHECKLIST = {
   function render(){
     var host = $("sections"); host.innerHTML = "";
     CL.sections.forEach(function(sec){
-      if(sec.id === "exit") host.appendChild(consumablesSection());
-      var el = document.createElement("section"); el.className = "sec";
+      if(sec.id === "exit"){ host.appendChild(anyElseSection()); host.appendChild(consumablesSection()); }
+      var el = document.createElement("section"); el.className = "sec" + (CL.photos.some(function(p){ return p.sec === sec.id; }) ? " hasph" : "");
       el.innerHTML = '<div class="sechead"><h2></h2><span class="secount" data-sec="'+sec.id+'"></span></div>';
       el.querySelector("h2").textContent = sec.title;
       var ul = document.createElement("ul"); ul.className = "items";
@@ -617,6 +645,100 @@ window.PHH_CHECKLIST = {
     renderMaint();
     renderPhotos();
     update();
+    updExtra();
+  }
+
+  /* ---------- All photos on one screen (Sharon, 30 Oct): take photos in any order as you move through the house. ---------- */
+  function setPhotoMode(on){
+    document.body.classList.toggle("photomode", !!on);
+    $("pmbtn").setAttribute("aria-pressed", on ? "true" : "false");
+    $("pmbtn").textContent = on ? "Back to the checklist" : "All photos on one screen";
+    try{ localStorage.setItem("phh-photomode", on ? "1" : ""); }catch(e){}
+    var pr = document.querySelector(".prog"); if(pr) window.scrollTo(0, Math.max(0, pr.offsetTop - 4));
+  }
+  $("pmbtn").addEventListener("click", function(){ setPhotoMode(!document.body.classList.contains("photomode")); });
+
+  /* ---------- Anything else (all optional, Sharon 30 Oct): more guests than booked, gas, extra photos, notes. ---------- */
+  var MAX_EXTRA = 6;
+  function exSlots(){ return (state.extra.slots || []).map(function(n){ return { key:"ex" + n, label:"Extra photo", stamp:"Extra photo", sec:"extra", group:"", optional:true }; }); }
+  function anyElseSection(){
+    var el = document.createElement("section"); el.className = "sec"; el.id = "anyelse";
+    el.innerHTML = '<div class="sechead"><h2>Anything else?</h2><span class="secount">Optional</span></div>' +
+      '<p class="note" style="margin-top:0">Only if something needs the office to know. All of this is optional.</p>' +
+      '<div class="anyq"><p class="lbl2">More guests stayed than were booked?</p><div class="seg"><button type="button" class="segbtn" id="gu_no">No</button><button type="button" class="segbtn" id="gu_yes">Yes</button></div>' +
+      '<input type="text" id="gu_note" maxlength="300" placeholder="What did you see? For example: 4 beds used, booked for 2" hidden></div>' +
+      '<div class="anyq"><p class="lbl2">Gas needed?</p><div class="gasrow"><button type="button" class="segbtn" id="gas_bbq">BBQ gas</button><button type="button" class="segbtn" id="gas_house">House gas</button></div></div>' +
+      '<div class="anyq"><p class="lbl2">Extra photos</p><p class="note" style="margin-top:0">For example the BBQ before you cleaned it, stained towels or extra beds used. Add a few words to each.</p><div class="photos" id="exphotos"></div>' +
+      '<button type="button" class="segbtn addissue" id="exadd">+ Add an extra photo</button></div>' +
+      '<div class="anyq"><p class="lbl2"><label for="ex_note">Note to the office</label></p><textarea id="ex_note" maxlength="1000" placeholder="Anything the office should know about this clean"></textarea></div>' +
+      '<div class="anyq"><p class="lbl2"><label for="ex_next">Note for the next clean here</label></p><textarea id="ex_next" maxlength="500" placeholder="For example: windows due, check the mould absorbers"></textarea><p class="note">Shown at the top of the next clean at this property.</p></div>';
+    el.querySelector("#gu_no").addEventListener("click", function(){ state.extra.guests = "no"; save(); updExtra(); });
+    el.querySelector("#gu_yes").addEventListener("click", function(){ state.extra.guests = "yes"; save(); updExtra(); var g = $("gu_note"); if(g) g.focus(); });
+    el.querySelector("#gu_note").addEventListener("input", function(){ state.extra.guestsNote = this.value; save(); });
+    ["bbq","house"].forEach(function(g){ el.querySelector("#gas_" + g).addEventListener("click", function(){ state.extra.gas[g] = !state.extra.gas[g]; save(); updExtra(); }); });
+    el.querySelector("#exadd").addEventListener("click", function(){
+      var used = state.extra.slots || [], n = 0; for(var i=1;i<=MAX_EXTRA;i++){ if(used.indexOf(i) < 0){ n = i; break; } }
+      if(!n) return; state.extra.slots = used.concat([n]); save(); renderExtraPhotos(); updExtra();
+    });
+    el.querySelector("#ex_note").addEventListener("input", function(){ state.extra.note = this.value; save(); });
+    el.querySelector("#ex_next").addEventListener("input", function(){ state.extra.nextNote = this.value; save(); });
+    return el;
+  }
+  function renderExtraPhotos(){
+    var host = $("exphotos"); if(!host) return; host.innerHTML = "";
+    exSlots().forEach(function(s){
+      var cell = document.createElement("div"); cell.className = "excell";
+      var d = photoTile(s, "Tap to take photo"); cell.appendChild(d);
+      var cap = document.createElement("input"); cap.type = "text"; cap.className = "excap"; cap.maxLength = 200; cap.placeholder = "What is this?";
+      cap.setAttribute("aria-label", "What is this extra photo?");
+      cap.value = (state.extra.captions || {})[s.key] || "";
+      cap.addEventListener("input", function(){ state.extra.captions[s.key] = this.value; save(); });
+      cell.appendChild(cap);
+      var rm = document.createElement("button"); rm.type = "button"; rm.className = "rmbtn"; rm.textContent = "Remove";
+      rm.addEventListener("click", function(){
+        var n = Number(s.key.slice(2));
+        state.extra.slots = (state.extra.slots || []).filter(function(x){ return x !== n; });
+        delete state.extra.captions[s.key]; delete state.photos[s.key];
+        save(); renderExtraPhotos(); updExtra(); update();
+      });
+      cell.appendChild(rm);
+      host.appendChild(cell);
+      var x = state.photos[s.key]; if(x && (x.path || x.blob)) showPhoto(s, d, x);
+    });
+  }
+  function updExtra(){
+    var ex = state.extra; if(!$("anyelse")) return;
+    $("gu_no").setAttribute("aria-pressed", ex.guests === "no" ? "true" : "false");
+    $("gu_yes").setAttribute("aria-pressed", ex.guests === "yes" ? "true" : "false");
+    $("gu_note").hidden = ex.guests !== "yes"; $("gu_note").value = ex.guestsNote || "";
+    $("gas_bbq").setAttribute("aria-pressed", ex.gas.bbq ? "true" : "false");
+    $("gas_house").setAttribute("aria-pressed", ex.gas.house ? "true" : "false");
+    $("ex_note").value = ex.note || ""; $("ex_next").value = ex.nextNote || "";
+    var full = (ex.slots || []).length >= MAX_EXTRA;
+    $("exadd").disabled = full; $("exadd").textContent = full ? "Up to " + MAX_EXTRA + " extra photos" : ((ex.slots || []).length ? "+ Add another extra photo" : "+ Add an extra photo");
+  }
+  function extraPayload(){
+    var ex = state.extra;
+    return {
+      guestsOver: ex.guests === "yes", guestsNote: ex.guests === "yes" ? String(ex.guestsNote || "").trim() : "",
+      gas: ["bbq","house"].filter(function(g){ return ex.gas[g]; }),
+      note: String(ex.note || "").trim(), nextNote: String(ex.nextNote || "").trim(),
+      photos: exSlots().filter(hasPhoto).map(function(s){ var x = state.photos[s.key]; return { id:s.key, caption:String((ex.captions || {})[s.key] || "").trim(), path:x.path, stampedAt:x.stampedAt }; })
+    };
+  }
+
+  /* Notes housekeepers left for the next clean at this property (from /clean). */
+  function showNotes(list){
+    var box = $("notesbox"), host = $("noteslist"); if(!box || !host) return;
+    host.innerHTML = "";
+    (list || []).forEach(function(n){
+      var p = document.createElement("p"); p.textContent = n.note;
+      var by = document.createElement("span"); by.className = "by";
+      var d = n.at ? new Date(n.at).toLocaleDateString("en-AU", { timeZone:"Australia/Sydney", day:"numeric", month:"short" }) : "";
+      by.textContent = " (" + [n.by, d].filter(Boolean).join(", ") + ")";
+      p.appendChild(by); host.appendChild(p);
+    });
+    box.hidden = !(list && list.length);
   }
 
   /* Maintenance issues: description, Normal / Urgent, up to 3 photos. Each one becomes a HomHero maintenance job. */
@@ -748,6 +870,7 @@ window.PHH_CHECKLIST = {
       h.appendChild(n);
     });
     renderMaintPhotos();
+    renderExtraPhotos();
   }
   /* One photo tile. The file input (phone camera app) stays as the fallback; on Android the in-app camera opens instead,
      so Chrome never goes to the background (Android was closing it while the camera app was open, 29 Oct, DEW). */
@@ -1028,6 +1151,7 @@ window.PHH_CHECKLIST = {
       consumables: state.consumables,
       noBbq: state.noBbq,
       absent: Object.keys(state.absent).filter(function(k){ return state.absent[k]; }),
+      extra: extraPayload(),
       rooms: rooms(),
       items: allItems().map(function(i){ return { id:i.id, text:i.text, status: status(i) }; }),
       photos: sl.map(function(s){ var x = state.photos[s.key]; return { id:s.key, label:s.label, path:x.path, stampedAt:x.stampedAt, takenAt:x.takenAt, oldPhoto:x.oldPhoto }; }),
@@ -1067,6 +1191,7 @@ window.PHH_CHECKLIST = {
 
   function start(c){
     clean = c;
+    showNotes(c.notes);
     officeAbsent = (c.absent && typeof c.absent === "object") ? c.absent : {};
     Object.keys(state.absent).forEach(function(k){ if(officeAbsent[k]) delete state.absent[k]; }); /* the office has decided: confirmed = not asked, rejected = photo needed */
     $("prop").textContent = c.property;
@@ -1081,7 +1206,8 @@ window.PHH_CHECKLIST = {
     var hb = Number(c.bedrooms), ht = Number(c.bathrooms);
     if(c.roomsLocked){ state.rooms = { bedrooms: Math.max(1, Math.min(10, Math.round(hb) || 1)), bathrooms: Math.max(1, Math.min(10, Math.floor(ht) || 1)) }; state.roomsEdited = false; }
     else if(!state.roomsEdited && (hb >= 1 || ht >= 1)){ state.rooms = { bedrooms: Math.max(1, Math.min(10, Math.round(hb) || 1)), bathrooms: Math.max(1, Math.min(10, Math.floor(ht) || 1)) }; }
-    fillNames(); save(); renderPhotos(); update();
+    fillNames(); save(); renderPhotos(); update(); updExtra();
+    try{ if(localStorage.getItem("phh-photomode")) setPhotoMode(true); }catch(e){}
     hhInfo();
     var ml = document.querySelector(".maint a.textlink"); if(ml) ml.href = portalUrl();
   }

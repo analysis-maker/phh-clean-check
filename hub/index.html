@@ -626,7 +626,7 @@ body,.main{background:#fff}
   function card(h){
     var a = h.action, c = el("div", "card");
     var ed = Array.isArray(a.editable) ? a.editable : [];
-    c.appendChild(el("p", "k", a.type === "hs_note" ? "Draft note" : a.type === "maint_job" ? "Draft maintenance job" : "Draft"));
+    c.appendChild(el("p", "k", a.type === "hs_note" ? "Draft note" : a.type === "hs_reply" ? "Draft reply (saved as a draft, never sent)" : a.type === "maint_job" ? "Draft maintenance job" : "Draft"));
     c.appendChild(el("div", "head", a.heading || "Draft"));
     if(a.staging_note) c.appendChild(el("div", "stg", a.staging_note));
     if(Array.isArray(a.fields) && a.fields.length){

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030001539"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030004137"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Clean Check">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="180x180" href="icon-180.png">
-<script>window.PHH_ADMIN_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/admin-api";</script>
+<script>window.PHH_ADMIN_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/admin-api";</script>
 <title>Message from PHH</title>
 <style>
 :root{color-scheme:light;--teal:#5bbfb5;--teal-ink:#23807a;--ink:#26323a;--muted:#5d6b73;--line:#e1e5e7;--bg:#f4f5f5}
@@ -64,6 +64,7 @@ h1{font-size:24px;line-height:1.25;margin:0 0 12px}
     <h1 id="title" hidden></h1>
     <p class="body" id="body" hidden></p>
     <p class="when" id="when"></p>
+    <div id="guides" hidden style="margin-top:14px"><a class="btn" style="background:#fff;color:#23807a;border:1px solid #5bbfb5" id="gpdf" target="_blank" rel="noopener">How It Works guide (PDF)</a><a class="btn" style="background:#fff;color:#23807a;border:1px solid #5bbfb5" id="gvid" target="_blank" rel="noopener">How It Works video</a></div>
     <a class="btn" href="./">Open Clean Check</a>
   </div>
 </main>
@@ -78,6 +79,7 @@ h1{font-size:24px;line-height:1.25;margin:0 0 12px}
       $("from").textContent = (j.name ? "Hi " + j.name + ", a message from " : "A message from ") + j.from;
       $("title").textContent = j.title; $("title").hidden = false;
       $("body").textContent = j.body; $("body").hidden = false;
+      if(j.guides){ $("gpdf").href = j.guides.pdf; $("gvid").href = j.guides.video; $("guides").hidden = false; }
       $("when").textContent = "Sent " + new Date(j.sentAt).toLocaleString("en-AU", { weekday:"short", day:"numeric", month:"short", hour:"numeric", minute:"2-digit", timeZone:"Australia/Sydney" });
     })
     .catch(function(e){ $("from").innerHTML = '<span class="err">' + String(e.message).replace(/[<>&]/g, "") + "</span>"; });

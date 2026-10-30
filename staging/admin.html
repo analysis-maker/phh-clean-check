@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030001539"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030004137"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -12,8 +12,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="preconnect" href="https://rxhpnowszmetjxbwylil.supabase.co" crossorigin>
-<script>window.PHH_ADMIN_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/admin-api";</script>
+<!-- admin-api is called directly (built from parts so the WordPress plugin does not rewrite it to its pass-through). -->
+<script>window.PHH_ADMIN_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/admin-api";</script>
 <title>Clean Check Admin</title>
 <style>
 /* Office view v2 (23 Oct 2026). Laid out like HomHero's Cleaning screen so staff feel at home:
@@ -163,7 +163,7 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
 .pushbtn.ghost{background:#fff;color:var(--teal-ink);border:1px solid var(--teal)}
 .pushbtn:disabled{opacity:.6}
 /* Photo viewer: swipe left and right through the photos, full screen. */
-/* Admin dashboard (30 Oct 2026) */
+/* Admin dashboard v2 (30 Oct 2026) */
 .lockbar{background:var(--warn-soft);color:var(--warn);border:1px solid #f3c9b8;padding:8px 12px;border-radius:4px;margin-bottom:12px;font-size:13px}
 .st-live{background:var(--ok);color:var(--ok-ink)}
 .st-ready{background:var(--info-soft);color:var(--info)}
@@ -171,35 +171,56 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
 .st-paused{background:var(--idle);color:var(--idle-ink)}
 .st-no_code{background:var(--miss);color:#fff}
 .code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;letter-spacing:.08em;font-weight:700}
+.bigcode{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:30px;letter-spacing:.14em;font-weight:700;color:var(--ink)}
 .mask{color:var(--faint);letter-spacing:.2em}
 .row2{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
-.row2 input[type=text],.row2 input[type=date],.row2 input[type=tel]{border:1px solid var(--line);border-radius:4px;padding:7px 8px;min-height:36px;min-width:0}
+.row2 input[type=text],.row2 input[type=date],.row2 input[type=tel],.row2 input[type=search],.row2 input[type=datetime-local]{border:1px solid var(--line);border-radius:4px;padding:7px 8px;min-height:36px;min-width:0}
 .row2 input[type=tel]{width:120px}
 .box{background:#fff;border:1px solid var(--line);border-radius:4px;padding:12px 16px;margin-bottom:12px}
 .box h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-ink)}
 .box p{margin:0 0 8px}
+.box.feature{border-color:#b9e0db;background:#f7fcfb}
 .ok{color:var(--ok-ink);font-weight:500}
 .bad{color:var(--miss);font-weight:500}
 .muted{color:var(--muted)}
 .compose{display:grid;gap:10px}
 .compose label{font-size:12px;color:var(--muted);display:block;margin-bottom:3px}
-.compose input,.compose textarea,.compose select{width:100%;border:1px solid var(--line);border-radius:4px;padding:8px 10px;font:inherit}
-.compose textarea{min-height:110px;resize:vertical}
+.compose input[type=text],.compose textarea,.compose select,.compose input[type=datetime-local]{width:100%;border:1px solid var(--line);border-radius:4px;padding:8px 10px;font:inherit}
+.compose textarea{min-height:120px;resize:vertical}
+.grid2{display:grid;gap:10px;grid-template-columns:1fr}
+@media (min-width:760px){.grid2{grid-template-columns:1fr 1fr}}
 .preview{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#f9fafa;max-width:420px;font-size:13px}
 .preview b{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
-.picklist{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:4px;padding:6px 10px;columns:2 220px}
+.picklist{max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:4px;padding:6px 10px;columns:2 220px}
 .picklist label{display:block;font-size:13px;color:var(--ink);margin:3px 0;break-inside:avoid}
-.ownrow td{background:#fff7f4}
 .dnga{color:var(--miss);font-weight:700;text-transform:uppercase;font-size:12px;letter-spacing:.03em}
 .tiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));margin-bottom:12px}
-.tile{background:#fff;border:1px solid var(--line);border-left:6px solid var(--ok);border-radius:4px;padding:10px 14px}
-.tile.warn{border-left-color:var(--pend)}
-.tile.bad{border-left-color:var(--miss)}
-.tile b{display:block;font-size:20px;font-weight:500}
+/* Health tiles: the dot is the status (green ok, amber watch, red act). */
+.tile{background:#fff;border:1px solid var(--line);border-radius:4px;padding:10px 14px;position:relative}
+.tile::after{content:"";position:absolute;top:12px;right:12px;width:10px;height:10px;border-radius:50%;background:var(--ok)}
+.tile.warn::after{background:var(--pend)}
+.tile.bad{border-color:#f0b9b3}
+.tile.bad::after{background:var(--miss)}
+.tile b{display:block;font-size:22px;font-weight:500}
 .tile span{color:var(--muted);font-size:12px}
 .loginbox{max-width:360px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:4px;padding:20px}
 .loginbox input{width:100%;border:1px solid var(--line);border-radius:4px;padding:10px;font-size:18px;letter-spacing:.2em;margin:8px 0 12px}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#26323a;color:#fff;padding:10px 16px;border-radius:4px;z-index:60;font-size:13px;max-width:90vw}
+.steps{display:inline-flex;gap:3px;vertical-align:middle}
+.steps i{width:12px;height:12px;border-radius:50%;background:var(--line);display:inline-block}
+.steps i.on{background:var(--ok)}
+.found{display:grid;gap:10px;margin-top:10px}
+.found .card{border:1px solid var(--line);border-radius:6px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;background:#fff}
+.found .card .who{flex:1 1 200px}
+.req{border:1px solid #f1dca6;padding:8px 12px;background:#fffaf0;margin:8px 0;border-radius:4px}
+.modal{position:fixed;inset:0;background:rgba(20,30,35,.45);z-index:70;display:grid;place-items:center;padding:16px}
+.modal[hidden]{display:none !important}
+.modal .sheet{background:#fff;border-radius:8px;max-width:420px;width:100%;padding:18px 20px}
+.modal h2{margin:0 0 6px;font-size:18px;font-weight:500}
+.modal .actions{justify-content:flex-end}
+.pill{display:inline-block;font-size:11px;font-weight:700;border-radius:10px;padding:1px 8px;background:var(--info-soft);color:var(--info);margin-left:6px}
+.pill.sched{background:#fff4d6;color:var(--pend-ink)}
+.pill.cancel{background:var(--idle);color:var(--idle-ink)}
 </style>
 <script>
 /* Self-update (tools/bump_build.py): if this copy is older than the live page, reopen it fresh.
@@ -234,12 +255,14 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
 <header class="bar">
   <div class="brand"><img src="icon-180.png" alt="" width="24" height="24">Clean Check</div>
   <div class="section">Admin</div>
-  <div class="me" id="me" hidden><span id="mename"></span><a href="office.html?v=1030a" style="color:var(--teal-ink);font-weight:500;text-decoration:none">Cleaning</a><a href="maintenance.html?v=1028m" style="color:var(--teal-ink);font-weight:500;text-decoration:none">Maintenance</a><button type="button" id="signout">Sign out</button></div>
+  <div class="me" id="me" hidden><span id="mename"></span><a href="office.html?v=1030b" style="color:var(--teal-ink);font-weight:500;text-decoration:none">Cleaning</a><a href="maintenance.html?v=1030b" style="color:var(--teal-ink);font-weight:500;text-decoration:none">Maintenance</a><button type="button" id="signout">Sign out</button></div>
 </header>
 <nav class="tabs" role="tablist" aria-label="Admin views" id="tabs" hidden>
-  <button class="tab" role="tab" data-tab="hk" aria-selected="true">Housekeepers &amp; codes</button>
+  <button class="tab" role="tab" data-tab="hk" aria-selected="true">Housekeepers &amp; codes<span class="n" id="reqN" hidden></span></button>
+  <button class="tab" role="tab" data-tab="roll" aria-selected="false">Rollout</button>
   <button class="tab" role="tab" data-tab="msg" aria-selected="false">Messages</button>
-  <button class="tab" role="tab" data-tab="codes" aria-selected="false">Staff &amp; other codes</button>
+  <button class="tab" role="tab" data-tab="thanks" aria-selected="false">Thank you</button>
+  <button class="tab" role="tab" data-tab="codes" aria-selected="false">Staff &amp; testers</button>
   <button class="tab" role="tab" data-tab="health" aria-selected="false">System health<span class="n" id="healthN" hidden></span></button>
   <button class="tab" role="tab" data-tab="log" aria-selected="false">Activity</button>
 </nav>
@@ -253,13 +276,19 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
 </div>
 
 <main id="main" hidden>
-  <div class="lockbar" id="lockbar" hidden>Staging: messages can only go to the two test housekeepers (1357, 2468) until go-live. Nothing reaches real housekeepers from here yet.</div>
+  <div class="lockbar" id="lockbar" hidden>Staging: messages only go to the testers (Ian 1357, Craig 2468, Marson 3579) until go-live. Nothing reaches real housekeepers from here yet.</div>
 
   <!-- Housekeepers and codes -->
   <section id="v-hk">
+    <div class="box feature">
+      <h3>Forgotten code or change a code</h3>
+      <div class="row2"><input type="search" id="fq" placeholder="Type the housekeeper's name" aria-label="Find a housekeeper" style="flex:1 1 260px"></div>
+      <div class="found" id="found"></div>
+      <div id="reqs"></div>
+    </div>
     <div class="strip" id="hkstrip"></div>
     <div class="filters">
-      <input type="search" id="hkq" placeholder="Search housekeeper or code" aria-label="Search housekeepers">
+      <input type="search" id="hkq" placeholder="Filter the list" aria-label="Filter housekeepers">
       <select id="hkst" aria-label="Status">
         <option value="">Every status</option>
         <option value="live">Live on Clean Check</option>
@@ -268,19 +297,22 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
         <option value="paused">Paused</option>
         <option value="no_code">No code</option>
       </select>
-      <select id="hkph" aria-label="Notifications">
-        <option value="">Notifications: any</option>
-        <option value="on">Notifications on</option>
+      <select id="hkph" aria-label="Setup">
+        <option value="">Setup: any</option>
+        <option value="nosent">Code not sent yet</option>
+        <option value="noseen">Not signed in yet</option>
         <option value="off">Notifications off</option>
+        <option value="on">Notifications on</option>
       </select>
       <label class="nowrap" style="font-size:13px"><input type="checkbox" id="showcodes"> Show codes</label>
     </div>
     <div class="tablewrap" style="margin-top:12px">
       <table>
-        <thead><tr><th>Status</th><th>Housekeeper</th><th>Code</th><th>Next 7 days</th><th>Checks (30 days)</th><th>Last check</th><th>Notifications</th></tr></thead>
+        <thead><tr><th>Status</th><th>Housekeeper</th><th>Code</th><th>Next 7 days</th><th title="Code sent, signed in, notifications on, first clean check">Setup</th><th>Checks (30 days)</th><th></th></tr></thead>
         <tbody id="hkbody"></tbody>
       </table>
     </div>
+    <p class="sub" style="margin:6px 2px">Setup dots: code sent, signed in, notifications on, first clean check.</p>
     <div class="box" style="margin-top:12px">
       <h3>Owners who clean their own homes</h3>
       <p class="dnga">Do not give access to owners.</p>
@@ -289,25 +321,44 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
     </div>
   </section>
 
+  <!-- Rollout planner -->
+  <section id="v-roll" hidden>
+    <div class="box">
+      <h3>Plan a start date</h3>
+      <p class="muted">Pick a day, tick who starts, save. Only housekeepers with cleans that day can be started, so nobody starts on a day off (the pilot lesson).</p>
+      <div class="row2"><input type="date" id="rdate" aria-label="Start date"><button class="btn ghost small" type="button" id="rload">Show cleans that day</button><button class="btn ghost small" type="button" id="rtick">Tick everyone with cleans</button></div>
+      <div class="tablewrap" style="margin-top:10px"><table><thead><tr><th></th><th>Housekeeper</th><th>Status</th><th>Cleans that day</th><th>Setup</th></tr></thead><tbody id="rbody"></tbody></table></div>
+      <div class="row2" style="margin-top:10px"><button class="btn" type="button" id="rsave">Save start date for ticked</button><span id="rres" class="muted"></span></div>
+      <p class="sub">After saving, send them the "Your start date" message from Messages. Their cleans are counted from that day.</p>
+    </div>
+  </section>
+
   <!-- Messages -->
   <section id="v-msg" hidden>
     <div class="box">
       <h3>New message to housekeepers</h3>
       <div class="compose">
-        <div><label for="mtitle">Title (shows first in the notification)</label><input id="mtitle" maxlength="60" placeholder="e.g. Easter long weekend"></div>
-        <div><label for="mbody">Message</label><textarea id="mbody" maxlength="600" placeholder="Keep it short and friendly."></textarea></div>
-        <div><label for="maud">Who gets it</label>
-          <select id="maud">
-            <option value="test">Test housekeepers only (1357, 2468)</option>
-            <option value="all">All housekeepers with a code</option>
-            <option value="live">Housekeepers live on Clean Check</option>
-            <option value="ids">Pick housekeepers</option>
-          </select>
+        <div class="grid2">
+          <div><label for="mtpl">Start from</label><select id="mtpl"></select></div>
+          <div><label for="maud">Who gets it (Ian, Craig and Marson always get a copy)</label>
+            <select id="maud">
+              <option value="test">Testers only (Ian, Craig, Marson)</option>
+              <option value="all">All housekeepers with a code</option>
+              <option value="live">Housekeepers live on Clean Check</option>
+              <option value="ids">Pick housekeepers</option>
+            </select>
+          </div>
         </div>
         <div id="mpick" class="picklist" hidden></div>
+        <div><label for="mtitle">Title (shows first in the notification)</label><input type="text" id="mtitle" maxlength="60" placeholder="e.g. Easter long weekend"></div>
+        <div><label for="mbody">Message. {first} = their first name, {code} = their code, {start} = their start date</label><textarea id="mbody" maxlength="600" placeholder="Keep it short and friendly."></textarea></div>
+        <div class="grid2">
+          <label style="font-size:13px;color:var(--ink)"><input type="checkbox" id="mguides"> Include the How It Works guide and video</label>
+          <div><label for="mwhen">Send later (optional, Sydney time)</label><input type="datetime-local" id="mwhen"></div>
+        </div>
         <div><label>Phone preview</label><div class="preview"><b>Professional Holiday Homes</b><span id="mprev">Title: message</span></div></div>
         <div class="row2"><button class="btn ghost" type="button" id="mdry">Check who gets it</button><button class="btn" type="button" id="msend">Send</button><span id="mres" class="muted"></span></div>
-        <p class="muted" style="margin:0;font-size:12px">Sent as "Professional Holiday Homes". Housekeepers without notifications see it in the app next time they sign in. Read means they opened the notification or tapped Got it in the app.</p>
+        <p class="muted" style="margin:0;font-size:12px">Sent as "Professional Holiday Homes". Without notifications, they see it in the app next time they sign in. Read = opened the notification or tapped Got it.</p>
       </div>
     </div>
     <div class="tablewrap">
@@ -318,11 +369,21 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
     </div>
   </section>
 
-  <!-- Staff, owner, office and test codes -->
+  <!-- Thank you -->
+  <section id="v-thanks" hidden>
+    <div class="box">
+      <h3>Most clean checks this month</h3>
+      <p class="muted">For a positive shout-out. Write a thank-you opens Messages ready to go to that housekeeper.</p>
+      <div id="thanklist"></div>
+    </div>
+  </section>
+
+  <!-- Staff, testers, owner and phones -->
   <section id="v-codes" hidden>
+    <div class="box"><h3>Testers</h3><p class="muted">Ian, Craig and Marson. They see exactly what a housekeeper sees, get a copy of every housekeeper message, and are never counted in reports or sent to HomHero. Each tester signs in with their code on their phone and taps Turn on.</p><div id="testlist"></div></div>
     <div class="box"><h3>Office and staff</h3><div id="stafflist"></div></div>
+    <div class="box"><h3>Other phones with notifications on</h3><div id="phonelist"></div></div>
     <div class="box"><h3>Owner dashboard</h3><div id="ownerlist"></div></div>
-    <div class="box"><h3>Shared and test codes</h3><div id="testlist"></div></div>
   </section>
 
   <!-- System health -->
@@ -339,30 +400,54 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
   <p class="msg" id="msg"></p>
 </main>
 
+<!-- Change code sheet -->
+<div class="modal" id="cc" hidden role="dialog" aria-modal="true" aria-labelledby="cctitle">
+  <div class="sheet">
+    <h2 id="cctitle">Change code</h2>
+    <p class="muted" id="ccwho"></p>
+    <p>Current code <span class="bigcode" id="cccur"></span></p>
+    <div class="row2"><button class="btn" type="button" id="ccgen">Give a new random code</button></div>
+    <div class="row2"><input type="tel" inputmode="numeric" maxlength="6" id="ccset" placeholder="Or type 4 to 6 digits" aria-label="New code"><button class="btn ghost small" type="button" id="ccsave">Use this code</button></div>
+    <p class="sub">The old code stops working straight away. Their phone asks for the new one next time. Notifications keep working.</p>
+    <p id="ccres"></p>
+    <div class="row2 actions"><button class="btn ghost small" type="button" id="cccopy" hidden>Copy code message</button><button class="btn ghost small" type="button" id="ccclose">Close</button></div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
   var API = window.PHH_ADMIN_API;
   var $ = function(id){ return document.getElementById(id); };
   var CODE = ""; try{ CODE = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
-  var D = null, open = {}, tab = "hk";
+  var D = null, open = {}, tab = "hk", ccId = null;
+  var SITE = "professionalholidayhomes.com.au/checkcleaning";
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]; }); }
   function call(route, body){
     return fetch(API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(Object.assign({ code: CODE }, body || {})) })
       .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
   }
   function toast(t){ var d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 3500); }
-  function fmtDate(s){ if(!s) return "-"; var d = new Date(String(s).length <= 10 ? s + "T00:00:00" : s); return d.toLocaleDateString("en-AU", { day:"numeric", month:"short", timeZone:"Australia/Sydney" }); }
+  function copy(t){ (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ toast("Copied"); }).catch(function(){ prompt("Copy this:", t); }); }
+  function fmtDate(s){ if(!s) return "-"; var d = new Date(String(s).length <= 10 ? s + "T12:00:00+10:00" : s); return d.toLocaleDateString("en-AU", { day:"numeric", month:"short", timeZone:"Australia/Sydney" }); }
   function fmtTime(s){ if(!s) return "-"; return new Date(s).toLocaleString("en-AU", { day:"numeric", month:"short", hour:"numeric", minute:"2-digit", timeZone:"Australia/Sydney" }); }
   function ago(s){ if(!s) return "never"; var m = Math.round((Date.now() - Date.parse(s)) / 60000); return m < 60 ? m + " min ago" : m < 2880 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " days ago"; }
   var ST = { live:"Live", ready:"Ready", starting:"Starts", paused:"Paused", no_code:"No code" };
   function first(n){ return String(n || "").split(/[ (]/)[0]; }
+  function hkById(id){ return D && D.housekeepers.filter(function(x){ return x.id === id; })[0]; }
+  function codeMsg(h){ return "Hi " + first(h.name) + ", your Clean Check code is " + h.code + ". Open " + SITE + " and enter it. Thanks, Professional Holiday Homes"; }
+  function steps(h){
+    var s = [!!h.codeSentAt, !!h.firstSeenAt, h.phones > 0, !!h.firstCheckAt], n = s.filter(Boolean).length;
+    var t = ["Code sent", "Signed in", "Notifications on", "First clean check"].map(function(l, i){ return (s[i] ? "Done: " : "Not yet: ") + l; }).join(", ");
+    return '<span class="steps" title="' + esc(t) + '" aria-label="' + esc(t) + '">' + s.map(function(x){ return '<i class="' + (x ? "on" : "") + '"></i>'; }).join("") + '</span> <span class="sub">' + n + "/4</span>";
+  }
 
   /* ---------- sign in ---------- */
   function showLogin(err){ $("loginbox").hidden = false; $("main").hidden = true; $("tabs").hidden = true; $("me").hidden = true; $("lerr").textContent = err || ""; setTimeout(function(){ $("lcode").focus(); }, 50); }
   function start(){
     if(!CODE) return showLogin("");
     call("login").then(function(j){
+      try{ localStorage.setItem("phh-staff-code", CODE); }catch(e){}
       $("loginbox").hidden = true; $("main").hidden = false; $("tabs").hidden = false; $("me").hidden = false;
       $("mename").textContent = j.name; $("lockbar").hidden = !!j.realSends;
       load();
@@ -373,23 +458,82 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
   $("signout").addEventListener("click", function(){ try{ localStorage.removeItem("phh-staff-code"); localStorage.removeItem("phh-staff-view"); }catch(e){} location.replace("./"); });
 
   /* ---------- tabs ---------- */
-  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(b){
-    b.addEventListener("click", function(){
-      tab = b.getAttribute("data-tab");
-      Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(x){ x.setAttribute("aria-selected", x === b ? "true" : "false"); });
-      ["hk","msg","codes","health","log"].forEach(function(t){ $("v-" + t).hidden = t !== tab; });
-      if(tab === "msg") loadMsgs();
-      if(tab === "log") loadLog();
-    });
-  });
+  function show(t){
+    tab = t;
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(x){ x.setAttribute("aria-selected", x.getAttribute("data-tab") === t ? "true" : "false"); });
+    ["hk","roll","msg","thanks","codes","health","log"].forEach(function(k){ $("v-" + k).hidden = k !== t; });
+    if(t === "msg") loadMsgs();
+    if(t === "log") loadLog();
+    if(t === "roll" && !$("rbody").children.length) loadPlan();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(b){ b.addEventListener("click", function(){ show(b.getAttribute("data-tab")); }); });
 
   function load(){
     $("msg").textContent = "Loading...";
-    return call("overview").then(function(j){ D = j; $("msg").textContent = ""; renderHk(); renderCodes(); renderHealth(); renderPick(); })
+    return call("overview").then(function(j){ D = j; $("msg").textContent = ""; renderHk(); renderFind(); renderReqs(); renderCodes(); renderHealth(); renderPick(); renderThanks(); })
       .catch(function(e){ $("msg").innerHTML = '<span class="err">' + esc(e.message) + "</span>"; });
   }
 
-  /* ---------- housekeepers ---------- */
+  /* ---------- forgotten code finder ---------- */
+  $("fq").addEventListener("input", renderFind);
+  function renderFind(){
+    var q = $("fq").value.trim().toLowerCase(), box = $("found");
+    if(!D || q.length < 2){ box.innerHTML = ""; return; }
+    var hits = D.housekeepers.filter(function(h){ return (h.name + " " + h.hhName).toLowerCase().indexOf(q) >= 0; }).slice(0, 5);
+    box.innerHTML = hits.length ? hits.map(function(h){
+      return '<div class="card"><div class="who"><b>' + esc(h.name) + '</b><div class="sub">' + esc(ST[h.status]) + (h.active ? "" : ", paused") + "</div></div>" +
+        (h.code ? '<span class="bigcode">' + esc(h.code) + '</span><button class="btn small" data-cc="' + esc(h.id) + '">Change code</button><button class="btn ghost small" data-copy="' + esc(h.id) + '">Copy code message</button>'
+                : '<button class="btn small" data-act="create" data-id="' + esc(h.id) + '">Create code</button>') + "</div>";
+    }).join("") : '<p class="muted">Nobody by that name. Owners are not listed.</p>';
+  }
+  $("found").addEventListener("click", function(e){
+    var b = e.target.closest("[data-cc],[data-copy],[data-act]"); if(!b) return;
+    if(b.hasAttribute("data-cc")) return openCC(b.getAttribute("data-cc"));
+    if(b.hasAttribute("data-copy")) return copy(codeMsg(hkById(b.getAttribute("data-copy"))));
+    act(b);
+  });
+
+  /* ---------- code requests from the app ---------- */
+  function renderReqs(){
+    var rs = (D && D.requests) || [];
+    $("reqN").hidden = !rs.length; $("reqN").textContent = rs.length;
+    $("reqs").innerHTML = rs.length ? '<h3 style="margin-top:14px">Asked for their code in the app (' + rs.length + ")</h3>" + rs.map(function(r){
+      var h = r.cleaner_id ? hkById(r.cleaner_id) : null;
+      return '<div class="req"><b>' + esc(r.name) + "</b>" + (r.phone ? " " + esc(r.phone) : "") + ' <span class="sub">' + esc(fmtTime(r.created_at)) + "</span>" + (r.note ? '<div class="sub">' + esc(r.note) + "</div>" : "") +
+        '<div class="row2">' + (h ? 'Looks like <b>' + esc(h.name) + "</b>" + (h.code ? ', code <span class="code">' + esc(h.code) + '</span> <button class="btn ghost small" data-copy="' + esc(h.id) + '">Copy code message</button> <button class="btn ghost small" data-cc="' + esc(h.id) + '">Change code</button>' : "") : '<span class="sub">No exact match. Search the name above.</span>') +
+        ' <button class="btn small" data-done="' + esc(r.id) + '" data-name="' + esc(r.name) + '">Sorted</button></div></div>';
+    }).join("") : "";
+  }
+  $("reqs").addEventListener("click", function(e){
+    var b = e.target.closest("[data-cc],[data-copy],[data-done]"); if(!b) return;
+    if(b.hasAttribute("data-cc")) return openCC(b.getAttribute("data-cc"));
+    if(b.hasAttribute("data-copy")) return copy(codeMsg(hkById(b.getAttribute("data-copy"))));
+    b.disabled = true; call("request-done", { id: b.getAttribute("data-done"), name: b.getAttribute("data-name") }).then(function(){ toast("Marked sorted"); load(); }).catch(function(x){ b.disabled = false; toast(x.message); });
+  });
+
+  /* ---------- change code sheet ---------- */
+  function openCC(id){
+    var h = hkById(id); if(!h) return; ccId = id;
+    $("ccwho").textContent = h.name; $("cccur").textContent = h.code; $("ccset").value = ""; $("ccres").textContent = ""; $("cccopy").hidden = true;
+    $("cc").hidden = false; setTimeout(function(){ $("ccgen").focus(); }, 30);
+  }
+  function closeCC(){ $("cc").hidden = true; ccId = null; }
+  $("ccclose").addEventListener("click", closeCC);
+  $("cc").addEventListener("click", function(e){ if(e.target === $("cc")) closeCC(); });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape" && !$("cc").hidden) closeCC(); });
+  function doCC(body){
+    $("ccgen").disabled = $("ccsave").disabled = true; $("ccres").textContent = "Saving...";
+    call("code", Object.assign({ cleanerId: ccId }, body)).then(function(j){
+      $("ccgen").disabled = $("ccsave").disabled = false;
+      $("cccur").textContent = j.code; $("ccres").innerHTML = '<span class="ok">New code saved.</span>'; $("cccopy").hidden = false;
+      var h = hkById(ccId); if(h) h.code = j.code; load();
+    }).catch(function(e){ $("ccgen").disabled = $("ccsave").disabled = false; $("ccres").innerHTML = '<span class="err">' + esc(e.message) + "</span>"; });
+  }
+  $("ccgen").addEventListener("click", function(){ doCC({ action: "generate" }); });
+  $("ccsave").addEventListener("click", function(){ var v = $("ccset").value.trim(); if(!v) return toast("Type a code first."); doCC({ action: "set", code: v }); });
+  $("cccopy").addEventListener("click", function(){ var h = hkById(ccId); if(h) copy(codeMsg({ name: h.name, code: $("cccur").textContent })); });
+
+  /* ---------- housekeepers table ---------- */
   ["hkq","hkst","hkph","showcodes"].forEach(function(id){ $(id).addEventListener(id === "hkq" ? "input" : "change", renderHk); });
   function renderHk(){
     if(!D) return;
@@ -397,15 +541,17 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
     var n = function(f){ return hk.filter(f).length; };
     $("hkstrip").innerHTML =
       "<div><b>" + hk.length + "</b><span>Housekeepers</span></div>" +
-      "<div><b>" + n(function(h){ return h.code; }) + "</b><span>Have a code</span></div>" +
       "<div><b>" + n(function(h){ return h.status === "live"; }) + "</b><span>Live on Clean Check</span></div>" +
-      "<div><b>" + n(function(h){ return h.status === "ready"; }) + "</b><span>Ready, not started</span></div>" +
+      "<div><b>" + n(function(h){ return h.codeSentAt; }) + "</b><span>Code sent</span></div>" +
+      "<div><b>" + n(function(h){ return h.firstSeenAt; }) + "</b><span>Signed in</span></div>" +
       "<div><b>" + n(function(h){ return h.phones > 0; }) + "</b><span>Notifications on</span></div>" +
       '<div class="' + (n(function(h){ return !h.code; }) ? "bad" : "") + '"><b>' + n(function(h){ return !h.code; }) + "</b><span>No code yet</span></div>";
     var list = hk.filter(function(h){
       if(st && h.status !== st) return false;
       if(ph === "on" && !h.phones) return false;
       if(ph === "off" && h.phones) return false;
+      if(ph === "nosent" && h.codeSentAt) return false;
+      if(ph === "noseen" && h.firstSeenAt) return false;
       if(q && (h.name + " " + h.hhName + " " + (h.code || "")).toLowerCase().indexOf(q) < 0) return false;
       return true;
     });
@@ -415,12 +561,12 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
       var stl = ST[h.status] + (h.status === "starting" ? " " + fmtDate(h.checksFrom) : "");
       html += '<tr class="r" data-id="' + esc(h.id) + '" aria-expanded="' + exp + '" tabindex="0">' +
         '<td class="st"><div class="stc st-' + h.status + '">' + esc(stl) + "</div></td>" +
-        '<td class="col-prop"><span class="prop">' + esc(h.name) + '</span><span class="stlabel st-' + h.status + '">' + esc(stl) + "</span>" + (h.hhName && h.hhName !== h.name ? '<div class="sub">HomHero: ' + esc(h.hhName) + "</div>" : "") + "</td>" +
+        '<td class="col-prop"><span class="prop">' + esc(h.name) + '</span><span class="stlabel st-' + h.status + '">' + esc(stl) + "</span></td>" +
         '<td data-l="Code">' + (h.code ? (show ? '<span class="code">' + esc(h.code) + "</span>" : '<span class="mask">****</span>') : '<span class="bad">None</span>') + "</td>" +
         '<td data-l="Next 7 days">' + (h.nextWeek || "-") + (h.today ? ' <span class="sub">(' + h.today + " today)</span>" : "") + "</td>" +
+        '<td data-l="Setup">' + steps(h) + "</td>" +
         '<td data-l="Checks (30 days)">' + (h.done30 ? h.checked30 + " of " + h.done30 : "-") + "</td>" +
-        '<td data-l="Last check">' + (h.lastCheckAt ? fmtDate(h.lastCheckAt) : "-") + "</td>" +
-        '<td data-l="Notifications">' + (h.phones ? '<span class="ok">On</span> <span class="sub">' + esc(h.devices.join(", ")) + "</span>" + (h.phoneError ? ' <span class="chip warn">error</span>' : "") : '<span class="muted">Off</span>') + "</td></tr>";
+        '<td class="nowrap">' + (h.code ? '<button class="btn ghost small" data-cc="' + esc(h.id) + '">Change code</button>' : '<button class="btn small" data-act="create" data-id="' + esc(h.id) + '">Create code</button>') + "</td></tr>";
       if(exp) html += '<tr class="d"><td colspan="7">' + detail(h) + "</td></tr>";
     });
     $("hkbody").innerHTML = html || '<tr><td colspan="7" class="empty">Nobody matches.</td></tr>';
@@ -428,83 +574,131 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
     $("ownlist").innerHTML = ow.length ? ow.map(function(o){ return esc(o.name) + (o.hasCode ? ' <span class="bad">(has a code, pause it)</span>' : "") + (o.nextWeek ? ' <span class="sub">' + o.nextWeek + (o.nextWeek === 1 ? " clean" : " cleans") + " next 7 days</span>" : ""); }).join("<br>") : "None in HomHero right now.";
   }
   function detail(h){
-    if(!h.code) return '<div class="detail"><div><h3>No code yet</h3><p>Create a code for ' + esc(first(h.name)) + '. It works straight away but nothing is counted until you set a start date.</p><div class="actions"><button class="btn" data-act="create" data-id="' + esc(h.id) + '">Create code</button></div></div></div>';
-    var msgTxt = "Hi " + first(h.name) + ", your Clean Check code is " + h.code + ". Open professionalholidayhomes.com.au/checkcleaning and enter it. Thanks, Professional Holiday Homes";
+    if(!h.code) return '<div class="detail"><div><h3>No code yet</h3><p>Create a code for ' + esc(first(h.name)) + '. It works straight away but nothing is counted until you set a start date.</p></div></div>';
     return '<div class="detail"><div>' +
       "<h3>Code</h3>" +
-      '<p><span class="code">' + esc(h.code) + '</span> <span class="sub">changed ' + esc(fmtDate(h.updatedAt)) + "</span></p>" +
-      '<div class="row2"><button class="btn small" data-act="generate" data-id="' + esc(h.id) + '">New random code</button>' +
-      '<input type="tel" inputmode="numeric" maxlength="6" placeholder="Or type one" id="set-' + esc(h.id) + '" aria-label="New code for ' + esc(h.name) + '"><button class="btn ghost small" data-act="set" data-id="' + esc(h.id) + '">Set code</button></div>' +
-      '<p class="sub">Forgotten code: read it out, or give a new one. A changed code signs their phone out; they enter the new one next time. Their notifications keep working.</p>' +
-      '<div class="row2"><button class="btn ghost small" data-act="copy" data-txt="' + esc(msgTxt) + '">Copy code message</button><span class="sub">For Marson to send. Nothing is sent from here.</span></div>' +
+      '<p><span class="bigcode">' + esc(h.code) + '</span> <span class="sub">changed ' + esc(fmtDate(h.updatedAt)) + "</span></p>" +
+      '<div class="row2"><button class="btn small" data-cc="' + esc(h.id) + '">Change code</button><button class="btn ghost small" data-copy="' + esc(h.id) + '">Copy code message</button>' +
+      (h.codeSentAt ? '<span class="ok">Sent ' + esc(fmtDate(h.codeSentAt)) + '</span> <button class="btn ghost small" data-act="unsent" data-id="' + esc(h.id) + '">Undo</button>' : '<button class="btn ghost small" data-act="sent" data-id="' + esc(h.id) + '">Mark code as sent</button>') + "</div>" +
+      "<h3 style=\"margin-top:12px\">Setup</h3>" +
+      '<dl class="kv"><dt>Code sent</dt><dd>' + (h.codeSentAt ? esc(fmtDate(h.codeSentAt)) : "Not yet") + "</dd><dt>Signed in</dt><dd>" + (h.firstSeenAt ? "First " + esc(fmtDate(h.firstSeenAt)) + ", last " + esc(ago(h.lastSeenAt)) : "Not yet") +
+      "</dd><dt>Notifications</dt><dd>" + (h.phones ? h.phones + " phone" + (h.phones > 1 ? "s" : "") + " (" + esc(h.devices.join(", ")) + "), last " + esc(ago(h.phoneLastSent)) : "Not turned on") + "</dd><dt>First clean check</dt><dd>" + (h.firstCheckAt ? esc(fmtDate(h.firstCheckAt)) : "Not yet") + "</dd>" + (h.phoneError ? "<dt>Phone error</dt><dd>" + esc(h.phoneError) + "</dd>" : "") + "</dl>" +
       "<h3 style=\"margin-top:12px\">Access</h3>" +
       '<div class="row2">' + (h.active ? '<button class="btn ghost small" data-act="pause" data-id="' + esc(h.id) + '">Pause code</button><span class="sub">Stops sign in. Use if someone leaves PHH.</span>' : '<button class="btn small" data-act="resume" data-id="' + esc(h.id) + '">Turn code back on</button>') + "</div>" +
       "</div><div>" +
       "<h3>Clean Check start date</h3>" +
-      "<p>" + (h.checksFrom ? "Counted from <b>" + esc(fmtDate(h.checksFrom)) + "</b>. From then a clean done in HomHero without a clean check shows as missed (office view, 7pm note, reminders when they are on)." : "Not started. The code works, but nothing is counted or reported for " + esc(first(h.name)) + " yet.") + "</p>" +
+      "<p>" + (h.checksFrom ? "Counted from <b>" + esc(fmtDate(h.checksFrom)) + "</b>. From then a clean done in HomHero without a clean check shows as missed." : "Not started. The code works, but nothing is counted or reported for " + esc(first(h.name)) + " yet.") + "</p>" +
       '<div class="row2"><input type="date" id="start-' + esc(h.id) + '" value="' + esc(h.checksFrom || "") + '" min="' + esc(D.today) + '" aria-label="Start date"><button class="btn small" data-act="start" data-id="' + esc(h.id) + '">Save start date</button>' + (h.checksFrom ? '<button class="btn ghost small" data-act="unstart" data-id="' + esc(h.id) + '">Clear</button>' : "") + "</div>" +
-      (h.nextWeek ? "" : '<p class="sub bad">No cleans in the next 7 days. Pick a start date when they next have cleans.</p>') +
-      '<dl class="kv" style="margin-top:10px"><dt>HomHero id</dt><dd>' + esc(h.id) + "</dd><dt>Last clean</dt><dd>" + esc(fmtDate(h.lastClean)) + "</dd><dt>Phone</dt><dd>" + (h.phones ? h.phones + " phone" + (h.phones > 1 ? "s" : "") + ", last notification " + esc(ago(h.phoneLastSent)) : "Notifications not turned on") + "</dd>" + (h.phoneError ? "<dt>Phone error</dt><dd>" + esc(h.phoneError) + "</dd>" : "") + "</dl>" +
+      (h.nextWeek ? "" : '<p class="sub bad">No cleans in the next 7 days. Use Rollout to pick a day they have cleans.</p>') +
+      '<dl class="kv" style="margin-top:10px"><dt>HomHero</dt><dd>' + esc(h.hhName || h.name) + " (id " + esc(h.id) + ")</dd><dt>Last clean</dt><dd>" + esc(fmtDate(h.lastClean)) + "</dd><dt>This month</dt><dd>" + h.monthChecks + " clean checks" + (h.monthScore ? ", average " + h.monthScore + "/5" : "") + "</dd></dl>" +
       "</div></div>";
   }
   $("hkbody").addEventListener("click", function(e){
-    var b = e.target.closest("[data-act]");
-    if(b){ e.stopPropagation(); return act(b); }
+    var b = e.target.closest("[data-act],[data-cc],[data-copy]");
+    if(b){ e.stopPropagation(); if(b.hasAttribute("data-cc")) return openCC(b.getAttribute("data-cc")); if(b.hasAttribute("data-copy")) return copy(codeMsg(hkById(b.getAttribute("data-copy")))); return act(b); }
     if(e.target.closest("input,label,a")) return;
     var tr = e.target.closest("tr.r"); if(!tr) return;
     var id = tr.getAttribute("data-id"); open[id] = !open[id]; renderHk();
   });
   $("hkbody").addEventListener("keydown", function(e){ if(e.key === "Enter" && e.target.matches("tr.r")){ var id = e.target.getAttribute("data-id"); open[id] = !open[id]; renderHk(); } });
   function act(b){
-    var a = b.getAttribute("data-act"), id = b.getAttribute("data-id");
-    var h = D && D.housekeepers.filter(function(x){ return x.id === id; })[0];
-    if(a === "copy"){ var t = b.getAttribute("data-txt"); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ toast("Copied"); }).catch(function(){ prompt("Copy this:", t); }); return; }
+    var a = b.getAttribute("data-act"), id = b.getAttribute("data-id"), h = hkById(id);
     var body = { cleanerId: id, action: a };
-    if(a === "set"){ body.code = $("set-" + id).value.trim(); if(!body.code) return toast("Type a code first."); }
     if(a === "start"){ body.date = $("start-" + id).value; if(!body.date) return toast("Pick a date first."); }
     if(a === "unstart"){ body.action = "start"; body.date = null; }
+    if(a === "sent"){ body.sent = true; }
+    if(a === "unsent"){ body.action = "sent"; body.sent = false; }
     if(a === "create") body.name = h ? (h.hhName || h.name) : "";
-    if((a === "generate" || a === "set") && !confirm("Change " + first(h && h.name) + "'s code? Their old code stops working straight away.")) return;
     if(a === "pause" && !confirm("Pause " + first(h && h.name) + "'s code? They will not be able to sign in.")) return;
     b.disabled = true;
     call("code", body).then(function(j){ toast(j.code ? "New code " + j.code : "Saved"); open[id] = true; return load(); })
       .catch(function(e){ b.disabled = false; toast(e.message); });
   }
 
+  /* ---------- rollout planner ---------- */
+  var plan = {};
+  function loadPlan(){
+    if(!D) return;
+    if(!$("rdate").value){ var t = new Date(Date.now() + 86400000); $("rdate").value = new Intl.DateTimeFormat("en-CA", { timeZone:"Australia/Sydney" }).format(t); }
+    $("rdate").min = D.today;
+    $("rres").textContent = "Loading...";
+    call("plan", { date: $("rdate").value }).then(function(j){ plan = j.cleans || {}; $("rres").textContent = ""; renderPlan(); }).catch(function(e){ $("rres").innerHTML = '<span class="err">' + esc(e.message) + "</span>"; });
+  }
+  function renderPlan(){
+    var list = D.housekeepers.filter(function(h){ return h.code && h.active && h.status !== "live"; })
+      .sort(function(a, b){ return ((plan[b.id] || []).length - (plan[a.id] || []).length) || a.name.localeCompare(b.name); });
+    $("rbody").innerHTML = list.map(function(h){
+      var c = plan[h.id] || [];
+      return '<tr><td><input type="checkbox" value="' + esc(h.id) + '" aria-label="Start ' + esc(h.name) + '"' + (c.length ? "" : " disabled") + '></td><td class="col-prop"><span class="prop">' + esc(h.name) + '</span></td><td data-l="Status">' + esc(ST[h.status]) + (h.status === "starting" ? " " + esc(fmtDate(h.checksFrom)) : "") +
+        '</td><td data-l="Cleans that day">' + (c.length ? c.length + ' <span class="sub">' + esc(c.slice(0, 3).join(", ")) + (c.length > 3 ? "..." : "") + "</span>" : '<span class="muted">None</span>') + '</td><td data-l="Setup">' + steps(h) + "</td></tr>";
+    }).join("") || '<tr><td colspan="5" class="empty">Everyone with a code is already live.</td></tr>';
+  }
+  $("rload").addEventListener("click", loadPlan);
+  $("rdate").addEventListener("change", loadPlan);
+  $("rtick").addEventListener("click", function(){ Array.prototype.forEach.call(document.querySelectorAll("#rbody input:not(:disabled)"), function(i){ i.checked = true; }); });
+  $("rsave").addEventListener("click", function(){
+    var ids = Array.prototype.map.call(document.querySelectorAll("#rbody input:checked"), function(i){ return i.value; });
+    if(!ids.length) return toast("Tick at least one housekeeper.");
+    if(!confirm("Start " + ids.length + " housekeeper" + (ids.length > 1 ? "s" : "") + " on " + fmtDate($("rdate").value) + "? From that day their cleans are counted.")) return;
+    $("rsave").disabled = true;
+    call("plan-save", { date: $("rdate").value, ids: ids }).then(function(j){ $("rsave").disabled = false; $("rres").innerHTML = '<span class="ok">' + j.saved + " started on " + esc(fmtDate($("rdate").value)) + ".</span>"; load().then(renderPlan); })
+      .catch(function(e){ $("rsave").disabled = false; $("rres").innerHTML = '<span class="err">' + esc(e.message) + "</span>"; });
+  });
+
   /* ---------- messages ---------- */
+  var TPL = [
+    { id:"", name:"Blank message", title:"", body:"", guides:false },
+    { id:"welcome", name:"Welcome and code", title:"Welcome to Clean Check", body:"Hi {first}, Clean Check is our short end-of-clean checklist with a few photos. It takes about 5 minutes and your feedback shapes how it works. Your code is {code}. Open professionalholidayhomes.com.au/checkcleaning to get started. The guide and a short video are below.", guides:true },
+    { id:"start", name:"Your start date", title:"Your Clean Check start date", body:"Hi {first}, from {start} please do a Clean Check at the end of each departure clean, before marking it done in HomHero. Thanks for being part of it, and tell us anything that would make it easier.", guides:true },
+    { id:"reminder", name:"Friendly reminder", title:"Quick Clean Check reminder", body:"Hi {first}, a quick reminder to tap Complete clean in Clean Check before marking the clean done in HomHero. Thanks so much.", guides:false },
+    { id:"thanks", name:"Thank you", title:"Thank you", body:"Hi {first}, thank you for your clean checks this month. They really help, and the photos back you up if a guest ever raises anything.", guides:false },
+    { id:"update", name:"App update", title:"Clean Check update", body:"Hi {first}, we have made Clean Check a little easier based on your feedback. Close and reopen the app to get the latest version. Thank you.", guides:false },
+    { id:"hours", name:"Office hours / holidays", title:"Office hours", body:"Hi {first}, a quick note on office hours over the holidays: ", guides:false }
+  ];
+  $("mtpl").innerHTML = TPL.map(function(t){ return '<option value="' + t.id + '">' + esc(t.name) + "</option>"; }).join("");
+  $("mtpl").addEventListener("change", function(){ var t = TPL.filter(function(x){ return x.id === $("mtpl").value; })[0]; if(!t) return; $("mtitle").value = t.title; $("mbody").value = t.body; $("mguides").checked = t.guides; prev(); });
   function renderPick(){
     if(!D) return;
     $("mpick").innerHTML = D.housekeepers.filter(function(h){ return h.code && h.active; }).map(function(h){
       return '<label><input type="checkbox" value="' + esc(h.id) + '"> ' + esc(h.name) + (h.phones ? "" : ' <span class="sub">(no notifications)</span>') + "</label>";
     }).join("");
   }
-  function prev(){ var t = $("mtitle").value.trim() || "Title", m = $("mbody").value.trim() || "message"; var s = (t + ": " + m).replace(/\s+/g, " "); $("mprev").textContent = s.length > 170 ? s.slice(0, 167) + "..." : s; }
+  function prev(){ var t = $("mtitle").value.trim() || "Title", m = ($("mbody").value.trim() || "message").replace(/\{first\}/g, "Sharon").replace(/\{code\}/g, "1234").replace(/\{start\}/g, "Monday 2 November"); var s = (t + ": " + m).replace(/\s+/g, " "); $("mprev").textContent = s.length > 170 ? s.slice(0, 167) + "..." : s; }
   $("mtitle").addEventListener("input", prev); $("mbody").addEventListener("input", prev);
   $("maud").addEventListener("change", function(){ $("mpick").hidden = this.value !== "ids"; $("mres").textContent = ""; });
   function sendBody(dry){
     var ids = Array.prototype.map.call(document.querySelectorAll("#mpick input:checked"), function(i){ return i.value; });
-    return { title: $("mtitle").value.trim(), body: $("mbody").value.trim(), audience: $("maud").value, ids: ids, dry: dry };
+    var when = $("mwhen").value ? new Date($("mwhen").value).toISOString() : null;
+    return { title: $("mtitle").value.trim(), body: $("mbody").value.trim(), audience: $("maud").value, ids: ids, dry: dry, guides: $("mguides").checked, sendAt: when };
   }
   $("mdry").addEventListener("click", function(){
     $("mres").textContent = "Checking...";
     call("send", sendBody(true)).then(function(j){
-      $("mres").innerHTML = j.recipients + " housekeeper" + (j.recipients > 1 ? "s" : "") + ", " + j.withPhones + " with notifications on." + (j.without && j.without.length ? ' <span class="sub">No notifications: ' + esc(j.without.slice(0, 12).join(", ")) + (j.without.length > 12 ? " and " + (j.without.length - 12) + " more" : "") + ". They see it in the app next sign in.</span>" : "");
+      var tot = j.recipients + j.testers;
+      $("mres").innerHTML = (j.recipients ? j.recipients + " housekeeper" + (j.recipients > 1 ? "s" : "") + " plus " : "") + j.testers + " testers. " + j.withPhones + " of " + tot + " have notifications on." +
+        (j.without && j.without.length ? ' <span class="sub">No notifications: ' + esc(j.without.slice(0, 12).join(", ")) + (j.without.length > 12 ? " and " + (j.without.length - 12) + " more" : "") + ". They see it in the app next sign in.</span>" : "");
     }).catch(function(e){ $("mres").innerHTML = '<span class="err">' + esc(e.message) + "</span>"; });
   });
   $("msend").addEventListener("click", function(){
     var b = sendBody(false); if(!b.title || !b.body) return toast("Add a title and a message.");
-    var who = { test:"the test housekeepers", all:"ALL housekeepers", live:"every housekeeper live on Clean Check", ids:"the picked housekeepers" }[b.audience];
-    if(!confirm("Send this to " + who + "?")) return;
+    var who = { test:"the testers", all:"ALL housekeepers", live:"every housekeeper live on Clean Check", ids:"the picked housekeepers" }[b.audience];
+    if(!confirm((b.sendAt ? "Schedule this for " + fmtTime(b.sendAt) + " to " : "Send this now to ") + who + (b.audience === "test" ? "" : " (plus the testers)") + "?")) return;
     $("msend").disabled = true; $("mres").textContent = "Sending...";
-    call("send", b).then(function(j){ $("msend").disabled = false; $("mres").textContent = "Sent to " + j.recipients + ". Delivered to " + j.delivered + " phone" + (j.delivered === 1 ? "" : "s") + "."; $("mtitle").value = ""; $("mbody").value = ""; prev(); loadMsgs(); })
-      .catch(function(e){ $("msend").disabled = false; $("mres").innerHTML = '<span class="err">' + esc(e.message) + "</span>"; });
+    call("send", b).then(function(j){
+      $("msend").disabled = false;
+      if(j.scheduled) $("mres").innerHTML = '<span class="ok">Scheduled for ' + esc(fmtTime(j.scheduled)) + " to " + j.recipients + ".</span>";
+      else $("mres").innerHTML = (j.delivered ? '<span class="ok">' : '<span class="bad">') + "Sent to " + j.recipients + ". Reached " + j.delivered + " phone" + (j.delivered === 1 ? "" : "s") + ".</span>" +
+        (j.withoutPhones && j.withoutPhones.length ? ' <span class="sub">No notifications on for: ' + esc(j.withoutPhones.slice(0, 10).join(", ")) + (j.withoutPhones.length > 10 ? "..." : "") + ". They see it in the app next sign in.</span>" : "");
+      $("mtitle").value = ""; $("mbody").value = ""; $("mwhen").value = ""; $("mtpl").value = ""; prev(); loadMsgs();
+    }).catch(function(e){ $("msend").disabled = false; $("mres").innerHTML = '<span class="err">' + esc(e.message) + "</span>"; });
   });
   var msgOpen = {};
   function loadMsgs(){
     call("msgs").then(function(j){
       var html = "";
       (j.msgs || []).forEach(function(m){
-        html += '<tr class="r" data-m="' + esc(m.id) + '" aria-expanded="' + !!msgOpen[m.id] + '" tabindex="0"><td class="nowrap" data-l="Sent">' + esc(fmtTime(m.at)) + '</td><td class="col-prop"><span class="prop">' + esc(m.title) + "</span>" + (m.test ? ' <span class="chip info">test</span>' : "") + '<div class="sub">' + esc(String(m.body).slice(0, 90)) + '</div></td><td data-l="To">' + m.recipients + '</td><td data-l="Delivered">' + m.delivered + " of " + m.recipients + '</td><td data-l="Read"><b>' + m.read + "</b> of " + m.recipients + "</td></tr>";
+        var pill = m.status === "scheduled" ? '<span class="pill sched">Scheduled ' + esc(fmtTime(m.sendAt)) + "</span>" : m.status === "cancelled" ? '<span class="pill cancel">Cancelled</span>' : "";
+        html += '<tr class="r" data-m="' + esc(m.id) + '" aria-expanded="' + !!msgOpen[m.id] + '" tabindex="0"><td class="nowrap" data-l="Sent">' + esc(m.status === "sent" ? fmtTime(m.at) : "-") + '</td><td class="col-prop"><span class="prop">' + esc(m.title) + "</span>" + (m.test ? ' <span class="pill">testers</span>' : "") + pill + '<div class="sub">' + esc(String(m.body).slice(0, 90)) + '</div></td><td data-l="To">' + m.recipients + '</td><td data-l="Delivered">' + m.delivered + " of " + m.recipients + '</td><td data-l="Read"><b>' + m.read + "</b> of " + m.recipients + "</td></tr>";
         if(msgOpen[m.id]) html += '<tr class="d"><td colspan="5" id="md-' + esc(m.id) + '"><div class="detail"><div class="muted">Loading...</div></div></td></tr>';
       });
       $("msgbody").innerHTML = html || '<tr><td colspan="5" class="empty">No messages yet.</td></tr>';
@@ -515,34 +709,54 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
     call("msg", { id: id }).then(function(j){
       var cell = $("md-" + id); if(!cell) return;
       var rs = j.recipients || [], unread = rs.filter(function(r){ return !r.opened_at; }).length;
-      cell.innerHTML = '<div class="detail"><div><h3>Message</h3><p style="white-space:pre-wrap">' + esc(j.msg.body) + '</p><p class="sub">By ' + esc(j.msg.by) + "</p>" + (unread ? '<div class="actions"><button class="btn small" data-remind="' + esc(id) + '">' + (unread === 1 ? "Remind the 1 who has not read it" : "Remind the " + unread + " who have not read it") + "</button></div>" : '<p class="ok">Everyone has read it.</p>') + "</div><div><h3>Who has read it</h3><ul style=\"list-style:none;padding:0\">" +
+      var acts = j.msg.status === "scheduled" ? '<div class="actions"><button class="btn ghost small" data-cancel="' + esc(id) + '">Cancel scheduled message</button></div>'
+        : j.msg.status === "sent" ? (unread ? '<div class="actions"><button class="btn small" data-remind="' + esc(id) + '">' + (unread === 1 ? "Remind the 1 who has not read it" : "Remind the " + unread + " who have not read it") + "</button></div>" : '<p class="ok">Everyone has read it.</p>') : "";
+      cell.innerHTML = '<div class="detail"><div><h3>Message</h3><p style="white-space:pre-wrap">' + esc(j.msg.body) + '</p><p class="sub">By ' + esc(j.msg.by) + "</p>" + acts + "</div><div><h3>Who has read it</h3><ul style=\"list-style:none;padding:0;margin:0\">" +
         rs.map(function(r){
           var s = r.opened_at ? '<span class="ok">Read ' + esc(fmtTime(r.opened_at)) + "</span> <span class=\"sub\">" + (r.opened_via === "app" ? "in the app" : "from the notification") + "</span>"
-            : r.delivered ? '<span class="muted">Delivered ' + esc(fmtTime(r.delivered_at)) + ", not opened</span>"
-            : r.phones ? '<span class="bad">Phone did not accept it</span>' : '<span class="muted">No notifications. Shows in the app next sign in</span>';
-          return "<li style=\"margin:4px 0\"><b>" + esc(r.name) + "</b>: " + s + "</li>";
+            : j.msg.status !== "sent" ? '<span class="muted">Not sent yet</span>'
+            : r.delivered ? '<span class="muted">On their phone ' + esc(fmtTime(r.delivered_at)) + ", not opened yet</span>"
+            : r.phones ? '<span class="bad">Phone did not accept it</span>' : '<span class="muted">No notifications on. Shows in the app next sign in</span>';
+          return "<li style=\"margin:4px 0\"><b>" + esc(r.name) + "</b>" + (r.tester ? ' <span class="pill">tester</span>' : "") + ": " + s + "</li>";
         }).join("") + "</ul></div></div>";
     });
   }
   $("msgbody").addEventListener("click", function(e){
-    var rb = e.target.closest("[data-remind]");
-    if(rb){ e.stopPropagation(); if(!confirm("Send it again to everyone who has not read it?")) return; rb.disabled = true;
-      call("remind", { id: rb.getAttribute("data-remind") }).then(function(j){ toast("Sent again to " + j.recipients + ". Delivered to " + j.delivered + "."); loadMsgs(); }).catch(function(x){ rb.disabled = false; toast(x.message); }); return; }
+    var rb = e.target.closest("[data-remind],[data-cancel]");
+    if(rb){ e.stopPropagation();
+      if(rb.hasAttribute("data-cancel")){ rb.disabled = true; call("cancel", { id: rb.getAttribute("data-cancel") }).then(function(){ toast("Cancelled"); loadMsgs(); }).catch(function(x){ rb.disabled = false; toast(x.message); }); return; }
+      if(!confirm("Send it again to everyone who has not read it?")) return; rb.disabled = true;
+      call("remind", { id: rb.getAttribute("data-remind") }).then(function(j){ toast("Sent again to " + j.recipients + ". Reached " + j.delivered + " phones."); loadMsgs(); }).catch(function(x){ rb.disabled = false; toast(x.message); }); return; }
     var tr = e.target.closest("tr.r"); if(!tr) return;
     var id = tr.getAttribute("data-m"); msgOpen[id] = !msgOpen[id]; loadMsgs();
   });
 
-  /* ---------- other codes ---------- */
+  /* ---------- thank you ---------- */
+  function renderThanks(){
+    var t = D.thanks || [];
+    $("thanklist").innerHTML = t.length ? '<div class="tablewrap"><table class="hk"><thead><tr><th>Housekeeper</th><th>Clean checks</th><th>Average AI score</th><th></th></tr></thead><tbody>' + t.map(function(x, i){
+      return '<tr><td class="name" data-l="Housekeeper">' + (i < 3 ? ["1st","2nd","3rd"][i] + " " : "") + esc(x.name) + '</td><td data-l="Clean checks">' + x.checks + '</td><td data-l="Average">' + (x.score ? x.score + "/5" : "-") + '</td><td><button class="btn ghost small" data-thank="' + esc(x.id) + '">Write a thank-you</button></td></tr>';
+    }).join("") + "</tbody></table></div>" : '<p class="muted">No clean checks yet this month.</p>';
+  }
+  $("thanklist").addEventListener("click", function(e){
+    var b = e.target.closest("[data-thank]"); if(!b) return;
+    show("msg"); $("mtpl").value = "thanks"; $("mtpl").dispatchEvent(new Event("change"));
+    $("maud").value = "ids"; $("mpick").hidden = false;
+    Array.prototype.forEach.call(document.querySelectorAll("#mpick input"), function(i){ i.checked = i.value === b.getAttribute("data-thank"); });
+    $("mres").textContent = "Ready for " + first((hkById(b.getAttribute("data-thank")) || {}).name) + ". Check the wording, then Send.";
+  });
+
+  /* ---------- staff, testers, phones ---------- */
   function table(head, rows){ return '<div class="tablewrap"><table class="hk"><thead><tr>' + head.map(function(h){ return "<th>" + h + "</th>"; }).join("") + "</tr></thead><tbody>" + rows.join("") + "</tbody></table></div>"; }
   function renderCodes(){
-    var show = true;
-    $("stafflist").innerHTML = table(["Code","Name","Opens","Last used","Notifications"], D.staff.map(function(s){
-      return '<tr><td data-l="Code"><span class="code">' + esc(s.code) + '</span></td><td class="name" data-l="Name">' + esc(s.name) + (s.active ? "" : ' <span class="chip">off</span>') + '</td><td data-l="Opens">' + esc(s.view === "maintenance" ? "Maintenance dashboard" : "Office dashboard") + (s.admin ? " + Admin" : "") + '</td><td data-l="Last used">' + esc(s.lastUsed ? fmtTime(s.lastUsed) : "-") + '</td><td data-l="Notifications">' + (s.phones ? '<span class="ok">On</span>' : '<span class="muted">Off</span>') + "</td></tr>";
-    }).concat(D.office.map(function(o){ return '<tr><td data-l="Code"><span class="code">' + esc(o.code) + '</span></td><td class="name" data-l="Name">CST (shared)</td><td data-l="Opens">Every clean on any date (housekeeper app)</td><td data-l="Last used">-</td><td data-l="Notifications">-</td></tr>'; })));
+    $("testlist").innerHTML = table(["Code","Tester","Phones"], D.tests.map(function(t){ return '<tr><td data-l="Code"><span class="code">' + esc(t.code) + '</span></td><td class="name" data-l="Tester">' + esc(t.name) + '</td><td data-l="Phones">' + (t.phones ? '<span class="ok">' + t.phones + " on</span>" : '<span class="bad">Not on yet</span>') + "</td></tr>"; }));
+    $("stafflist").innerHTML = table(["Code","Name","Opens","Last used"], D.staff.map(function(s){
+      return '<tr><td data-l="Code"><span class="code">' + esc(s.code) + '</span></td><td class="name" data-l="Name">' + esc(s.name) + (s.active ? "" : ' <span class="chip">off</span>') + '</td><td data-l="Opens">' + esc(s.view === "maintenance" ? "Maintenance dashboard" : "Office dashboard") + (s.admin ? " + Admin" : "") + '</td><td data-l="Last used">' + esc(s.lastUsed ? fmtTime(s.lastUsed) : "-") + "</td></tr>";
+    }).concat(D.office.map(function(o){ return '<tr><td data-l="Code"><span class="code">' + esc(o.code) + '</span></td><td class="name" data-l="Name">CST (shared)</td><td data-l="Opens">Every clean on any date (housekeeper app)</td><td data-l="Last used">-</td></tr>'; })));
+    $("phonelist").innerHTML = (D.otherPhones || []).length ? table(["Name","Role","Phone","Since"], D.otherPhones.map(function(p){ return '<tr><td class="name" data-l="Name">' + esc(p.name) + '</td><td data-l="Role">' + esc(p.role) + '</td><td data-l="Phone">' + esc(p.device) + '</td><td data-l="Since">' + esc(fmtDate(p.since)) + "</td></tr>"; })) : '<p class="muted">None.</p>';
     $("ownerlist").innerHTML = table(["Code","Owner","Properties","Last used"], D.ownerCodes.map(function(o){
       return '<tr><td data-l="Code"><span class="code">' + esc(o.code) + '</span></td><td class="name" data-l="Owner">' + esc(o.name) + '</td><td data-l="Properties">' + o.properties + '</td><td data-l="Last used">' + esc(o.lastUsed ? fmtTime(o.lastUsed) : "-") + "</td></tr>";
     })) + '<p class="sub" style="margin-top:8px">Owner trial only (Craig). Owners never see the office view. Owners who clean their own homes never get a housekeeper code.</p>';
-    $("testlist").innerHTML = table(["Code","Who","Phones"], D.tests.map(function(t){ return '<tr><td data-l="Code"><span class="code">' + esc(t.code) + '</span></td><td class="name" data-l="Who">' + esc(t.name) + '</td><td data-l="Phones">' + t.phones + "</td></tr>"; })) + '<p class="sub" style="margin-top:8px">Test codes never reach HomHero, reports or real housekeepers.</p>';
   }
 
   /* ---------- health ---------- */
@@ -560,6 +774,7 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
     t(h.maintWaiting ? "bad" : "", h.maintWaiting, "Maintenance issues not yet HomHero jobs");
     t(h.unassignedNextWeek ? "warn" : "", h.unassignedNextWeek, "Cleans next 7 days with no housekeeper in HomHero");
     t(h.phoneErrors ? "warn" : "", h.phoneErrors, "Phones with a notification error");
+    t("", h.scheduled, "Messages scheduled to send");
     t("", h.checks3, "Clean checks in the last 3 days");
     var per = h.ai7.reviews ? Math.round((h.ai7.inputTokens + h.ai7.outputTokens) / h.ai7.reviews / 1000) : 0;
     t("", h.ai7.reviews + " reviews", "AI reviews in 7 days, about " + per + "k tokens each");
@@ -568,11 +783,11 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
   }
 
   /* ---------- activity ---------- */
-  var ACT = { code_change:"Changed code", code_create:"Created code", code_pause:"Paused code", code_resume:"Turned code back on", start_date:"Start date", msg_send:"Sent message", msg_remind:"Sent reminder" };
+  var ACT = { code_change:"Changed code", code_create:"Created code", code_pause:"Paused code", code_resume:"Turned code back on", code_sent:"Code sent", code_unsent:"Code not sent", start_date:"Start date", rollout:"Rollout", msg_send:"Sent message", msg_remind:"Sent reminder", msg_schedule:"Scheduled message", msg_cancel:"Cancelled message", request_done:"Code request sorted" };
   function loadLog(){
     call("log").then(function(j){
       $("logbody").innerHTML = (j.log || []).map(function(l){
-        var d = l.detail || {}, what = (ACT[l.action] || l.action) + ": " + (d.name || d.title || l.target || "") + (l.action === "start_date" ? " (" + (d.date ? fmtDate(d.date) : "cleared") + ")" : "") + (l.action.indexOf("msg_") === 0 ? " (" + d.recipients + " housekeepers" + (d.test ? ", test" : "") + ")" : "");
+        var d = l.detail || {}, what = (ACT[l.action] || l.action) + ": " + (l.action === "rollout" ? d.count + " housekeepers from " + fmtDate(d.date) : (d.name || d.title || l.target || "")) + (l.action === "start_date" ? " (" + (d.date ? fmtDate(d.date) : "cleared") + ")" : "") + (l.action.indexOf("msg_") === 0 && d.recipients ? " (" + d.recipients + " people" + (d.test ? ", testers" : "") + ")" : "");
         return '<tr><td class="nowrap" data-l="When">' + esc(fmtTime(l.at)) + '</td><td data-l="Who">' + esc(l.by_name) + '</td><td data-l="What">' + esc(what) + "</td></tr>";
       }).join("") || '<tr><td colspan="3" class="empty">Nothing yet.</td></tr>';
     });

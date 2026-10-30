@@ -289,6 +289,16 @@ body,.main{background:#fff}
 .mpb{background:#F4F7F9;border-color:#E3EAEF}
 .send{background:var(--navy)}
 .send:disabled{background:#C9D6DE}
+.mic{width:36px;height:36px;margin-right:2px}
+.mic.on{color:#fff;background:var(--bad);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(163,52,23,.35)}50%{box-shadow:0 0 0 6px rgba(163,52,23,0)}}
+#savedW{margin-bottom:14px}
+#savedW h2{font:600 12.5px/1 var(--body);color:var(--faint);margin:0 0 8px 8px}
+#slist{list-style:none;margin:0;padding:0}
+#slist button{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;text-align:left;padding:7px 10px;font-size:14px;color:var(--ink-2);border-radius:var(--r2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#slist button:hover{background:#E6EEF3}
+#slist button svg{color:var(--navy)}
+#ppin[aria-pressed="true"]{color:var(--navy)}
 .meter{background:#DCE5EB}
 .a code,.a.err{border-radius:var(--r2)}
 @media print{.side,.top,.dock,.panel,.acts{display:none !important}.app,body{height:auto;overflow:visible}.log{overflow:visible}}
@@ -317,6 +327,7 @@ body,.main{background:#fff}
     </div>
     <button type="button" class="newc" id="newc"><span class="plus" aria-hidden="true"></span>New chat</button>
     <div class="chats" id="chats">
+      <div id="savedW" hidden><h2 id="savedH">Saved reports</h2><ul id="slist" aria-labelledby="savedH"></ul></div>
       <h2 id="chatsH">Chats</h2>
       <p class="hint" id="chatsHint" hidden>This tab only. Chats are not saved yet.</p>
       <ul id="clist" aria-labelledby="chatsH"></ul>
@@ -362,6 +373,7 @@ body,.main{background:#fff}
               <button type="button" class="mpb" id="mpb" aria-haspopup="listbox" aria-expanded="false" aria-controls="mpm"><span class="sr">Model: </span><span id="mpl">Sonnet</span></button>
               <div class="pop menu" id="mpm" role="listbox" aria-label="Choose a model" hidden></div>
             </div>
+            <button type="button" class="ib mic" id="mic" aria-label="Speak your question" hidden></button>
             <button type="submit" class="send" id="go" aria-label="Send message" disabled></button>
           </div>
         </form>
@@ -373,6 +385,7 @@ body,.main{background:#fff}
   <aside class="panel" id="panel" aria-labelledby="ptitle" hidden>
     <div class="ph">
       <div class="pt"><h2 id="ptitle"></h2><div class="psub" id="psub"></div></div>
+      <button type="button" class="ib" id="ppin" aria-label="Save this report" aria-pressed="false" title="Save to Saved reports"></button>
       <button type="button" class="ib" id="pexp" aria-label="Expand report" aria-pressed="false"></button>
       <button type="button" class="ib" id="pclose" aria-label="Close report"></button>
     </div>
@@ -386,7 +399,7 @@ body,.main{background:#fff}
 (function(){
   "use strict";
   var API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/hub-api/";
-  var CODE_KEY = "phhHubStaffCode", MODEL_KEY = "phhHubModel", SB_KEY = "phhHubSidebar";
+  var CODE_KEY = "phhHubStaffCode", MODEL_KEY = "phhHubModel2", SB_KEY = "phhHubSidebar";
   var $ = function(id){ return document.getElementById(id); };
   var CODE = "", ME = null, busy = false;
   var MODELS = [], MODEL = "", SOURCES = null;
@@ -410,6 +423,35 @@ body,.main{background:#fff}
         if(r.status === 503 && j.code === "BOOT_ERROR" && !retried) return new Promise(function(ok){ setTimeout(ok, 1500); }).then(function(){ return post(route, body, true); });
         if(!r.ok) { var e = new Error(j.error || ("Something went wrong (" + r.status + ")")); e.status = r.status; throw e; } return j; }); });
   }
+  /* Streaming ask: status events while the Hub works, then the answer. Falls back to a normal request. */
+  function postStream(route, body, onEvent){
+    if(!window.ReadableStream || !window.TextDecoder) return post(route, body);
+    body.code = CODE; body.stream = true;
+    return fetch(API + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) }).then(function(r){
+      var ct = r.headers.get("content-type") || "";
+      if(!r.body || ct.indexOf("event-stream") < 0){
+        return r.json().catch(function(){ return {}; }).then(function(j){ if(!r.ok){ var e = new Error(j.error || ("Something went wrong (" + r.status + ")")); e.status = r.status; throw e; } return j; });
+      }
+      var rd = r.body.getReader(), dec = new TextDecoder(), buf = "", done = null;
+      function pump(){
+        return rd.read().then(function(x){
+          if(x.done){ if(done) return done; throw new Error("The connection dropped. Try again."); }
+          buf += dec.decode(x.value, { stream: true });
+          var parts = buf.split("\n\n"); buf = parts.pop();
+          parts.forEach(function(chunk){
+            var line = chunk.split("\n").filter(function(l){ return l.indexOf("data: ") === 0; }).map(function(l){ return l.slice(6); }).join("");
+            if(!line) return; var ev; try{ ev = JSON.parse(line); }catch(e){ return; }
+            if(ev.type === "done") done = ev; else if(onEvent) onEvent(ev);
+          });
+          return pump();
+        });
+      }
+      return pump().then(function(ev){
+        if(ev.status >= 400 || (ev.body && ev.body.error && !ev.body.answer)){ var e = new Error((ev.body && ev.body.error) || "Something went wrong."); e.status = ev.status; throw e; }
+        return ev.body;
+      });
+    });
+  }
   function say(t){ var l = $("live"); l.textContent = ""; setTimeout(function(){ l.textContent = t; }, 50); }
 
   /* ---------- Icons ---------- */
@@ -427,6 +469,9 @@ body,.main{background:#fff}
     shrink: sv('<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>'),
     close: sv('<path d="M6 6l12 12M18 6L6 18"/>'),
     down: sv('<path d="M6 9l6 6 6-6"/>', 14),
+    mic: sv('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>', 18),
+    pin: sv('<path d="M12 17v5M8 3h8l-1 6 3 3v2H6v-2l3-3z"/>', 18),
+    pinned: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" d="M8 3h8l-1 6 3 3v2H6v-2l3-3z"/><path stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M12 17v5"/></svg>',
     up: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7"/></svg>'
   };
 
@@ -474,6 +519,7 @@ body,.main{background:#fff}
   /* ---------- Models ---------- */
   function prettyModel(id){
     if(!id) return "";
+    if(/^Auto, /.test(id)) return "Auto · " + prettyModel(id.slice(6));
     for(var i = 0; i < MODELS.length; i++) if(MODELS[i].id && MODELS[i].id === id) return MODELS[i].label;
     var m = /(haiku|sonnet|opus)[-_ ]?(\d+)?(?:[-_.](\d))?/i.exec(id);
     if(m) return m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase() + (m[2] ? " " + m[2] + (m[3] ? "." + m[3] : "") : "");
@@ -632,7 +678,7 @@ body,.main{background:#fff}
 
   /* ---------- Reports: chart, Download Excel, Save PDF ---------- */
   function fmtDate(d){ return d ? new Date(d + "T12:00:00+10:00").toLocaleDateString("en-AU", { day:"numeric", month:"short", year:"numeric", timeZone:"Australia/Sydney" }) : ""; }
-  function fmtCell(v, type){ if(v === null || v === undefined || v === "") return type === "num" ? "-" : ""; if(type === "date") return fmtDate(v); return String(v); }
+  function fmtCell(v, type){ if(v === null || v === undefined || v === "") return type === "num" ? "-" : ""; if(type === "date") return fmtDate(v); if(type === "num" && typeof v === "number") return Math.abs(v) >= 1000 ? Math.round(v).toLocaleString("en-AU") : String(Math.round(v * 100) / 100); return String(v); }
   function repSub(r){
     var d = r.from ? fmtDate(r.from) + (r.to && r.to !== r.from ? " to " + fmtDate(r.to) : "") : "";
     return (d ? d + " | " : "") + r.rows.length + " row" + (r.rows.length === 1 ? "" : "s");
@@ -720,6 +766,7 @@ body,.main{background:#fff}
   function narrow(){ return window.innerWidth < 900; }
   function openPanel(r, opener){
     PANEL_R = r; OPENER = opener || null;
+    var pp = $("ppin"); pp.hidden = !r.id; pp.innerHTML = r.pinned ? I.pinned : I.pin; pp.setAttribute("aria-pressed", String(!!r.pinned)); pp.title = r.pinned ? "Saved. Tap to remove from Saved reports" : "Save to Saved reports";
     $("ptitle").textContent = r.title; $("psub").textContent = repSub(r);
     var b = $("pbody"); b.innerHTML = "";
     var PREV = 50;
@@ -866,7 +913,11 @@ body,.main{background:#fff}
     if(h.err){
       t.appendChild(el("div", "a err", h.err)); acts.appendChild(rt); t.appendChild(acts); return t;
     }
-    var a = el("div", "a"); a.innerHTML = md(h.a); t.appendChild(a);
+    var a = el("div", "a"); t.appendChild(a);
+    if(h.typing && !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)){
+      h.typing = false; var full = h.a, k = 0, step = Math.max(4, Math.ceil(full.length / 90));
+      (function tick(){ k = Math.min(full.length, k + step); a.innerHTML = md(full.slice(0, k)); if(k < full.length) setTimeout(tick, 14); else { var lg = $("log"); if(lg) lg.scrollTop = lg.scrollHeight; } })();
+    } else { h.typing = false; a.innerHTML = md(h.a); }
     if(h.report) t.appendChild(repChip(h.report));
     if(h.action) t.appendChild(card(h));
     var cp = btn("ib", "Copy answer", I.copy); cp.title = "Copy answer";
@@ -906,7 +957,7 @@ body,.main{background:#fff}
     var t = el("article", "turn"); t.appendChild(el("div", "q", h.q));
     var w = el("div", "wait"); w.setAttribute("role", "status");
     var d = el("span", "dots"); d.innerHTML = "<i></i><i></i><i></i>"; d.setAttribute("aria-hidden", "true");
-    w.appendChild(d); w.appendChild(el("span", "", "Looking that up")); t.appendChild(w); return t;
+    h._wl = el("span", "", h.status || "Looking that up"); w.appendChild(d); w.appendChild(h._wl); t.appendChild(w); return t;
   }
   function sendState(){ $("go").disabled = busy || !$("in").value.trim(); }
   function retry(h){
@@ -925,8 +976,10 @@ body,.main{background:#fff}
     if(MODEL) body.model = MODEL;
     if(chat.id && !chat.local) body.chat_id = chat.id;
     var t0 = now();
-    post("ask", body).then(function(j){
-      h.ms = j.ms != null ? Number(j.ms) : now() - t0;
+    postStream("ask", body, function(ev){
+      if(ev.type === "status" && ev.text){ h.status = ev.text; if(h._wl) h._wl.textContent = ev.text; }
+    }).then(function(j){
+      h.ms = j.ms != null ? Number(j.ms) : now() - t0; h.typing = true;
       h.a = String(j.answer || ""); h.id = j.id; h.cost = j.costUsd; h.model = j.model || MODEL;
       h.action = j.action || null; h.report = j.report ? normRep(j.report) : null;
       if(j.monthUsd != null) setSpend(j.monthUsd, j.capUsd);
@@ -943,6 +996,45 @@ body,.main{background:#fff}
     });
   }
   function size(){ var t = $("in"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 220) + "px"; }
+
+  /* ---------- Saved reports ---------- */
+  var SAVED = [];
+  function loadSaved(){
+    post("reports", {}).then(function(j){ SAVED = Array.isArray(j.reports) ? j.reports : []; renderSaved(); }).catch(function(){});
+  }
+  function renderSaved(){
+    var ul = $("slist"); ul.innerHTML = ""; $("savedW").hidden = !SAVED.length;
+    SAVED.forEach(function(r){
+      var li = el("li"), b = btn("", "Run saved report " + r.title); b.innerHTML = I.chart + "<span>" + esc(r.title) + "</span>"; b.title = "Run again with today's dates";
+      b.addEventListener("click", function(){
+        b.disabled = true; var sp = b.querySelector("span"), old = sp.textContent; sp.textContent = "Updating...";
+        post("report_run", { id: r.id }).then(function(j){ closeSide(); openPanel(normRep(j.report), b); })
+          .catch(function(e){ say(e.message); }).then(function(){ b.disabled = false; sp.textContent = old; });
+      });
+      li.appendChild(b); ul.appendChild(li);
+    });
+  }
+  $("ppin").addEventListener("click", function(){
+    var r = PANEL_R; if(!r || !r.id) return; var on = !r.pinned, b = this; b.disabled = true;
+    post("report_pin", { id: r.id, pinned: on }).then(function(){ r.pinned = on; b.innerHTML = on ? I.pinned : I.pin; b.setAttribute("aria-pressed", String(on)); say(on ? "Saved to Saved reports." : "Removed from Saved reports."); loadSaved(); })
+      .catch(function(e){ say(e.message); }).then(function(){ b.disabled = false; });
+  });
+
+  /* ---------- Voice input ---------- */
+  (function(){
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition; if(!SR) return;
+    var m = $("mic"), rec = null, base = ""; m.hidden = false; m.innerHTML = I.mic;
+    m.addEventListener("click", function(){
+      if(rec){ rec.stop(); return; }
+      rec = new SR(); rec.lang = "en-AU"; rec.interimResults = true; rec.continuous = false;
+      base = $("in").value ? $("in").value.replace(/\s*$/, " ") : "";
+      rec.onresult = function(e){ var t = ""; for(var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript; $("in").value = base + t; size(); sendState(); };
+      rec.onend = function(){ rec = null; m.classList.remove("on"); m.setAttribute("aria-label", "Speak your question"); $("in").focus(); };
+      rec.onerror = function(e){ if(e.error === "not-allowed") say("Allow the microphone for this site to use voice."); };
+      m.classList.add("on"); m.setAttribute("aria-label", "Stop listening");
+      try{ rec.start(); }catch(e){ rec = null; m.classList.remove("on"); }
+    });
+  })();
 
   /* ---------- Sidebar ---------- */
   function setSideDesktop(on){ $("app").classList.toggle("sb-off", !on); ls.set(SB_KEY, on ? "1" : "0"); }
@@ -1005,7 +1097,7 @@ body,.main{background:#fff}
       $("foot").textContent = foot;
       $("signin").hidden = true; $("app").hidden = false; $("scode").value = "";
       if(!narrow() && ls.get(SB_KEY) === "0") setSideDesktop(false);
-      CUR = blank(); render(); renderChats(); loadChats();
+      CUR = blank(); render(); renderChats(); loadChats(); loadSaved();
       if(!narrow()) $("in").focus();
     }).catch(function(e){
       if(e.status === 403 || e.status === 401){ ls.del(CODE_KEY); CODE = ""; showSignin(fromForm ? "That code didn't work. Check it and try again." : ""); }

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030032254"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030033301"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -756,6 +756,16 @@ html.aphh-open body{margin-right:var(--aphh-w,400px)}
 .aphh-btn.ghost{background:#fff;color:var(--a-blue);border:1px solid rgba(34,117,176,.35)}
 .aphh-btn:disabled{opacity:.5;cursor:default}
 .aphh-done{font-weight:700;color:var(--a-teal);margin-top:8px}
+.aphh-rep{border:1px solid var(--a-line);border-radius:12px;padding:12px 14px;background:#fff}
+.aphh-rep h4{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em}
+.aphh-rep .sub{font-size:12px;color:var(--a-muted);font-weight:600;margin:2px 0 8px}
+.aphh-rep svg{display:block;width:100%;height:auto;margin:4px 0 8px}
+.aphh-tw{max-height:220px;overflow:auto;border:1px solid var(--a-line);border-radius:8px}
+.aphh-tw table{border-collapse:collapse;width:100%;font-size:12px}
+.aphh-tw th,.aphh-tw td{padding:5px 8px;border-bottom:1px solid var(--a-line);text-align:left;white-space:nowrap}
+.aphh-tw th{position:sticky;top:0;background:var(--a-soft);font-weight:700;color:var(--a-muted)}
+.aphh-tw td.n,.aphh-tw th.n{text-align:right}
+.aphh-rep .more{font-size:12px;color:var(--a-muted);margin-top:6px}
 .aphh-form{margin:8px 14px 6px;border:1px solid var(--a-line);border-radius:14px;background:#fff;box-shadow:0 2px 8px rgba(26,58,74,.06);display:flex;align-items:flex-end;gap:6px;padding:6px 6px 6px 12px}
 .aphh-form:focus-within{border-color:rgba(34,117,176,.6);box-shadow:0 0 0 3px rgba(33,166,199,.18)}
 .aphh .aphh-form textarea:focus-visible{outline:0}
@@ -799,7 +809,11 @@ html.aphh-open body{margin-right:var(--aphh-w,400px)}
   var KEY = "phh-ask-chat", OPEN = "phh-ask-open", WIDTH = "phh-ask-width";
   var ls = { get: function(k){ try{ return localStorage.getItem(k) || ""; }catch(e){ return ""; } }, set: function(k, v){ try{ localStorage.setItem(k, v); }catch(e){} } };
   function load(){ try{ H = JSON.parse(sessionStorage.getItem(KEY) || "[]") || []; }catch(e){ H = []; } }
-  function save(){ try{ sessionStorage.setItem(KEY, JSON.stringify(H.slice(-30))); }catch(e){} }
+  function save(){
+    /* Keep the chat for this tab; reports only for the last 3 answers so storage stays small. */
+    var keep = H.slice(-30).map(function(h, i, all){ return i < all.length - 3 && h.report ? Object.assign({}, h, { report: null }) : h; });
+    try{ sessionStorage.setItem(KEY, JSON.stringify(keep)); }catch(e){ try{ sessionStorage.setItem(KEY, JSON.stringify(keep.map(function(h){ return Object.assign({}, h, { report: null }); }))); }catch(x){} }
+  }
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]; }); }
   function el(t, c, txt){ var e = document.createElement(t); if(c) e.className = c; if(txt != null) e.textContent = txt; return e; }
   function post(route, body, retried){
@@ -867,6 +881,99 @@ html.aphh-open body{margin-right:var(--aphh-w,400px)}
     cancel.addEventListener("click", function(){ act("cancel"); });
     c.appendChild(row); return c;
   }
+  /* ---------- Reports: chart, Download Excel, Save PDF ---------- */
+  function fmtDate(d){ return d ? new Date(d + "T12:00:00+10:00").toLocaleDateString("en-AU", { day:"numeric", month:"short", year:"numeric", timeZone:"Australia/Sydney" }) : ""; }
+  function fmtCell(v, type){ if(v === null || v === undefined || v === "") return type === "num" ? "-" : ""; if(type === "date") return fmtDate(v); return String(v); }
+  function repSub(r){ return fmtDate(r.from) + (r.to !== r.from ? " to " + fmtDate(r.to) : "") + " | " + r.rows.length + " row" + (r.rows.length === 1 ? "" : "s"); }
+  /* Horizontal bar chart as SVG (works in the panel, the PDF and print). */
+  function chartSvg(c, w, labelChars){
+    if(!c || !c.values || !c.values.length) return "";
+    var n = c.values.length, rowH = 26, top = 24, lw = Math.round(w * 0.38), bw = w - lw - 46;
+    var max = c.max || Math.max.apply(null, c.values.concat([1])), h = top + n * rowH + 6;
+    var s = '<svg viewBox="0 0 ' + w + " " + h + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + esc(c.label) + '" font-family="Raleway, Helvetica, Arial, sans-serif">';
+    s += '<text x="0" y="14" font-size="12" font-weight="700" fill="#4f5c6b">' + esc(c.label) + "</text>";
+    c.values.forEach(function(v, i){
+      var y = top + i * rowH, len = Math.max(2, Math.round(bw * (Number(v) || 0) / max));
+      var lab = String(c.labels[i] || ""); if(lab.length > labelChars) lab = lab.slice(0, labelChars - 1) + "…";
+      s += '<text x="' + (lw - 8) + '" y="' + (y + 15) + '" font-size="12" text-anchor="end" fill="#1a3a4a">' + esc(lab) + "</text>";
+      s += '<rect x="' + lw + '" y="' + (y + 4) + '" width="' + len + '" height="16" rx="3" fill="' + (i === 0 ? "#2275b0" : "#21a6c7") + '"/>';
+      var val = (Math.round(Number(v) * 10) / 10) + (c.extra && c.extra[i] ? " (" + c.extra[i] + ")" : "");
+      s += '<text x="' + (lw + len + 6) + '" y="' + (y + 15) + '" font-size="11" fill="#1a3a4a">' + esc(val) + "</text>";
+    });
+    return s + "</svg>";
+  }
+  function tableHtml(r, limit){
+    var cols = r.columns, rows = limit ? r.rows.slice(0, limit) : r.rows;
+    return "<table><thead><tr>" + cols.map(function(c){ return '<th class="' + (c.type === "num" ? "n" : "") + '">' + esc(c.label) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+      rows.map(function(x){ return "<tr>" + cols.map(function(c){ return '<td class="' + (c.type === "num" ? "n" : "") + '">' + esc(fmtCell(x[c.key], c.type)) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
+  }
+  function fileName(r, ext){ return ("PHH " + r.title).replace(/[^A-Za-z0-9 ,-]+/g, "").replace(/\s+/g, " ").trim().slice(0, 80) + "." + ext; }
+  function aoa(r){
+    var out = [[r.title], ["Professional Holiday Homes | Clean Check | " + repSub(r)], [], r.columns.map(function(c){ return c.label; })];
+    r.rows.forEach(function(x){ out.push(r.columns.map(function(c){ var v = x[c.key]; return v === null || v === undefined ? "" : (c.type === "date" ? fmtDate(v) : v); })); });
+    out.push([]); (r.notes || []).forEach(function(n){ out.push([n]); });
+    return out;
+  }
+  var xlsxLoad = null;
+  function downloadExcel(r, btn){
+    btn.disabled = true;
+    xlsxLoad = xlsxLoad || new Promise(function(ok, no){
+      if(window.XLSX) return ok(window.XLSX);
+      var sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+      sc.onload = function(){ window.XLSX ? ok(window.XLSX) : no(); }; sc.onerror = no; document.head.appendChild(sc);
+    });
+    xlsxLoad.then(function(X){
+      var ws = X.utils.aoa_to_sheet(aoa(r));
+      ws["!cols"] = r.columns.map(function(c){ return { wch: c.type === "text" ? 30 : c.type === "date" ? 14 : 12 }; });
+      var wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, "Report");
+      if(r.chart){ X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([[r.chart.label, "Value"]].concat(r.chart.labels.map(function(l, i){ return [l, r.chart.values[i]]; }))), "Chart data"); }
+      X.writeFile(wb, fileName(r, "xlsx"));
+    }).catch(function(){
+      /* Fallback: CSV opens in Excel too. */
+      xlsxLoad = null;
+      var csv = aoa(r).map(function(row){ return row.map(function(v){ v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(","); }).join("\n");
+      var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type:"text/csv" })); a.download = fileName(r, "csv"); document.body.appendChild(a); a.click(); a.remove();
+    }).then(function(){ btn.disabled = false; });
+  }
+  /* One-page report in a new window, then the browser's Print / Save as PDF. */
+  function savePdf(r){
+    var logo = (root.querySelector(".aphh-head img") || {}).src || "";
+    var html = '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(fileName(r, "pdf").replace(/\.pdf$/, "")) + '</title>' +
+      '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700;800&display=swap">' +
+      "<style>@page{size:A4;margin:12mm}*{box-sizing:border-box}body{margin:0;font-family:Raleway,Helvetica,Arial,sans-serif;color:#1a3a4a;font-size:11.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}" +
+      ".top{display:flex;align-items:center;gap:10px;border-bottom:2px solid #2275b0;padding-bottom:8px;margin-bottom:12px}.top img{width:34px;height:34px}.top b{font-size:13px}.top span{display:block;color:#4f5c6b;font-size:11px}" +
+      "h1{font-size:20px;margin:0 0 2px;letter-spacing:-.01em}.sub{color:#4f5c6b;font-weight:600;margin-bottom:10px}svg{width:100%;height:auto;margin:6px 0 12px}" +
+      "table{border-collapse:collapse;width:100%}th,td{padding:4px 6px;border-bottom:1px solid #dce5ec;text-align:left}th{background:#e8f0f6;font-weight:700}td.n,th.n{text-align:right}" +
+      ".notes{margin-top:10px;color:#4f5c6b;font-size:10.5px}.notes p{margin:2px 0}.foot{margin-top:14px;border-top:1px solid #dce5ec;padding-top:6px;color:#8a9bb0;font-size:10px}" +
+      ".bar{position:fixed;top:0;left:0;right:0;background:#2275b0;color:#fff;padding:10px;text-align:center;font-weight:700}.bar button{margin-left:10px;font:inherit;padding:6px 14px;border-radius:999px;border:0;background:#fff;color:#2275b0;cursor:pointer}" +
+      "@media print{.bar{display:none}}@media screen{body{padding:60px 24px 24px;max-width:840px;margin:0 auto}}</style></head><body>" +
+      '<div class="bar">Choose Save as PDF in the print window<button onclick="print()">Print / Save PDF</button></div>' +
+      '<div class="top"><img src="' + esc(logo) + '" alt=""><div><b>Professional Holiday Homes</b><span>Clean Check report | Internal, staff only</span></div></div>' +
+      "<h1>" + esc(r.title) + '</h1><div class="sub">' + esc(repSub(r)) + "</div>" + chartSvg(r.chart, 720, 34) + tableHtml(r, 0) +
+      '<div class="notes">' + (r.notes || []).map(function(n){ return "<p>" + esc(n) + "</p>"; }).join("") + "</div>" +
+      '<div class="foot">Generated ' + esc(new Date(r.generatedAt).toLocaleString("en-AU", { timeZone:"Australia/Sydney", day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit" })) + " by " + esc(r.by) + " with Ask PHH. Figures from Clean Check data.</div>" +
+      "<script>window.addEventListener('load',function(){setTimeout(function(){try{print();}catch(e){}},600);});<\/script></body></html>";
+    var w = window.open("", "_blank");
+    if(w){ w.document.open(); w.document.write(html); w.document.close(); return; }
+    /* Pop-ups blocked (some Home Screen apps): download the report page instead. */
+    var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type:"text/html" })); a.download = fileName(r, "html"); document.body.appendChild(a); a.click(); a.remove();
+  }
+  function reportCard(r){
+    var c = el("div", "aphh-rep");
+    c.appendChild(el("h4", "", r.title)); c.appendChild(el("div", "sub", repSub(r)));
+    if(r.chart){ var ch = el("div"); ch.innerHTML = chartSvg(r.chart, 380, 18); c.appendChild(ch); }
+    if(r.rows.length){ var tw = el("div", "aphh-tw"); tw.innerHTML = tableHtml(r, 8); c.appendChild(tw); }
+    else c.appendChild(el("div", "more", "No rows for these dates."));
+    if(r.rows.length > 8) c.appendChild(el("div", "more", "Showing 8 of " + r.rows.length + ". Excel and PDF have every row."));
+    var row = el("div", "aphh-btns");
+    var x = el("button", "aphh-btn", "Download Excel"), p = el("button", "aphh-btn ghost", "Save PDF");
+    x.type = p.type = "button"; x.disabled = p.disabled = !r.rows.length;
+    x.addEventListener("click", function(){ downloadExcel(r, x); });
+    p.addEventListener("click", function(){ savePdf(r); });
+    row.appendChild(x); row.appendChild(p); c.appendChild(row);
+    return c;
+  }
+
   function render(){
     var log = $("aphhLog"); log.innerHTML = "";
     if(!H.length) log.appendChild(hello());
@@ -875,6 +982,7 @@ html.aphh-open body{margin-right:var(--aphh-w,400px)}
       if(h.err){ log.appendChild(el("div", "aphh-a err", h.err)); return; }
       if(h.a == null) return;
       var a = el("div", "aphh-a"); a.innerHTML = md(h.a); log.appendChild(a);
+      if(h.report) log.appendChild(reportCard(h.report));
       if(h.action && ME.admin) log.appendChild(card(h));
     });
     if(busy){ var w = el("div", "aphh-wait", "Looking that up"); w.appendChild(el("i")); w.appendChild(el("i")); w.appendChild(el("i")); log.appendChild(w); }
@@ -885,7 +993,7 @@ html.aphh-open body{margin-right:var(--aphh-w,400px)}
     var hist = H.filter(function(h){ return h.a && !h.err; }).slice(-4).map(function(h){ return { q: h.q, a: h.a }; });
     var h = { q: q }; H.push(h); busy = true; $("aphhIn").value = ""; size(); $("aphhGo").disabled = true; render(); save();
     post("ask", { page: PAGE, question: q, history: hist }).then(function(j){
-      h.a = j.answer; h.id = j.id; h.action = j.action || null;
+      h.a = j.answer; h.id = j.id; h.action = j.action || null; h.report = j.report || null;
     }).catch(function(e){ h.err = e.status === 403 ? "Ask PHH is for PHH staff. Sign in again with your code." : e.message; })
       .then(function(){ busy = false; $("aphhGo").disabled = false; save(); render(); $("aphhIn").focus(); });
   }

@@ -4,6 +4,12 @@
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#FFFFFF">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="PHH Hub">
 <link rel="preconnect" href="https://rxhpnowszmetjxbwylil.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -272,7 +278,8 @@ body,.main{background:#fff}
 .crow:hover,.crow:focus-within,.crow.on{background:#E6EEF3}
 .newc{border-color:#DCE5EB}
 .top{background:#fff}
-.hero{padding:0 16px 24px;justify-content:center}
+.hero{padding:0 16px 24px}
+@media (max-width:899px){.app:not(.sb-open) .side{box-shadow:none;visibility:hidden}.app.sb-open .side{visibility:visible}}
 .hero .hin{max-width:720px}
 .greet{color:var(--deep);margin:0 0 22px}
 .greet img{width:36px;height:36px}

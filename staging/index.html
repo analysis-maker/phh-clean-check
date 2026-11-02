@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261102144029"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261102145228"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -294,6 +294,7 @@ body.photomode .ph .hint, body.photomode .ph .stamp{display:none}
       <p class="trow ok" id="glbox" hidden></p>
       <p class="trow warn" id="hhb2b" hidden></p>
       <p class="trow" id="hhnext" hidden></p>
+      <p class="trow" id="hhguests" hidden></p>
       <p class="trow deadline">Complete by 3pm</p>
       <p class="trow note" id="hhnote" hidden></p>
       <div class="trow note" id="notesbox" hidden><b>From earlier cleans</b><div id="noteslist"></div></div>
@@ -671,6 +672,7 @@ window.PHH_CHECKLIST = {
     renderPhotos();
     update();
     updExtra();
+    if(BOOKED) showGuests(BOOKED);
   }
 
   /* ---------- All photos on one screen (Sharon, 30 Oct): take photos in any order as you move through the house. ---------- */
@@ -710,7 +712,7 @@ window.PHH_CHECKLIST = {
     var el = document.createElement("div"); el.className = "arrive"; el.id = "arrive";
     el.innerHTML = '<p class="lbl2" style="margin:0 0 4px;font-weight:700">When you arrive</p>' +
       '<p class="note" style="margin-top:0">Before you strip the beds, check how many beds and towels were used.</p>' +
-      '<div class="anyq"><p class="lbl2">More guests stayed than were booked?</p><div class="seg"><button type="button" class="segbtn" id="gu_no">No</button><button type="button" class="segbtn" id="gu_yes">Yes</button></div>' +
+      '<div class="anyq"><p class="lbl2" id="gu_q">More guests stayed than were booked?</p><div class="seg"><button type="button" class="segbtn" id="gu_no">No</button><button type="button" class="segbtn" id="gu_yes">Yes</button></div>' +
       '<div id="gu_more" hidden><input type="text" id="gu_note" maxlength="300" placeholder="What did you see? For example: 4 beds used, booked for 2">' +
       '<p class="note">Take a photo of the extra beds or towels now, before you clean.</p><div class="photos" id="guphotos"></div>' +
       '<button type="button" class="segbtn addissue" id="guadd">+ Add a photo</button></div></div>';
@@ -777,6 +779,31 @@ window.PHH_CHECKLIST = {
   function glText(at, src){
     var t = new Date(at).toLocaleTimeString("en-AU", { timeZone:"Australia/Sydney", hour:"numeric", minute:"2-digit" }).replace(" ", "");
     return "Guests left " + t + (src ? " (" + (src === "sms" ? "text" : "Airbnb message") + ")" : "");
+  }
+  /* Booked guests from HomHero (Sharon, 2 Nov): one line on the card, and the number in the arrival question. */
+  var BOOKED = null;
+  function guestsText(g){
+    if(!g) return "";
+    var n = (Number(g.adults) || 0) + (Number(g.children) || 0), i = Number(g.infants) || 0;
+    if(!n && !i) return "";
+    return "Booked for " + n + " guest" + (n === 1 ? "" : "s") + (i ? ", plus " + i + " infant" + (i === 1 ? "" : "s") : "") + (Number(g.pets) ? ", with a pet" : "");
+  }
+  function showGuests(g){
+    BOOKED = g || null;
+    var t = guestsText(g), row = $("hhguests"); if(row){ row.textContent = t; row.hidden = !t; }
+    var q = $("gu_q"); if(q) q.textContent = t ? "More guests stayed than booked? (" + t.replace("Booked for ", "") + ")" : "More guests stayed than were booked?";
+  }
+  /* Booked guests come from the database lookup qa_clean_guests (only for this clean's housekeeper or PHH staff).
+     The address is built from parts so the WordPress proxy does not rewrite it. Fails quietly: the line just stays hidden. */
+  function loadGuests(){
+    try{
+      var code = ""; try{ code = localStorage.getItem("phh-cleaner-code") || localStorage.getItem("phh-staff-code") || ""; }catch(x){}
+      if(!code || !RES) return;
+      fetch("https://rxhpnowszmetjxbwylil" + ".supabase.co/rest/v1/rpc/qa_clean_guests", { method:"POST",
+        headers:{ "content-type":"application/json", "apikey":"sb_publishable_JaFEZTFufkk0hrminCZdXQ_fQFJ0kLb" },
+        body: JSON.stringify({ p_code: code, p_res: String(RES) }) })
+        .then(function(r){ return r.ok ? r.json() : null; }).then(function(g){ if(g && typeof g === "object") showGuests(g); }).catch(function(){});
+    }catch(e){}
   }
   function showGuestLeft(g){
     var box = $("glbox"); if(!box) return;
@@ -1245,7 +1272,7 @@ window.PHH_CHECKLIST = {
 
   function start(c){
     clean = c;
-    showNotes(c.notes); showGuestLeft(c.guestLeft);
+    showNotes(c.notes); showGuestLeft(c.guestLeft); showGuests(c.guests || null); loadGuests();
     officeAbsent = (c.absent && typeof c.absent === "object") ? c.absent : {};
     Object.keys(state.absent).forEach(function(k){ if(officeAbsent[k]) delete state.absent[k]; }); /* the office has decided: confirmed = not asked, rejected = photo needed */
     $("prop").textContent = c.property;

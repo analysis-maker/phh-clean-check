@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261102145228"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261102150903"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -222,6 +222,9 @@ body.photomode .ph .hint, body.photomode .ph .stamp{display:none}
 .notesbox p{margin:6px 0 0;white-space:pre-wrap}
 .notesbox .by{color:var(--muted);font-size:.8rem}
 .today{margin-top:14px;padding:10px 14px;border-radius:var(--radius-md);background:var(--surface-2);border:1px solid var(--line);font-size:.92rem;display:grid;gap:6px}
+.today .keys{margin:0 0 4px;padding:10px 12px;border:1.5px solid var(--teal);border-radius:var(--radius-md);background:#eef8f7;color:var(--ink);font-weight:700;white-space:pre-wrap;word-break:break-word}
+.today .keys b{display:block;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);margin-bottom:2px}
+.today .trow a{color:inherit}
 .today .trow{margin:0;padding-left:18px;position:relative;color:var(--ink);line-height:1.35}
 .today .trow::before{content:"";position:absolute;left:2px;top:.45em;width:8px;height:8px;border-radius:50%;background:var(--muted)}
 .today .trow.ok{color:#1d7a45;font-weight:700}.today .trow.ok::before{background:#2e9e5b}
@@ -291,6 +294,8 @@ body.photomode .ph .hint, body.photomode .ph .stamp{display:none}
     <div class="meta"><span id="cdate"></span><span id="cres"></span></div>
     <!-- One compact "today" card (Ian, 2 Nov: too many banners before the clean). Same ids as before so the scripts are unchanged. -->
     <div class="today" id="hhinfo">
+      <div class="keys" id="hhkeys" hidden><b>Entry</b><span id="hhkeystext"></span></div>
+      <p class="trow" id="hhaddr" hidden></p>
       <p class="trow ok" id="glbox" hidden></p>
       <p class="trow warn" id="hhb2b" hidden></p>
       <p class="trow" id="hhnext" hidden></p>
@@ -467,7 +472,9 @@ window.PHH_CHECKLIST = {
   var $ = function(id){ return document.getElementById(id); };
   /* Sign out (top right): clears every saved code (cleaner, office, owner) and goes back to the code screen.
      A clean check in progress stays saved on the phone for that booking. */
-  function signOutAll(e){ if(e) e.preventDefault(); try{ ["phh-cleaner-code","phh-cleaner-name","phh-staff-code","phh-owner-code"].forEach(function(k){ localStorage.removeItem(k); }); }catch(x){} location.href = location.pathname; }
+  function signOutAll(e){ if(e) e.preventDefault(); try{ ["phh-cleaner-code","phh-cleaner-name","phh-staff-code","phh-owner-code"].forEach(function(k){ localStorage.removeItem(k); }); Object.keys(localStorage).forEach(function(k){ if(k.indexOf("phh-cc-access-") === 0) localStorage.removeItem(k); }); }catch(x){} location.href = location.pathname; }
+  /* Saved entry codes are kept 3 days at most. */
+  try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf("phh-cc-access-") === 0){ var c = JSON.parse(localStorage.getItem(k) || "null"); if(!c || Date.now() - c.at > 3 * 86400000) localStorage.removeItem(k); } }); }catch(x){}
   function showMe(name){ var me = $("me"); if(!me) return; $("mename").textContent = name || ""; me.hidden = false; }
   if($("signout")) $("signout").addEventListener("click", signOutAll);
   (function(){ var c = "", n = ""; try{ c = localStorage.getItem("phh-cleaner-code") || ""; n = localStorage.getItem("phh-cleaner-name") || ""; }catch(e){} if(c) showMe(n ? n.split(" ")[0] : ""); })();
@@ -802,8 +809,18 @@ window.PHH_CHECKLIST = {
       fetch("https://rxhpnowszmetjxbwylil" + ".supabase.co/rest/v1/rpc/qa_clean_guests", { method:"POST",
         headers:{ "content-type":"application/json", "apikey":"sb_publishable_JaFEZTFufkk0hrminCZdXQ_fQFJ0kLb" },
         body: JSON.stringify({ p_code: code, p_res: String(RES) }) })
-        .then(function(r){ return r.ok ? r.json() : null; }).then(function(g){ if(g && typeof g === "object") showGuests(g); }).catch(function(){});
+        .then(function(r){ return r.ok ? r.json() : null; }).then(function(g){
+          if(g && typeof g === "object" && !g.locked){ showGuests(g); showAccess(g); try{ localStorage.setItem("phh-cc-access-" + RES, JSON.stringify({ at: Date.now(), g: g })); }catch(x){} }
+        }).catch(function(){ /* weak signal: use the copy saved on this phone */
+          try{ var c = JSON.parse(localStorage.getItem("phh-cc-access-" + RES) || "null"); if(c && Date.now() - c.at < 3 * 86400000){ showGuests(c.g); showAccess(c.g); } }catch(x){}
+        });
     }catch(e){}
+  }
+  /* Address and entry codes (Ian, 2 Nov). Codes come from HomHero, only for this clean's own housekeeper, around the clean day. */
+  function showAccess(g){
+    var a = $("hhaddr"), k = $("hhkeys");
+    if(a){ var ad = g && g.address ? String(g.address) : ""; a.innerHTML = ""; if(ad){ var l = document.createElement("a"); l.href = "https://maps.google.com/?q=" + encodeURIComponent(ad); l.target = "_blank"; l.rel = "noopener"; l.textContent = ad; a.appendChild(l); } a.hidden = !ad; }
+    if(k){ var t = g && g.keys ? String(g.keys) : (g && g.keysLater ? "Entry codes show here from the day before the clean." : ""); $("hhkeystext").textContent = t; k.hidden = !t; var hl = $("hhlink"); if(hl) hl.textContent = g && g.keys ? "More notes in HomHero" : "Entry codes and notes (HomHero)"; }
   }
   function showGuestLeft(g){
     var box = $("glbox"); if(!box) return;

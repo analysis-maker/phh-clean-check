@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030060412"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261102000622"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -218,6 +218,8 @@ body.photomode .ph .hint, body.photomode .ph .stamp{display:none}
 .notesbox b{display:block;margin-bottom:4px}
 .notesbox p{margin:6px 0 0;white-space:pre-wrap}
 .notesbox .by{color:var(--muted);font-size:.8rem}
+.glbox{margin-top:14px;padding:10px 14px;border-radius:var(--radius-md);background:#e8f6ee;border:1px solid #9fd3b3;font-size:.92rem;color:var(--ink)}
+.pickrow .sub.gl{color:#1d7a45;font-weight:600}
 </style>
 
 <nav class="nav"><div class="wrap"><img src="../logo.png" alt="Professional Holiday Homes" width="183" height="34" fetchpriority="high"><div class="me" id="me" hidden><span id="mename"></span><a href="#" id="signout">Sign out</a></div></div></nav>
@@ -271,6 +273,7 @@ body.photomode .ph .hint, body.photomode .ph .stamp{display:none}
     <span class="badge">Clean check</span>
     <h1 id="prop">Loading clean...</h1>
     <div class="meta"><span id="cdate"></span><span id="cres"></span></div>
+    <div class="glbox" id="glbox" hidden></div>
     <div class="notesbox" id="notesbox" hidden><b>Notes from earlier cleans here</b><div id="noteslist"></div></div>
     <div class="hhinfo" id="hhinfo" hidden><span class="b2b" id="hhb2b" hidden></span><span id="hhnext" hidden></span><span class="hhnote" id="hhnote" hidden></span><span class="wifitip">Tip: join the property Wi-Fi (scan the QR code) so photos send straight away.</span><a class="hhlink" id="hhlink" target="_blank" rel="noopener">Open this clean in HomHero Cleaner (entry codes and notes)</a></div>
     <div class="due">Complete by 3pm.</div>
@@ -728,6 +731,15 @@ window.PHH_CHECKLIST = {
   }
 
   /* Notes housekeepers left for the next clean at this property (from /clean). */
+  /* Guests told us they've left (their Airbnb message or SMS reply in HomHero), Sharon 2 Nov. */
+  function glText(at, src){
+    var t = new Date(at).toLocaleTimeString("en-AU", { timeZone:"Australia/Sydney", hour:"numeric", minute:"2-digit" }).replace(" ", "");
+    return "Guests have left (" + t + (src ? ", told us by " + (src === "sms" ? "text" : "Airbnb message") : "") + ")";
+  }
+  function showGuestLeft(g){
+    var box = $("glbox"); if(!box) return;
+    box.textContent = g && g.at ? glText(g.at, g.source) : ""; box.hidden = !(g && g.at);
+  }
   function showNotes(list){
     var box = $("notesbox"), host = $("noteslist"); if(!box || !host) return;
     host.innerHTML = "";
@@ -1191,7 +1203,7 @@ window.PHH_CHECKLIST = {
 
   function start(c){
     clean = c;
-    showNotes(c.notes);
+    showNotes(c.notes); showGuestLeft(c.guestLeft);
     officeAbsent = (c.absent && typeof c.absent === "object") ? c.absent : {};
     Object.keys(state.absent).forEach(function(k){ if(officeAbsent[k]) delete state.absent[k]; }); /* the office has decided: confirmed = not asked, rejected = photo needed */
     $("prop").textContent = c.property;
@@ -1257,6 +1269,7 @@ window.PHH_CHECKLIST = {
         b.innerHTML = '<span class="txt"></span><span class="chev" aria-hidden="true">&rsaquo;</span>';
         b.querySelector(".txt").textContent = c.property;
         if(office && c.cleaner){ var sub = document.createElement("span"); sub.className = "sub"; sub.textContent = c.cleaner; b.querySelector(".txt").appendChild(sub); }
+        if(c.guestLeftAt && !c.submitted){ var gl = document.createElement("span"); gl.className = "sub gl"; gl.textContent = glText(c.guestLeftAt, c.guestLeftSource); b.querySelector(".txt").appendChild(gl); }
         if(office && c.submissionId){
           var t1 = document.createElement("span"); t1.className = "tag"; t1.textContent = "Done" + (c.submittedAt ? " " + new Date(c.submittedAt).toLocaleTimeString("en-AU", { timeZone:"Australia/Sydney", hour:"numeric", minute:"2-digit" }).replace(" ", "") : ""); b.insertBefore(t1, b.querySelector(".chev"));
           b.addEventListener("click", function(){ location.href = "view.html?id=" + encodeURIComponent(c.submissionId) + "&from=officelist"; });

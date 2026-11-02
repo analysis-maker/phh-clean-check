@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261102150903"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261102153120"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -624,7 +624,8 @@ window.PHH_CHECKLIST = {
     $("hhlink").href = portalUrl(); box.hidden = false;
     var code = ""; try{ code = localStorage.getItem("phh-cleaner-code") || ""; }catch(e){}
     if(!code || !RES) return;
-    fetch(OFFICE_API + "/clean-extra", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code, res: RES }) })
+    /* clean-api /clean-extra (2 Nov): same as office-api's, and also works for a member of the housekeeper's team. */
+    fetch(API + "/clean-extra", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code, res: RES }) })
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(j){
         if(!j) return;
@@ -1434,7 +1435,9 @@ window.PHH_CHECKLIST = {
           showMe(office ? "PHH office" : String(j.cleaner || "").split(" ")[0]);
           try{ if(office) localStorage.removeItem("phh-cleaner-name"); else localStorage.setItem("phh-cleaner-name", String(j.cleaner || "")); }catch(e){}
           $("pickh1").textContent = office ? "All cleans today" : "Hi " + String(j.cleaner || "").split(" ")[0];
-          $("pickmeta").textContent = office ? "Office view. Every clean with a PHH housekeeper." : "Your cleans for today. Pick the property you are cleaning.";
+          /* Team member (2 Nov): signed in with their own code, sees the cleans of the housekeeper they clean for. */
+          var teamLead = (!office && j.team && j.team.lead) ? String(j.team.lead).replace(/\s*\(.*\)\s*$/, "") : "";
+          $("pickmeta").textContent = office ? "Office view. Every clean with a PHH housekeeper." : teamLead ? "Today's cleans for " + teamLead + "'s team. Pick the property you are cleaning." : "Your cleans for today. Pick the property you are cleaning.";
           $("notme").hidden = false;
           $("searchbox").hidden = all.length < 6;
           if(window.phhPush) window.phhPush($("pushbox"), code, "notifications");

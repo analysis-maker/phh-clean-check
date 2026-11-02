@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261102013030"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261102015112"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -364,6 +364,16 @@ html,body{overflow-x:clip}
             </select>
           </div>
         </div>
+        <div class="grid2">
+          <div><label for="mchan">Send by</label>
+            <select id="mchan">
+              <option value="app">App (phone ping and in the app)</option>
+              <option value="email">Email (from admin@, as Marson)</option>
+              <option value="both">Email and app</option>
+            </select>
+          </div>
+          <p class="muted" style="margin:22px 0 0;font-size:12px">New housekeepers who have never opened the app need Email.</p>
+        </div>
         <div id="mpick" class="picklist" hidden></div>
         <div><label for="mtitle">Title (shows first in the notification)</label><input type="text" id="mtitle" maxlength="60" placeholder="e.g. Easter long weekend"></div>
         <div><label for="mbody">Message. {first} = their first name, {code} = their code, {start} = their start date</label><textarea id="mbody" maxlength="600" placeholder="Keep it short and friendly."></textarea></div>
@@ -372,13 +382,14 @@ html,body{overflow-x:clip}
           <div><label for="mwhen">Send later (optional, Sydney time)</label><input type="datetime-local" id="mwhen"></div>
         </div>
         <div><label>Phone preview</label><div class="preview"><b>Professional Holiday Homes</b><span id="mprev">Title: message</span></div></div>
+        <div id="memailprev" hidden><label>Email preview (each housekeeper gets their own name and code)</label><div id="memailbox" style="border:1px solid #dfe8ec;border-radius:8px;padding:14px;background:#fff;color:#33414f;max-width:640px"></div></div>
         <div class="row2"><button class="btn ghost" type="button" id="mdry">Check who gets it</button><button class="btn" type="button" id="msend">Send</button><span id="mres" class="muted"></span></div>
         <p class="muted" style="margin:0;font-size:12px">Sent as "Professional Holiday Homes". Without notifications, they see it in the app next time they sign in. Read = opened the notification or tapped Got it.</p>
       </div>
     </div>
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Sent</th><th>Title</th><th>To</th><th>Delivered to phone</th><th>Read</th></tr></thead>
+        <thead><tr><th>Sent</th><th>Title</th><th>To</th><th>Delivered</th><th>Read</th></tr></thead>
         <tbody id="msgbody"></tbody>
       </table>
     </div>
@@ -689,7 +700,7 @@ html,body{overflow-x:clip}
   /* ---------- messages ---------- */
   var TPL = [
     { id:"", name:"Blank message", title:"", body:"", guides:false },
-    { id:"welcome", name:"Welcome and code", title:"Welcome to Clean Check", body:"Hi {first}, Clean Check is our short end-of-clean checklist with a few photos. It takes about 5 minutes and your feedback shapes how it works. Your code is {code}. Open professionalholidayhomes.com.au/checkcleaning to get started. The guide and a short video are below.", guides:true },
+    { id:"welcome", name:"Welcome and code (email)", title:"Welcome to Clean Check", body:"Hi {first}, welcome to Clean Check, our short end-of-clean checklist with a few photos. It takes about 5 minutes and your feedback shapes how it works.\n\nYour code is {code}. Open professionalholidayhomes.com.au/checkcleaning on your phone, add it to your home screen, then tap Turn on so you get a ping when guests have left.\n\nThe one-page guide and a short video are below.", guides:true, channel:"email" },
     { id:"start", name:"Your start date", title:"Your Clean Check start date", body:"Hi {first}, from {start} please do a Clean Check at the end of each departure clean, before marking it done in HomHero. Thanks for being part of it, and tell us anything that would make it easier.", guides:true },
     { id:"reminder", name:"Friendly reminder", title:"Quick Clean Check reminder", body:"Hi {first}, a quick reminder to tap Complete clean in Clean Check before marking the clean done in HomHero. Thanks so much.", guides:false },
     { id:"thanks", name:"Thank you", title:"Thank you", body:"Hi {first}, thank you for your clean checks this month. They really help, and the photos back you up if a guest ever raises anything.", guides:false },
@@ -697,25 +708,33 @@ html,body{overflow-x:clip}
     { id:"hours", name:"Office hours / holidays", title:"Office hours", body:"Hi {first}, a quick note on office hours over the holidays: ", guides:false }
   ];
   $("mtpl").innerHTML = TPL.map(function(t){ return '<option value="' + t.id + '">' + esc(t.name) + "</option>"; }).join("");
-  $("mtpl").addEventListener("change", function(){ var t = TPL.filter(function(x){ return x.id === $("mtpl").value; })[0]; if(!t) return; $("mtitle").value = t.title; $("mbody").value = t.body; $("mguides").checked = t.guides; prev(); });
+  $("mtpl").addEventListener("change", function(){ var t = TPL.filter(function(x){ return x.id === $("mtpl").value; })[0]; if(!t) return; $("mtitle").value = t.title; $("mbody").value = t.body; $("mguides").checked = t.guides; $("mchan").value = t.channel || "app"; if(t.channel === "email" && $("maud").value === "test"){ $("maud").value = "ids"; $("mpick").hidden = false; } $("memailprev").hidden = true; prev(); });
   function renderPick(){
     if(!D) return;
     $("mpick").innerHTML = D.housekeepers.filter(function(h){ return h.code && h.active; }).map(function(h){
-      return '<label><input type="checkbox" value="' + esc(h.id) + '"> ' + esc(h.name) + (h.phones ? "" : ' <span class="sub">(no notifications)</span>') + "</label>";
+      return '<label><input type="checkbox" value="' + esc(h.id) + '"> ' + esc(h.name) + (h.phones ? "" : ' <span class="sub">(no notifications)</span>') + (h.hasEmail ? "" : ' <span class="sub">(no email)</span>') + "</label>";
     }).join("");
   }
   function prev(){ var t = $("mtitle").value.trim() || "Title", m = ($("mbody").value.trim() || "message").replace(/\{first\}/g, "Sharon").replace(/\{code\}/g, "1234").replace(/\{start\}/g, "Monday 2 November"); var s = (t + ": " + m).replace(/\s+/g, " "); $("mprev").textContent = s.length > 170 ? s.slice(0, 167) + "..." : s; }
   $("mtitle").addEventListener("input", prev); $("mbody").addEventListener("input", prev);
   $("maud").addEventListener("change", function(){ $("mpick").hidden = this.value !== "ids"; $("mres").textContent = ""; });
+  $("mchan").addEventListener("change", function(){ $("mres").textContent = ""; $("memailprev").hidden = true; });
   function sendBody(dry){
     var ids = Array.prototype.map.call(document.querySelectorAll("#mpick input:checked"), function(i){ return i.value; });
     var when = $("mwhen").value ? new Date($("mwhen").value).toISOString() : null;
-    return { title: $("mtitle").value.trim(), body: $("mbody").value.trim(), audience: $("maud").value, ids: ids, dry: dry, guides: $("mguides").checked, sendAt: when };
+    return { title: $("mtitle").value.trim(), body: $("mbody").value.trim(), audience: $("maud").value, ids: ids, dry: dry, guides: $("mguides").checked, sendAt: when, channel: $("mchan").value };
   }
   $("mdry").addEventListener("click", function(){
     $("mres").textContent = "Checking...";
     call("send", sendBody(true)).then(function(j){
       var tot = j.recipients + j.testers;
+      if(j.channel && j.channel !== "app"){
+        $("memailbox").innerHTML = j.sampleHtml || ""; $("memailprev").hidden = !j.sampleHtml;
+        $("mres").innerHTML = j.withEmail + " of " + j.recipients + " housekeeper" + (j.recipients === 1 ? "" : "s") + " will get an email" + (j.channel === "both" ? " and a phone ping (if on)" : "") + ". Testers get it in the app only." +
+          (j.noEmail && j.noEmail.length ? ' <span class="bad">No email address in HomHero: ' + esc(j.noEmail.join(", ")) + ".</span>" : "") +
+          (j.emailCheck ? (j.emailCheck.ok ? ' <span class="ok">Email system ready.</span>' : ' <span class="bad">Email system problem: ' + esc(j.emailCheck.error || "unknown") + ". Tell Ian before sending.</span>") : "");
+        return;
+      }
       $("mres").innerHTML = (j.recipients ? j.recipients + " housekeeper" + (j.recipients > 1 ? "s" : "") + " plus " : "") + j.testers + " testers. " + j.withPhones + " of " + tot + " have notifications on." +
         (j.without && j.without.length ? ' <span class="sub">No notifications: ' + esc(j.without.slice(0, 12).join(", ")) + (j.without.length > 12 ? " and " + (j.without.length - 12) + " more" : "") + ". They see it in the app next sign in.</span>" : "");
     }).catch(function(e){ $("mres").innerHTML = '<span class="err">' + esc(e.message) + "</span>"; });
@@ -723,14 +742,16 @@ html,body{overflow-x:clip}
   $("msend").addEventListener("click", function(){
     var b = sendBody(false); if(!b.title || !b.body) return toast("Add a title and a message.");
     var who = { test:"the testers", all:"ALL housekeepers", live:"every housekeeper live on Clean Check", ids:"the picked housekeepers" }[b.audience];
-    if(!confirm((b.sendAt ? "Schedule this for " + fmtTime(b.sendAt) + " to " : "Send this now to ") + who + (b.audience === "test" ? "" : " (plus the testers)") + "?")) return;
+    var how = b.channel === "email" ? " by EMAIL" : b.channel === "both" ? " by EMAIL and app" : "";
+    if(!confirm((b.sendAt ? "Schedule this for " + fmtTime(b.sendAt) + " to " : "Send this now to ") + who + how + (b.audience === "test" ? "" : " (testers get it in the app)") + "?")) return;
     $("msend").disabled = true; $("mres").textContent = "Sending...";
     call("send", b).then(function(j){
       $("msend").disabled = false;
       if(j.scheduled) $("mres").innerHTML = '<span class="ok">Scheduled for ' + esc(fmtTime(j.scheduled)) + " to " + j.recipients + ".</span>";
+      else if(j.channel && j.channel !== "app") $("mres").innerHTML = (j.emailed === j.emailTo ? '<span class="ok">' : '<span class="bad">') + "Emailed " + j.emailed + " of " + j.emailTo + ".</span>" + (j.emailed < j.emailTo ? ' <span class="sub">Open the message below to see who did not get it.</span>' : "");
       else $("mres").innerHTML = (j.delivered ? '<span class="ok">' : '<span class="bad">') + "Sent to " + j.recipients + ". Reached " + j.delivered + " phone" + (j.delivered === 1 ? "" : "s") + ".</span>" +
         (j.withoutPhones && j.withoutPhones.length ? ' <span class="sub">No notifications on for: ' + esc(j.withoutPhones.slice(0, 10).join(", ")) + (j.withoutPhones.length > 10 ? "..." : "") + ". They see it in the app next sign in.</span>" : "");
-      $("mtitle").value = ""; $("mbody").value = ""; $("mwhen").value = ""; $("mtpl").value = ""; prev(); loadMsgs();
+      $("mtitle").value = ""; $("mbody").value = ""; $("mwhen").value = ""; $("mtpl").value = ""; $("mchan").value = "app"; $("memailprev").hidden = true; prev(); loadMsgs();
     }).catch(function(e){ $("msend").disabled = false; $("mres").innerHTML = '<span class="err">' + esc(e.message) + "</span>"; });
   });
   var msgOpen = {};
@@ -739,7 +760,7 @@ html,body{overflow-x:clip}
       var html = "";
       (j.msgs || []).forEach(function(m){
         var pill = m.status === "scheduled" ? '<span class="pill sched">Scheduled ' + esc(fmtTime(m.sendAt)) + "</span>" : m.status === "cancelled" ? '<span class="pill cancel">Cancelled</span>' : "";
-        html += '<tr class="r" data-m="' + esc(m.id) + '" aria-expanded="' + !!msgOpen[m.id] + '" tabindex="0"><td class="nowrap" data-l="Sent">' + esc(m.status === "sent" ? fmtTime(m.at) : "-") + '</td><td class="col-prop"><span class="prop">' + esc(m.title) + "</span>" + (m.test ? ' <span class="pill">testers</span>' : "") + pill + '<div class="sub">' + esc(String(m.body).slice(0, 90)) + '</div></td><td data-l="To">' + m.recipients + '</td><td data-l="Delivered">' + m.delivered + " of " + m.recipients + '</td><td data-l="Read"><b>' + m.read + "</b> of " + m.recipients + "</td></tr>";
+        html += '<tr class="r" data-m="' + esc(m.id) + '" aria-expanded="' + !!msgOpen[m.id] + '" tabindex="0"><td class="nowrap" data-l="Sent">' + esc(m.status === "sent" ? fmtTime(m.at) : "-") + '</td><td class="col-prop"><span class="prop">' + esc(m.title) + "</span>" + (m.test ? ' <span class="pill">testers</span>' : "") + pill + '<div class="sub">' + esc(String(m.body).slice(0, 90)) + '</div></td><td data-l="To">' + m.recipients + '</td><td data-l="Delivered">' + (m.channel && m.channel !== "app" ? "Emailed " + m.emailed + " of " + m.emailTo : m.delivered + " of " + m.recipients) + '</td><td data-l="Read"><b>' + m.read + "</b> of " + m.recipients + "</td></tr>";
         if(msgOpen[m.id]) html += '<tr class="d"><td colspan="5" id="md-' + esc(m.id) + '"><div class="detail"><div class="muted">Loading...</div></div></td></tr>';
       });
       $("msgbody").innerHTML = html || '<tr><td colspan="5" class="empty">No messages yet.</td></tr>';
@@ -758,7 +779,8 @@ html,body{overflow-x:clip}
             : j.msg.status !== "sent" ? '<span class="muted">Not sent yet</span>'
             : r.delivered ? '<span class="muted">On their phone ' + esc(fmtTime(r.delivered_at)) + ", not opened yet</span>"
             : r.phones ? '<span class="bad">Phone did not accept it</span>' : '<span class="muted">No notifications on. Shows in the app next sign in</span>';
-          return "<li style=\"margin:4px 0\"><b>" + esc(r.name) + "</b>" + (r.tester ? ' <span class="pill">tester</span>' : "") + ": " + s + "</li>";
+          var em = r.emailed_at ? ' <span class="ok">Emailed ' + esc(fmtTime(r.emailed_at)) + "</span>" : r.email_error ? ' <span class="bad">Email failed: ' + esc(r.email_error) + "</span>" : r.email_to && j.msg.status === "sent" ? ' <span class="muted">Email not sent</span>' : "";
+          return "<li style=\"margin:4px 0\"><b>" + esc(r.name) + "</b>" + (r.tester ? ' <span class="pill">tester</span>' : "") + ": " + s + em + "</li>";
         }).join("") + "</ul></div></div>";
     });
   }

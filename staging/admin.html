@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261102005321"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261102013030"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -468,7 +468,9 @@ html,body{overflow-x:clip}
   var ST = { live:"Live", ready:"Ready", starting:"Starts", paused:"Paused", no_code:"No code" };
   function first(n){ return String(n || "").split(/[ (]/)[0]; }
   function hkById(id){ return D && D.housekeepers.filter(function(x){ return x.id === id; })[0]; }
-  function codeMsg(h){ return "Hi " + first(h.name) + ", your Clean Check code is " + h.code + ". Open " + SITE + " and enter it. Thanks, Professional Holiday Homes"; }
+  /* Copy code message = the welcome Marson pastes into an email or text. Always carries the How It Works guide and video (Ian, 2 Nov). */
+  var GUIDE_PDF = "https://drive.google.com/file/d/1ey89ZX-pvR839gnkHRL2Pz08Co8_91zt/view", GUIDE_VIDEO = "https://drive.google.com/file/d/1ByAaWI-VpATFER-VKVeEO0c0VSFl2iCC/view";
+  function codeMsg(h){ return "Hi " + first(h.name) + ", welcome to Clean Check, our short end-of-clean checklist with a few photos. It takes about 5 minutes and your feedback shapes how it works.\n\nYour code is " + h.code + ". Open " + SITE + " on your phone, add it to your home screen, then tap Turn on so you get a ping when guests have left.\n\nHow it works (1-page guide): " + GUIDE_PDF + "\nShort video: " + GUIDE_VIDEO + "\n\nThanks, Professional Holiday Homes"; }
   function steps(h){
     var s = [!!h.codeSentAt, !!h.firstSeenAt, h.phones > 0, !!h.firstCheckAt], n = s.filter(Boolean).length;
     var t = ["Code sent", "Signed in", "Notifications on", "First clean check"].map(function(l, i){ return (s[i] ? "Done: " : "Not yet: ") + l; }).join(", ");

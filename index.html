@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030060412"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261102005321"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -218,6 +218,21 @@ body.photomode .ph .hint, body.photomode .ph .stamp{display:none}
 .notesbox b{display:block;margin-bottom:4px}
 .notesbox p{margin:6px 0 0;white-space:pre-wrap}
 .notesbox .by{color:var(--muted);font-size:.8rem}
+.today{margin-top:14px;padding:10px 14px;border-radius:var(--radius-md);background:var(--surface-2);border:1px solid var(--line);font-size:.92rem;display:grid;gap:6px}
+.today .trow{margin:0;padding-left:18px;position:relative;color:var(--ink);line-height:1.35}
+.today .trow::before{content:"";position:absolute;left:2px;top:.45em;width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.today .trow.ok{color:#1d7a45;font-weight:700}.today .trow.ok::before{background:#2e9e5b}
+.today .trow.warn{color:var(--warn);font-weight:700}.today .trow.warn::before{background:var(--warn)}
+.today .trow.deadline{font-weight:700}.today .trow.deadline::before{background:var(--warn)}
+.today .trow.note{white-space:pre-wrap}.today .trow.note::before{background:#e0b440}
+.today .trow.note b{font-weight:700}
+.today #noteslist p{margin:2px 0 0;white-space:pre-wrap}
+.today a.hhlink{display:block;text-align:center;text-decoration:none;font-weight:700;color:var(--primary);border:1.5px solid var(--primary);border-radius:var(--radius-md);padding:8px 10px;margin-top:2px;background:#fff;font-size:.9rem}
+.today .howto{margin:0;color:var(--muted);font-size:.82rem;line-height:1.35}
+.badgerow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.badgerow .topback{margin:0}
+.glbox{margin-top:14px;padding:10px 14px;border-radius:var(--radius-md);background:#e8f6ee;border:1px solid #9fd3b3;font-size:.92rem;color:var(--ink)}
+.pickrow .sub.gl{color:#1d7a45;font-weight:600}
 </style>
 
 <nav class="nav"><div class="wrap"><img src="logo.png" alt="Professional Holiday Homes" width="183" height="34" fetchpriority="high"><div class="me" id="me" hidden><span id="mename"></span><a href="#" id="signout">Sign out</a></div></div></nav>
@@ -268,14 +283,20 @@ body.photomode .ph .hint, body.photomode .ph .stamp{display:none}
 
 <div class="wrap" id="app">
   <header class="top">
-    <span class="badge">Clean check</span>
+    <div class="badgerow"><span class="badge">Clean check</span><a class="back topback" id="back" href="./" hidden>&lsaquo; My cleans</a></div>
     <h1 id="prop">Loading clean...</h1>
     <div class="meta"><span id="cdate"></span><span id="cres"></span></div>
-    <div class="notesbox" id="notesbox" hidden><b>Notes from earlier cleans here</b><div id="noteslist"></div></div>
-    <div class="hhinfo" id="hhinfo" hidden><span class="b2b" id="hhb2b" hidden></span><span id="hhnext" hidden></span><span class="hhnote" id="hhnote" hidden></span><span class="wifitip">Tip: join the property Wi-Fi (scan the QR code) so photos send straight away.</span><a class="hhlink" id="hhlink" target="_blank" rel="noopener">Open this clean in HomHero Cleaner (entry codes and notes)</a></div>
-    <div class="due">Complete by 3pm.</div>
-    <div class="banner" id="howto">Take the first photo (guest keys) when you arrive. Then tick each section and take its photos as you go. Photos are time-stamped. No photos, no payment.</div>
-    <a class="back" id="back" href="./" hidden>Back to my cleans</a>
+    <!-- One compact "today" card (Ian, 2 Nov: too many banners before the clean). Same ids as before so the scripts are unchanged. -->
+    <div class="today" id="hhinfo">
+      <p class="trow ok" id="glbox" hidden></p>
+      <p class="trow warn" id="hhb2b" hidden></p>
+      <p class="trow" id="hhnext" hidden></p>
+      <p class="trow deadline">Complete by 3pm</p>
+      <p class="trow note" id="hhnote" hidden></p>
+      <div class="trow note" id="notesbox" hidden><b>From earlier cleans</b><div id="noteslist"></div></div>
+      <a class="hhlink" id="hhlink" target="_blank" rel="noopener">Entry codes and notes (HomHero)</a>
+      <p class="howto" id="howto">Keys photo first when you arrive, then tick and photo each section as you go. Photos are time-stamped: no photos, no payment. Join the property Wi-Fi so photos send faster.</p>
+    </div>
   </header>
   <div class="prog">
     <div class="bar" aria-hidden="true"><i id="barfill"></i></div>
@@ -602,10 +623,10 @@ window.PHH_CHECKLIST = {
           var h = +m[2], t = (h % 12 || 12) + ":" + m[3] + (h < 12 ? " am" : " pm");
           var d = new Date(m[1] + "T12:00:00+10:00").toLocaleDateString("en-AU",{ timeZone:"Australia/Sydney", weekday:"short", day:"numeric", month:"short" });
           var today = new Intl.DateTimeFormat("en-CA",{ timeZone:"Australia/Sydney" }).format(new Date());
-          if(j.backToBack || m[1] === today){ $("hhb2b").textContent = "Back to back: next guests arrive " + (m[1] === today ? "today" : d) + " at " + t; $("hhb2b").hidden = false; }
-          else { $("hhnext").textContent = "Next guests arrive " + d + " at " + t; $("hhnext").hidden = false; }
+          if(j.backToBack || m[1] === today){ $("hhb2b").textContent = "Back to back: next guests " + (m[1] === today ? "" : d + " ") + t.replace(" ", ""); $("hhb2b").hidden = false; }
+          else { $("hhnext").textContent = "Next guests " + d + ", " + t.replace(" ", ""); $("hhnext").hidden = false; }
         } else if(j.backToBack){ $("hhb2b").textContent = "Back to back: next guests arrive today"; $("hhb2b").hidden = false; }
-        if(j.hkNote){ $("hhnote").textContent = "Note from PHH: " + j.hkNote; $("hhnote").hidden = false; }
+        if(j.hkNote){ $("hhnote").textContent = "PHH note: " + j.hkNote; $("hhnote").hidden = false; }
       }).catch(function(){});
   }
 
@@ -728,6 +749,15 @@ window.PHH_CHECKLIST = {
   }
 
   /* Notes housekeepers left for the next clean at this property (from /clean). */
+  /* Guests told us they've left (their Airbnb message or SMS reply in HomHero), Sharon 2 Nov. */
+  function glText(at, src){
+    var t = new Date(at).toLocaleTimeString("en-AU", { timeZone:"Australia/Sydney", hour:"numeric", minute:"2-digit" }).replace(" ", "");
+    return "Guests left " + t + (src ? " (" + (src === "sms" ? "text" : "Airbnb message") + ")" : "");
+  }
+  function showGuestLeft(g){
+    var box = $("glbox"); if(!box) return;
+    box.textContent = g && g.at ? glText(g.at, g.source) : ""; box.hidden = !(g && g.at);
+  }
   function showNotes(list){
     var box = $("notesbox"), host = $("noteslist"); if(!box || !host) return;
     host.innerHTML = "";
@@ -1191,7 +1221,7 @@ window.PHH_CHECKLIST = {
 
   function start(c){
     clean = c;
-    showNotes(c.notes);
+    showNotes(c.notes); showGuestLeft(c.guestLeft);
     officeAbsent = (c.absent && typeof c.absent === "object") ? c.absent : {};
     Object.keys(state.absent).forEach(function(k){ if(officeAbsent[k]) delete state.absent[k]; }); /* the office has decided: confirmed = not asked, rejected = photo needed */
     $("prop").textContent = c.property;
@@ -1257,6 +1287,7 @@ window.PHH_CHECKLIST = {
         b.innerHTML = '<span class="txt"></span><span class="chev" aria-hidden="true">&rsaquo;</span>';
         b.querySelector(".txt").textContent = c.property;
         if(office && c.cleaner){ var sub = document.createElement("span"); sub.className = "sub"; sub.textContent = c.cleaner; b.querySelector(".txt").appendChild(sub); }
+        if(c.guestLeftAt && !c.submitted){ var gl = document.createElement("span"); gl.className = "sub gl"; gl.textContent = glText(c.guestLeftAt, c.guestLeftSource); b.querySelector(".txt").appendChild(gl); }
         if(office && c.submissionId){
           var t1 = document.createElement("span"); t1.className = "tag"; t1.textContent = "Done" + (c.submittedAt ? " " + new Date(c.submittedAt).toLocaleTimeString("en-AU", { timeZone:"Australia/Sydney", hour:"numeric", minute:"2-digit" }).replace(" ", "") : ""); b.insertBefore(t1, b.querySelector(".chev"));
           b.addEventListener("click", function(){ location.href = "view.html?id=" + encodeURIComponent(c.submissionId) + "&from=officelist"; });
@@ -1296,7 +1327,7 @@ window.PHH_CHECKLIST = {
           /* Staff: office view, or the maintenance dashboard for a maintenance code (staging asks office-api-v2 which one). */
           return fetch(OFFICE_API + "-v2/login", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
             .then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
-            .then(function(v){ var mv = v && v.view === "maintenance"; try{ localStorage.setItem("phh-staff-view", mv ? "maintenance" : "office"); }catch(e){} location.href = mv ? "maintenance.html?v=1030d" : "office.html?v=1030e"; });
+            .then(function(v){ var mv = v && v.view === "maintenance"; try{ localStorage.setItem("phh-staff-view", mv ? "maintenance" : "office"); }catch(e){} location.href = mv ? "maintenance.html?v=1030d" : "office.html?v=1102a"; });
         })
         .catch(function(e){ reset(e.message, true); });
     }
@@ -1369,7 +1400,7 @@ window.PHH_CHECKLIST = {
     $("switchcode").addEventListener("click", function(e){ e.preventDefault(); $("code").value = ""; reset(""); });
     var staffSaved = ""; try{ staffSaved = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
     var staffView = ""; try{ staffView = localStorage.getItem("phh-staff-view") || ""; }catch(e){}
-    if(staffSaved){ location.replace(staffView === "maintenance" ? "maintenance.html?v=1030d" : "office.html?v=1030e"); return; }
+    if(staffSaved){ location.replace(staffView === "maintenance" ? "maintenance.html?v=1030d" : "office.html?v=1102a"); return; }
     var ownerSaved = ""; try{ ownerSaved = localStorage.getItem("phh-owner-code") || ""; }catch(e){}
     if(ownerSaved){ location.replace("owner.html"); return; }
     var saved = ""; try{ saved = localStorage.getItem(KEY) || ""; }catch(e){}

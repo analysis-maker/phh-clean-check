@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261030060412"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261102005321"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -427,6 +427,23 @@ html,body{overflow-x:clip}
       if(hit){ renderStrip(); renderRows(); }
     }).catch(function(){});
   }
+  /* Guests told us they've left (Airbnb message or SMS reply in the HomHero inbox), Sharon 2 Nov. Info chip on the clean. */
+  function loadGuestLeft(date, my){
+    if(!CLEAN_API) return;
+    cpost("guest-left-day", { date: date }).then(function(j){
+      if(my !== loading) return;
+      var by = {}; (j.rows || []).forEach(function(x){ by[String(x.res)] = x; });
+      var hit = false;
+      state.rows.forEach(function(r){
+        var x = by[String(r.res)]; if(!x) return;
+        var t = new Date(x.at).toLocaleTimeString("en-AU", { timeZone:"Australia/Sydney", hour:"numeric", minute:"2-digit" }).replace(" ", "");
+        r.flags = (r.flags || []).filter(function(f){ return !f.gl; });
+        r.flags.push({ tone:"info", label:"Guests left " + t, gl:true, title: x.message || "" });
+        r.guestLeft = x; hit = true;
+      });
+      if(hit){ renderStrip(); renderRows(); }
+    }).catch(function(){});
+  }
   function extraBlock(r){
     var x = r.extra, wrap = el("div");
     wrap.appendChild(el("h3", "", "From the housekeeper"));
@@ -773,7 +790,7 @@ html,body{overflow-x:clip}
       state.rows = j.rows || []; fillWho(j.cleaners || []);
       renderStrip(); renderRows();
       if(LINK.open){ var or = $("r-" + LINK.open.replace(/[^A-Za-z0-9-]/g, "")); if(or) or.scrollIntoView({ block:"center" }); LINK.open = ""; }
-      loadAbsent(state.date, my);
+      loadAbsent(state.date, my); loadGuestLeft(state.date, my);
     }).catch(function(e){ if(my !== loading) return; $("dayTableWrap").hidden = true; $("msg").className = "msg err"; $("msg").textContent = e.message; });
   }
 

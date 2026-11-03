@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261102233016"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261103000240"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -133,6 +133,12 @@ li.na .nabtn{color:var(--ink);background:var(--offset)}
 .callbtn{display:block;text-align:center;text-decoration:none;margin-top:12px;background:#fff;color:var(--teal);white-space:normal;padding:14px 16px}
 .hktools{margin-top:14px;display:grid;gap:10px}
 .hktools .tbtn{display:block;width:100%;text-align:center;text-decoration:none;font:inherit;font-weight:600;font-size:1rem;padding:14px 16px;border:2px solid var(--teal);border-radius:var(--radius-md);background:#fff;color:var(--teal);cursor:pointer}
+.rlist{list-style:none;margin:8px 0 0;padding:0}
+.rlist li{padding:10px 0;border-top:1px solid var(--line)}
+.rlist li:first-child{border-top:0}
+.rlist .rt{font-weight:600}
+.rlist .rs{display:inline-block;margin-top:4px;font-size:.85rem;font-weight:700;padding:2px 8px;border-radius:10px;background:#eef3f5;color:#33414f}
+.rlist .rs.ok{background:#e6f4ea;color:#1e6b3a}
 .alertbox{padding:12px 14px;border:1.5px solid var(--line);border-radius:var(--radius-md);background:var(--surface)}
 .alertbox select, .alertbox input[type=text], .alertbox textarea{width:100%;font:inherit;font-size:1rem;padding:12px;border:1.5px solid var(--line);border-radius:var(--radius-md);background:#fff;color:var(--ink);margin-top:8px}
 .alertbox textarea{min-height:70px}
@@ -293,6 +299,13 @@ body.photomode .ph .hint, body.photomode .ph .stamp{display:none}
   <p class="note" id="obnote" hidden></p>
   <div class="hktools" id="hktools" hidden>
     <a class="tbtn" id="supplies" target="_blank" rel="noopener">Order supplies</a>
+    <button type="button" class="tbtn" id="repbtn">Things you've flagged</button>
+    <div class="alertbox" id="repbox" hidden>
+      <p class="lbl2" style="margin:0;font-weight:700">Things you've flagged</p>
+      <p class="note" style="margin:4px 0 0">Maintenance, gas and office alerts from the last 45 days, and where each one is up to. You'll get a ping when something you flagged is fixed.</p>
+      <ul class="rlist" id="replist"></ul>
+      <p class="note" id="repmsg"></p>
+    </div>
     <button type="button" class="tbtn" id="lostbtn">Found something guests left behind?</button>
     <div class="alertbox" id="lostbox" hidden>
       <p class="lbl2" style="margin:0;font-weight:700">Lost property</p>
@@ -689,7 +702,7 @@ window.PHH_CHECKLIST = {
       if(sec.id === "entry") el.appendChild(arriveBlock());
       if(sec.id === "damage"){
         var m = document.createElement("div"); m.className = "maint";
-        m.innerHTML = '<p class="note" style="margin-top:0">Anything broken, damaged or needing repair? Add each issue here with a photo. It goes straight to the PHH maintenance team in HomHero, so there is no need to log it in HomHero as well.</p>' +
+        m.innerHTML = '<p class="note" style="margin-top:0">Anything broken, damaged or needing repair? Add each issue here with a photo. It goes straight to the PHH maintenance team in HomHero, so there is no need to log it in HomHero as well. We\'ll let you know when it\'s fixed.</p>' +
           '<div id="issues"></div><button type="button" class="segbtn addissue" id="addissue">+ Add maintenance issue</button>';
         if(CL.maintenanceUrl){ var a = document.createElement("a"); a.className = "textlink"; a.target = "_blank"; a.rel = "noopener"; a.href = portalUrl(); a.textContent = "Or log it in HomHero Cleaner yourself"; m.appendChild(a); }
         m.querySelector("#addissue").addEventListener("click", addIssue);
@@ -763,6 +776,29 @@ window.PHH_CHECKLIST = {
       .then(function(j){ btn.disabled = false; out.textContent = j.test ? "Sent (test only, nobody was told)." : "Sent. The office has been told. Thank you."; alertPhotos[key] = null; var im = $(key + "img"); if(im) im.hidden = true; var pb = $(key + "ph"); if(pb) pb.textContent = "Add a photo"; if(done) done(); })
       .catch(function(e){ btn.disabled = false; out.textContent = (e && e.message) || "Could not send. Try again, or call the PHH office."; });
   }
+  /* Things you've flagged (Ian, 3 Nov): the housekeeper's maintenance issues, gas requests and office alerts with their
+     status (HomHero job status, gas Done). The "fixed" phone ping opens the app with ?reports=1, which opens this list. */
+  var REPORTS_API = ALERT_API.replace(/\/alert$/, "/reports");
+  function esc(t){ return String(t == null ? "" : t).replace(/[&<>"]/g, function(ch){ return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[ch]; }); }
+  function loadReports(){
+    var code = ""; try{ code = localStorage.getItem("phh-cleaner-code") || ""; }catch(x){}
+    var ul = $("replist"), out = $("repmsg"); if(!ul || !code) return;
+    out.textContent = "Loading..."; ul.innerHTML = "";
+    fetch(REPORTS_API, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || "Could not load. Try again."); return j; }); })
+      .then(function(j){
+        var items = (j && j.items) || [];
+        out.textContent = items.length ? "" : "Nothing flagged in the last 45 days. Anything broken? Add it as a maintenance issue in your clean check.";
+        var lbl = { maintenance:"Maintenance", gas:"Gas", keys_missing:"Keys", lost_property:"Lost property" };
+        ul.innerHTML = items.map(function(it){
+          var d = it.at ? new Date(it.at).toLocaleDateString("en-AU", { day:"numeric", month:"short" }) : "";
+          var fx = it.fixedAt ? " " + new Date(it.fixedAt).toLocaleDateString("en-AU", { day:"numeric", month:"short" }) : "";
+          return '<li><div class="rt">' + esc(it.property || "") + ": " + esc(it.text || "") + '</div><div class="note" style="margin:2px 0 0">' + esc(lbl[it.kind] || "") + (d ? ", " + esc(d) : "") + '</div>' +
+            '<span class="rs' + (it.status === "Fixed" ? " ok" : "") + '">' + esc(it.status || "") + esc(it.status === "Fixed" ? fx : "") + '</span></li>';
+        }).join("");
+      })
+      .catch(function(e){ out.textContent = (e && e.message) || "Could not load. Try again."; });
+  }
   function fillLostProps(list){
     var sel = $("lostprop"); if(!sel) return;
     var names = []; (list || []).forEach(function(c){ if(c.property && names.indexOf(c.property) < 0 && !/^TEST-/.test(String(c.res))) names.push(c.property); });
@@ -771,6 +807,8 @@ window.PHH_CHECKLIST = {
   }
   (function(){
     var sup = $("supplies"); if(sup && CL && CL.consumablesUrl) sup.href = CL.consumablesUrl; else if(sup) sup.hidden = true;
+    var rb = $("repbtn");
+    if(rb) rb.addEventListener("click", function(){ var b = $("repbox"); b.hidden = !b.hidden; if(!b.hidden) loadReports(); });
     var lb = $("lostbtn"); if(!lb) return;
     lb.addEventListener("click", function(){ var b = $("lostbox"); b.hidden = !b.hidden; });
     $("lostprop").addEventListener("change", function(){ $("lostother").hidden = this.value !== "__other"; });
@@ -1518,7 +1556,8 @@ window.PHH_CHECKLIST = {
           var teamLead = (!office && j.team && j.team.lead) ? String(j.team.lead).replace(/\s*\(.*\)\s*$/, "") : "";
           $("pickmeta").textContent = office ? "Office view. Every clean with a PHH housekeeper." : teamLead ? "Today's cleans for " + teamLead + "'s team. Pick the property you are cleaning." : "Your cleans for today. Pick the property you are cleaning.";
           $("notme").hidden = false;
-          if($("hktools")){ $("hktools").hidden = office; fillLostProps(all); }
+          if($("hktools")){ $("hktools").hidden = office; fillLostProps(all);
+            if(!office && /[?&]reports=1/.test(location.search) && $("repbox")){ $("repbox").hidden = false; loadReports(); try{ $("repbox").scrollIntoView({ block:"start" }); }catch(x){} } }
           $("searchbox").hidden = all.length < 6;
           if(window.phhPush) window.phhPush($("pushbox"), code, "notifications");
           if(!office){ showMessages(code); try{ fetch("https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/admin-api/seen", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) }).catch(function(){}); }catch(x){} }

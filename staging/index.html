@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261103064007"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261103064452"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -894,7 +894,7 @@ window.PHH_CHECKLIST = {
     $("gu_no").setAttribute("aria-pressed", ex.guests === "no" ? "true" : "false");
     $("gu_yes").setAttribute("aria-pressed", ex.guests === "yes" ? "true" : "false");
     $("gu_more").hidden = ex.guests !== "yes"; $("gu_note").value = ex.guestsNote || "";
-    /* Sharon, 3 Nov: the guest check stays pinned under the progress bar until it is answered, then disappears. */
+    /* Sharon, 3 Nov: the guest check stays pinned in the bottom bar until it is answered, then disappears. */
     if($("gnag")) $("gnag").hidden = !!ex.guests;
     $("gas_bbq").setAttribute("aria-pressed", ex.gas.bbq ? "true" : "false");
     $("gas_house").setAttribute("aria-pressed", ex.gas.house ? "true" : "false");

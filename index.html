@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105232016"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105233738"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -763,7 +763,7 @@ window.PHH_CHECKLIST = {
   }
 
   /* ---------- Anything else (all optional, Sharon 30 Oct): more guests than booked, gas, extra photos, notes. ---------- */
-  var MAX_EXTRA = 6;
+  var MAX_EXTRA = 12; /* 6 -> 12 (6 Nov 2026, Sharon: before and after photos of extra jobs) */
   function exSlots(){ return (state.extra.slots || []).map(function(n){ return { key:"ex" + n, label:"Extra photo", stamp:"Extra photo", sec:"extra", group:"", optional:true }; }); }
   function anyElseSection(){
     var el = document.createElement("section"); el.className = "sec"; el.id = "anyelse";
@@ -892,6 +892,19 @@ window.PHH_CHECKLIST = {
     });
     return el;
   }
+  /* Quick extra photo (Sharon, 6 Nov): a camera button that stays on screen during a clean, for before and after photos of
+     extra jobs (drains, sinks) as she goes. Live camera only, same as every other photo (Craig: no gallery). It adds an extra
+     photo slot captioned Before / After and opens the camera; the photo shows under Anything else, is kept by PHH and is
+     copied into HomHero like the other extra photos. */
+  window.phhQuickCam = function(label){
+    if(!$("exphotos")) return "none";
+    var used = state.extra.slots || [], n = 0; for(var i=1;i<=MAX_EXTRA;i++){ if(used.indexOf(i) < 0){ n = i; break; } }
+    if(!n) return "full";
+    state.extra.slots = used.concat([n]); state.extra.captions["ex" + n] = label || "";
+    save(); renderExtraPhotos(); updExtra();
+    var t = document.querySelector('#exphotos [data-id="ex' + n + '"]'); if(t) t.click();
+    return "ok";
+  };
   function renderExtraPhotos(){
     var host0 = $("exphotos"); if(!host0) return; host0.innerHTML = ""; var guHost = $("guphotos"); if(guHost) guHost.innerHTML = "";
     var gu = state.extra.guSlots || [];
@@ -1956,6 +1969,13 @@ window.PHH_CHECKLIST = {
 })();
 </script>
 <!-- Back to top (Sharon, 2 Nov): a round button that hovers bottom right on long lists and checklists; one tap scrolls to the top. Sits above the Complete bar when it shows. -->
+<button type="button" id="quickcam" aria-label="Take an extra photo" style="display:none;position:fixed;left:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:7;height:52px;padding:0 16px;border-radius:26px;border:0;background:var(--teal,#23807a);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.22);font:inherit;font-weight:700;font-size:.95rem;cursor:pointer;align-items:center;gap:8px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Extra photo</button>
+<div id="quickpick" hidden style="position:fixed;left:16px;right:16px;z-index:8;background:#fff;border:2px solid var(--teal,#23807a);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:12px">
+  <p style="margin:0 0 8px;font-weight:700;color:#0b2545">Extra photo. What is it?</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"><button type="button" class="segbtn" data-q="Before">Before</button><button type="button" class="segbtn" data-q="After">After</button><button type="button" class="segbtn" data-q="">Other</button></div>
+  <p class="note" id="quickmsg" style="margin:8px 0 0">Saved with this clean, under Anything else. Add a few words there if you like.</p>
+  <button type="button" class="absbtn" id="quickx">Cancel</button>
+</div>
 <button type="button" id="totop" aria-label="Back to top" style="display:none;position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:7;width:52px;height:52px;border-radius:50%;border:0;background:var(--teal,#23807a);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.22);place-items:center;cursor:pointer;padding:0">
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
 <script>
@@ -1966,8 +1986,25 @@ window.PHH_CHECKLIST = {
     var fh = foot && !foot.hidden && getComputedStyle(foot).display !== "none" ? foot.offsetHeight : 0;
     document.body.style.paddingBottom = fh ? (fh + 90) + "px" : "";
   }
+  var qc = document.getElementById("quickcam"), qp = document.getElementById("quickpick");
+  function placeQuick(){
+    if(!qc) return;
+    var fh = foot && !foot.hidden && getComputedStyle(foot).display !== "none" ? foot.offsetHeight : 0;
+    var on = !!fh && !!document.getElementById("exphotos");
+    qc.style.display = on ? "flex" : "none"; if(!on){ if(qp) qp.hidden = true; return; }
+    qc.style.bottom = (fh + 12) + "px"; if(qp) qp.style.bottom = (fh + 76) + "px";
+  }
+  if(qc && qp){
+    qc.addEventListener("click", function(){ qp.hidden = !qp.hidden; document.getElementById("quickmsg").textContent = "Saved with this clean, under Anything else. Add a few words there if you like."; });
+    document.getElementById("quickx").addEventListener("click", function(){ qp.hidden = true; });
+    qp.querySelectorAll("[data-q]").forEach(function(btn){ btn.addEventListener("click", function(){
+      var r = window.phhQuickCam ? window.phhQuickCam(btn.getAttribute("data-q")) : "none";
+      if(r === "full"){ document.getElementById("quickmsg").textContent = "That's 12 extra photos, the most for one clean."; return; }
+      qp.hidden = true;
+    }); });
+  }
   function place(){
-    room();
+    room(); placeQuick();
     var show = (window.scrollY || document.documentElement.scrollTop) > 500;
     b.style.display = show ? "grid" : "none"; if(!show) return;
     var fh = foot && !foot.hidden && getComputedStyle(foot).display !== "none" ? foot.offsetHeight : 0;

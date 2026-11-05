@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105100525"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105102642"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -221,20 +221,18 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
 #camov .camerr{color:#fff;padding:20px 16px;font-size:.95rem;line-height:1.45}
 #camov .camerr button{display:block;margin-top:14px;font:inherit;font-weight:700;padding:14px 18px;border-radius:10px;border:0;background:#fff;color:#000;min-height:48px;cursor:pointer}
 .namefixed{margin:4px 0 0;font-weight:700;font-size:1.05rem;color:var(--ink)}
-.pmbar{display:flex;gap:8px;margin-top:8px}
-.pmbtn{flex:1;font:inherit;font-size:.9rem;font-weight:700;padding:10px 12px;min-height:44px;border:2px solid var(--primary);border-radius:var(--radius-md);background:var(--surface);color:var(--primary);cursor:pointer}
-.pmbtn[aria-pressed="true"]{background:var(--primary);color:#fff}
-.pmnote{display:none;margin:12px 0 0;padding:10px 12px;border-radius:var(--radius-md);background:var(--surface-2);border:1px solid var(--line);font-size:.9rem;color:var(--ink)}
-body.photomode .pmnote{display:block}
-body.photomode section.sec:not(.hasph){display:none}
-body.photomode section.sec .items, body.photomode .maint, body.photomode .who, body.photomode .rooms .room{display:none}
-body.photomode section.sec{margin-top:18px}
-body.photomode .photos{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-body.photomode .ph{min-height:112px}
-body.photomode .ph .cap{padding:6px 8px;font-size:.78rem}
-body.photomode .ph .shot{padding:10px 4px;font-size:.82rem}
-body.photomode .ph .hint, body.photomode .ph .stamp{display:none}
-@media (max-width:360px){ body.photomode .photos{grid-template-columns:repeat(2,minmax(0,1fr))} }
+/* Photos at end of clean (Craig, 5 Nov): every room photo in one compact section (the old "All photos on one screen" grid). */
+.endnote{margin:0 0 4px}
+.endgrp{font-size:1rem;font-weight:800;margin:18px 0 8px}
+#endphotos .rooms{margin-bottom:8px}
+#endphotos .roominfo{margin:0 0 8px;font-size:.85rem}
+#endphotos .photos{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#endphotos .ph{min-height:112px}
+#endphotos .ph .cap{padding:6px 8px;font-size:.78rem}
+#endphotos .ph .shot{padding:10px 4px;font-size:.82rem}
+#endphotos .ph .hint{display:none}
+#endphotos .ph .stamp{font-size:.7rem}
+@media (max-width:360px){ #endphotos .photos{grid-template-columns:repeat(2,minmax(0,1fr))} }
 .anyq{margin-top:14px}
 .arrive{margin-top:14px;padding:12px 14px;border:1.5px solid var(--line);border-radius:var(--radius-md);background:var(--surface)}
 .arrive .anyq{margin-top:8px}
@@ -355,14 +353,12 @@ body.photomode .ph .hint, body.photomode .ph .stamp{display:none}
       <p class="trow note" id="hhnote" hidden></p>
       <div class="trow note" id="notesbox" hidden><b>From earlier cleans</b><div id="noteslist"></div></div>
       <a class="hhlink" id="hhlink" target="_blank" rel="noopener">Entry codes and notes (HomHero)</a>
-      <p class="howto" id="howto">Keys photo first when you arrive, then tick and photo each section as you go. Photos are time-stamped: no photos, no payment. Weak signal? Scan the property's QR code for the Wi-Fi details (optional).</p>
+      <p class="howto" id="howto">Keys photo first when you arrive, then tick each section as you go. Room photos are all together at the end. Photos are time-stamped: no photos, no payment. Weak signal? Scan the property's QR code for the Wi-Fi details (optional).</p>
     </div>
   </header>
   <div class="prog">
     <div class="bar" aria-hidden="true"><i id="barfill"></i></div>
     <div class="count"><span id="counttxt">0 of 0 ticked</span><span id="phototxt">0 photos</span></div>
-    <div class="pmbar"><button type="button" class="pmbtn" id="pmbtn" aria-pressed="false">All photos on one screen</button></div>
-    <p class="pmnote" id="pmnote">Every photo on one screen. Take them in any order as you move through the house. Tap the button again to go back to the checklist.</p>
   </div>
 
   <div class="banner" id="demobanner" hidden>Demo clean with example data. Nothing you tick or photograph here is saved to PHH.</div>
@@ -478,8 +474,9 @@ window.PHH_CHECKLIST = {
       { id: "exit_keys", text: "Return housekeeper keys to lockbox" }
     ]}
   ],
-  // Photos, shown inside their section ("sec") in this order. The first one (guest keys) is taken on arrival,
-  // so first photo to Complete = how long the clean took.
+  // Photos, in this order. The first one (guest keys) is taken on arrival and stays under Entry,
+  // so first photo to Complete = how long the clean took. The rest are grouped by room ("sec") in
+  // "Photos at end of clean" (Craig, 5 Nov 2026: checklist first, photos at the end).
   // "per" = one photo per bedroom or per bathroom (count locked to HomHero).
   // "bbq" = skipped when the cleaner says the property has no BBQ. "optional" = not needed to complete.
   // "absent" = can be marked "Not at this property" (office confirms; confirmed ones are not asked again at that property).
@@ -699,8 +696,8 @@ window.PHH_CHECKLIST = {
   function render(){
     var host = $("sections"); host.innerHTML = "";
     CL.sections.forEach(function(sec){
-      if(sec.id === "exit"){ host.appendChild(anyElseSection()); host.appendChild(consumablesSection()); }
-      var el = document.createElement("section"); el.className = "sec" + (CL.photos.some(function(p){ return p.sec === sec.id; }) ? " hasph" : "");
+      if(sec.id === "exit"){ host.appendChild(anyElseSection()); host.appendChild(consumablesSection()); host.appendChild(endPhotosSection()); }
+      var el = document.createElement("section"); el.className = "sec";
       el.innerHTML = '<div class="sechead"><h2></h2><span class="secount" data-sec="'+sec.id+'"></span></div>';
       el.querySelector("h2").textContent = sec.title;
       var ul = document.createElement("ul"); ul.className = "items";
@@ -716,9 +713,7 @@ window.PHH_CHECKLIST = {
       }
       sec.items.forEach(function(it){ ul.appendChild(itemRow(it)); });
       el.appendChild(ul);
-      if(sec.id === "bedrooms" || sec.id === "bathrooms"){ var ri = document.createElement("div"); ri.className = "rooms secphotos"; ri.id = "rooms_" + sec.id; el.appendChild(ri); }
-      if(CL.photos.some(function(p){ return p.sec === sec.id; })){ var pg = document.createElement("div"); pg.className = "photos secphotos"; pg.id = "photos_" + sec.id; el.appendChild(pg); }
-      if(sec.id === "entry") el.appendChild(arriveBlock());
+      if(sec.id === "entry"){ var pg = document.createElement("div"); pg.className = "photos secphotos"; pg.id = "photos_entry"; el.appendChild(pg); el.appendChild(arriveBlock()); }
       if(sec.id === "damage"){
         var m = document.createElement("div"); m.className = "maint";
         m.innerHTML = '<p class="note" style="margin-top:0">Anything broken, damaged or needing repair? Add each issue here with a photo. It goes straight to the PHH maintenance team in HomHero, so there is no need to log it in HomHero as well. We\'ll let you know when it\'s fixed.</p>' +
@@ -737,15 +732,20 @@ window.PHH_CHECKLIST = {
     if(BOOKED) showGuests(BOOKED);
   }
 
-  /* ---------- All photos on one screen (Sharon, 30 Oct): take photos in any order as you move through the house. ---------- */
-  function setPhotoMode(on){
-    document.body.classList.toggle("photomode", !!on);
-    $("pmbtn").setAttribute("aria-pressed", on ? "true" : "false");
-    $("pmbtn").textContent = on ? "Back to the checklist" : "All photos on one screen";
-    try{ localStorage.setItem("phh-photomode", on ? "1" : ""); }catch(e){}
-    var pr = document.querySelector(".prog"); if(pr) window.scrollTo(0, Math.max(0, pr.offsetTop - 4));
+  /* ---------- Photos at end of clean (Craig, 5 Nov): the checklist first, then every room photo here, grouped by room.
+     Same photo tiles, camera, live rule and background upload as before; only the keys photo stays under Entry. ---------- */
+  function endPhotosSection(){
+    var el = document.createElement("section"); el.className = "sec"; el.id = "endphotos";
+    el.innerHTML = '<div class="sechead"><h2>Photos at end of clean</h2><span class="secount" id="endcount"></span></div>' +
+      '<p class="note endnote" style="margin-top:0">Once the cleaning is done, take a photo of each room. Tap a box to open the camera.</p>';
+    CL.sections.forEach(function(sec){
+      if(sec.id === "entry" || !CL.photos.some(function(p){ return p.sec === sec.id; })) return;
+      var h = document.createElement("h3"); h.className = "endgrp"; h.textContent = sec.title; el.appendChild(h);
+      if(sec.id === "bedrooms" || sec.id === "bathrooms"){ var ri = document.createElement("div"); ri.className = "rooms"; ri.id = "rooms_" + sec.id; el.appendChild(ri); }
+      var pg = document.createElement("div"); pg.className = "photos"; pg.id = "photos_" + sec.id; el.appendChild(pg);
+    });
+    return el;
   }
-  $("pmbtn").addEventListener("click", function(){ setPhotoMode(!document.body.classList.contains("photomode")); });
 
   /* ---------- Anything else (all optional, Sharon 30 Oct): more guests than booked, gas, extra photos, notes. ---------- */
   var MAX_EXTRA = 6;
@@ -1234,11 +1234,13 @@ window.PHH_CHECKLIST = {
     if($("nobbq")){ $("bbq_yes").setAttribute("aria-pressed", state.noBbq ? "false" : "true"); $("bbq_no").setAttribute("aria-pressed", state.noBbq ? "true" : "false"); $("bbq_note").hidden = !state.noBbq; }
     var req = required(slots());
     CL.sections.forEach(function(sec){
-      var rs = req.filter(function(s){ return s.sec === sec.id; });
+      var rs = sec.id === "entry" ? req.filter(function(s){ return s.sec === "entry"; }) : [];
       var n = sec.items.filter(function(i){ return status(i); }).length + rs.filter(hasPhoto).length, tot = sec.items.length + rs.length;
       var c = document.querySelector('[data-sec="'+sec.id+'"]');
       c.textContent = n + " / " + tot; c.classList.toggle("ok", n === tot);
     });
+    var re = req.filter(function(s){ return s.sec !== "entry"; }), rn = re.filter(hasPhoto).length, ec = $("endcount");
+    if(ec){ ec.textContent = rn + " / " + re.length; ec.classList.toggle("ok", rn === re.length); }
     $("con_yes").setAttribute("aria-pressed", state.consumables === "yes" ? "true" : "false");
     $("con_no").setAttribute("aria-pressed", state.consumables === "no" ? "true" : "false");
     $("con_link").hidden = state.consumables !== "yes"; $("con_note").hidden = state.consumables !== "yes";
@@ -1454,7 +1456,7 @@ window.PHH_CHECKLIST = {
     if(c.roomsLocked){ state.rooms = { bedrooms: Math.max(1, Math.min(10, Math.round(hb) || 1)), bathrooms: Math.max(1, Math.min(10, Math.floor(ht) || 1)) }; state.roomsEdited = false; }
     else if(!state.roomsEdited && (hb >= 1 || ht >= 1)){ state.rooms = { bedrooms: Math.max(1, Math.min(10, Math.round(hb) || 1)), bathrooms: Math.max(1, Math.min(10, Math.floor(ht) || 1)) }; }
     fillNames(); save(); renderPhotos(); update(); updExtra();
-    try{ if(localStorage.getItem("phh-photomode")) setPhotoMode(true); }catch(e){}
+    try{ localStorage.removeItem("phh-photomode"); }catch(e){}
     hhInfo();
     var ml = document.querySelector(".maint a.textlink"); if(ml) ml.href = portalUrl();
   }

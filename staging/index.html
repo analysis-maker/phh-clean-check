@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105102642"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105231634"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -232,6 +232,10 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
 #endphotos .ph .shot{padding:10px 4px;font-size:.82rem}
 #endphotos .ph .hint{display:none}
 #endphotos .ph .stamp{font-size:.7rem}
+.ponlybar{margin-top:8px}
+.ponlybtn{width:100%;font:inherit;font-weight:600;font-size:.95rem;padding:10px 14px;border:2px solid var(--teal);border-radius:var(--radius-md);background:#fff;color:var(--teal);cursor:pointer}
+.ponlybtn[aria-pressed="true"]{background:var(--teal);color:#fff}
+#sections.ponly > .sec:not(#endphotos){display:none}
 @media (max-width:360px){ #endphotos .photos{grid-template-columns:repeat(2,minmax(0,1fr))} }
 .anyq{margin-top:14px}
 .arrive{margin-top:14px;padding:12px 14px;border:1.5px solid var(--line);border-radius:var(--radius-md);background:var(--surface)}
@@ -359,6 +363,7 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
   <div class="prog">
     <div class="bar" aria-hidden="true"><i id="barfill"></i></div>
     <div class="count"><span id="counttxt">0 of 0 ticked</span><span id="phototxt">0 photos</span></div>
+    <div class="ponlybar"><button type="button" class="ponlybtn" id="ponlybtn" aria-pressed="false">Photos only</button></div>
   </div>
 
   <div class="banner" id="demobanner" hidden>Demo clean with example data. Nothing you tick or photograph here is saved to PHH.</div>
@@ -404,14 +409,6 @@ window.PHH_CHECKLIST = {
       { id: "ent_cobwebs", text: "Check entryway for cobwebs/dust and clean" },
       { id: "ent_light", text: "Check security light is working" },
       { id: "ent_keys", text: "Check guest keys are in the lockbox" }
-    ]},
-    { id: "all", title: "All areas", items: [
-      { id: "all_vacuum", text: "Vacuum (including under couches and beds)" },
-      { id: "all_mop", text: "Mop floors" },
-      { id: "all_cornices", text: "Dust cornices and remove cobwebs and insects" },
-      { id: "all_walls", text: "Check walls for marks and clean" },
-      { id: "all_sills", text: "Dust window sills and wipe down door and window tracks" },
-      { id: "all_screens", text: "Check window and door fly screens for holes and report via maintenance" }
     ]},
     { id: "kitchen", title: "Kitchen & dining", items: [
       { id: "kit_benches", text: "Clean benches and cupboard doors" },
@@ -467,6 +464,14 @@ window.PHH_CHECKLIST = {
     { id: "damage", title: "Damage & repairs", items: [
       { id: "dmg_inspect", text: "Inspect for damage" },
       { id: "dmg_globes", text: "Check for blown light globes" }
+    ]},
+    { id: "all", title: "All areas", items: [
+      { id: "all_vacuum", text: "Vacuum (including under couches and beds)" },
+      { id: "all_mop", text: "Mop floors" },
+      { id: "all_cornices", text: "Dust cornices and remove cobwebs and insects" },
+      { id: "all_walls", text: "Check walls for marks and clean" },
+      { id: "all_sills", text: "Dust window sills and wipe down door and window tracks" },
+      { id: "all_screens", text: "Check window and door fly screens for holes and report via maintenance" }
     ]},
     { id: "exit", title: "Upon exit", items: [
       { id: "exit_lock", text: "Close and lock all windows and doors" },
@@ -702,11 +707,10 @@ window.PHH_CHECKLIST = {
       el.querySelector("h2").textContent = sec.title;
       var ul = document.createElement("ul"); ul.className = "items";
       if(sec.items.some(function(i){ return i.bbq; })){
-        /* A clear Yes / No BBQ question (28 Oct, Craig): the old "This property has no BBQ" row looked like a checklist item to tick. */
+        /* Sharon, 6 Nov: no Yes / No BBQ question. Just a "No BBQ at this property" link, here and under the BBQ photo. */
         var q = document.createElement("div"); q.className = "bbqq"; q.id = "nobbq";
-        q.innerHTML = '<p class="note" style="margin-top:0">Is there a BBQ at this property?</p>' +
-          '<div class="seg"><button type="button" class="segbtn" id="bbq_yes">Yes</button><button type="button" class="segbtn" id="bbq_no">No BBQ</button></div>' +
-          '<p class="note" id="bbq_note" hidden>BBQ tasks and the BBQ photo are skipped and the office is told. Only choose this if there is no BBQ anywhere at the property (check decks, balconies and the garage).</p>';
+        q.innerHTML = '<button type="button" class="absbtn" id="bbq_no">No BBQ at this property</button>' +
+          '<p class="note" id="bbq_note" hidden style="margin:0">No BBQ: the BBQ tasks and photo are skipped and the office is told. <button type="button" class="absbtn" id="bbq_yes">Undo, there is one</button></p>';
         q.querySelector("#bbq_yes").addEventListener("click", function(){ state.noBbq = false; save(); renderPhotos(); update(); });
         q.querySelector("#bbq_no").addEventListener("click", function(){ state.noBbq = true; save(); renderPhotos(); update(); });
         el.appendChild(q);
@@ -732,6 +736,17 @@ window.PHH_CHECKLIST = {
     if(BOOKED) showGuests(BOOKED);
   }
 
+  /* Photos only (Sharon, 6 Nov): one tap shows just the photos section, another goes back to the checklist.
+     The checklist and photos stay separate (Craig, 5 Nov); this only changes what is on screen. */
+  (function(){
+    var b = $("ponlybtn"); if(!b) return;
+    b.addEventListener("click", function(){
+      var host = $("sections"); if(!host) return;
+      var on = !host.classList.contains("ponly"); host.classList.toggle("ponly", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false"); b.textContent = on ? "Back to the checklist" : "Photos only";
+      var t = on ? $("endphotos") : host; if(t) try{ window.scrollTo({ top: Math.max(0, t.getBoundingClientRect().top + window.scrollY - 140), behavior:"smooth" }); }catch(x){}
+    });
+  })();
   /* ---------- Photos at end of clean (Craig, 5 Nov): the checklist first, then every room photo here, grouped by room.
      Same photo tiles, camera, live rule and background upload as before; only the keys photo stays under Entry. ---------- */
   function endPhotosSection(){
@@ -909,6 +924,8 @@ window.PHH_CHECKLIST = {
     $("gu_more").hidden = ex.guests !== "yes"; $("gu_note").value = ex.guestsNote || "";
     /* Sharon, 3 Nov: the guest check stays pinned in the bottom bar until it is answered, then disappears. */
     if($("gnag")) $("gnag").hidden = !!ex.guests;
+    /* Sharon, 6 Nov: the question was showing twice. Until it is answered only the bottom bar asks it. */
+    var gq0 = $("gu_q"); if(gq0){ gq0.hidden = !ex.guests; if(gq0.nextElementSibling) gq0.nextElementSibling.hidden = !ex.guests; }
     $("gas_bbq").setAttribute("aria-pressed", ex.gas.bbq ? "true" : "false");
     $("gas_house").setAttribute("aria-pressed", ex.gas.house ? "true" : "false");
     $("ex_note").value = ex.note || ""; $("ex_next").value = ex.nextNote || "";
@@ -1098,7 +1115,12 @@ window.PHH_CHECKLIST = {
         return;
       }
       var d = photoTile(s, "Tap to take photo");
-      if(s.absent && !(x && (x.path || x.blob))){
+      if(s.key === "ph_bbq" && !(x && (x.path || x.blob))){
+        var cb = document.createElement("div"); cb.className = "phcell";
+        var nb = document.createElement("button"); nb.type = "button"; nb.className = "absbtn"; nb.textContent = "No BBQ at this property";
+        nb.addEventListener("click", function(){ state.noBbq = true; save(); renderPhotos(); update(); });
+        cb.appendChild(d); cb.appendChild(nb); ph.appendChild(cb);
+      } else if(s.absent && !(x && (x.path || x.blob))){
         var c2 = document.createElement("div"); c2.className = "phcell";
         var ab = document.createElement("button"); ab.type = "button"; ab.className = "absbtn"; ab.textContent = "No " + s.absent + " at this property";
         ab.addEventListener("click", function(){ state.absent[s.key] = true; save(); renderPhotos(); update(); });
@@ -1106,6 +1128,17 @@ window.PHH_CHECKLIST = {
       } else ph.appendChild(d);
       if(x && (x.path || x.blob)) showPhoto(s, d, x);
     });
+    /* No BBQ (Sharon, 6 Nov): a plain box where the BBQ photo was, with Undo. */
+    if(state.noBbq && $("photos_outdoor")){
+      var bc = document.createElement("div"); bc.className = "phcell";
+      var bx = document.createElement("div"); bx.className = "ph absent"; bx.innerHTML = '<div class="shot">No BBQ here</div><div class="cap">Barbecue</div>';
+      var bu = document.createElement("button"); bu.type = "button"; bu.className = "absbtn"; bu.textContent = "Undo, there is one";
+      bu.addEventListener("click", function(){ state.noBbq = false; save(); renderPhotos(); update(); });
+      bc.appendChild(bx); bc.appendChild(bu);
+      var po = $("photos_outdoor"), after = po.querySelector('[data-id="ph_patio"]');
+      var cellAfter = after ? after.closest(".phcell") || after : null;
+      if(cellAfter && cellAfter.nextSibling) po.insertBefore(bc, cellAfter.nextSibling); else if(cellAfter) po.appendChild(bc); else po.insertBefore(bc, po.firstChild);
+    }
     /* Items the office has confirmed this property does not have: not asked for, just noted. */
     CL.photos.forEach(function(p){
       if(!p.absent || officeAbsent[p.id] !== "confirmed") return;
@@ -1231,7 +1264,7 @@ window.PHH_CHECKLIST = {
       $("t_"+it.id).setAttribute("aria-pressed", v === "done" ? "true" : "false");
       if(v) done++;
     });
-    if($("nobbq")){ $("bbq_yes").setAttribute("aria-pressed", state.noBbq ? "false" : "true"); $("bbq_no").setAttribute("aria-pressed", state.noBbq ? "true" : "false"); $("bbq_note").hidden = !state.noBbq; }
+    if($("nobbq")){ $("bbq_no").hidden = !!state.noBbq; $("bbq_note").hidden = !state.noBbq; }
     var req = required(slots());
     CL.sections.forEach(function(sec){
       var rs = sec.id === "entry" ? req.filter(function(s){ return s.sec === "entry"; }) : [];

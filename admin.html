@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105011003"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105072240"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -13,7 +13,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <!-- admin-api is called directly (built from parts so the WordPress plugin does not rewrite it to its pass-through). -->
-<script>window.PHH_ADMIN_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/admin-api";</script>
+<script>window.PHH_ADMIN_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/admin-api";
+/* Team codes live on clean-api (staging: clean-api-v11). */ window.PHH_CLEAN_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/clean-api";</script>
 <title>Clean Check Admin</title>
 <style>
 /* Office view v2 (23 Oct 2026). Laid out like HomHero's Cleaning screen so staff feel at home:
@@ -273,6 +274,7 @@ html,body{overflow-x:clip}
 </header>
 <nav class="tabs" role="tablist" aria-label="Admin views" id="tabs" hidden>
   <button class="tab" role="tab" data-tab="hk" aria-selected="true">Housekeepers &amp; codes<span class="n" id="reqN" hidden></span></button>
+  <button class="tab" role="tab" data-tab="team" aria-selected="false">Teams</button>
   <button class="tab" role="tab" data-tab="roll" aria-selected="false">Rollout</button>
   <button class="tab" role="tab" data-tab="msg" aria-selected="false">Messages</button>
   <button class="tab" role="tab" data-tab="thanks" aria-selected="false">Thank you</button>
@@ -333,6 +335,28 @@ html,body{overflow-x:clip}
       <p class="dnga">Do not give access to owners.</p>
       <p class="muted">These HomHero cleaners are owners. They never get a Clean Check code and are left out of every report and message.</p>
       <div id="ownlist" class="muted"></div>
+    </div>
+  </section>
+
+  <!-- Teams: a housekeeping business's own cleaners, each with a code (2 Nov 2026, Amber Stewart first) -->
+  <section id="v-team" hidden>
+    <div class="box feature">
+      <h3>Team codes</h3>
+      <p class="muted">For a housekeeper whose own team does the cleans. Each team member gets a code on their own phone, sees that housekeeper's cleans and takes the photos at the property. Their clean check shows their name and counts for the housekeeper.</p>
+      <div class="row2">
+        <select id="tlead" aria-label="Housekeeper" style="flex:1 1 260px"><option value="">Pick the housekeeper</option></select>
+      </div>
+      <div class="row2" id="tadd" hidden style="margin-top:10px">
+        <input type="text" id="tname" placeholder="Team member's full name" aria-label="Team member's name" style="flex:1 1 200px" autocomplete="off">
+        <input type="tel" id="tmob" placeholder="Mobile (optional)" aria-label="Mobile, optional" style="flex:0 1 170px" autocomplete="off">
+        <button class="btn small" type="button" id="tgo">Add and make a code</button>
+      </div>
+      <p class="err" id="terr"></p>
+      <div id="tlist" style="margin-top:10px"></div>
+    </div>
+    <div class="box">
+      <h3>All teams</h3>
+      <div id="tall"><p class="muted">Loading...</p></div>
     </div>
   </section>
 
@@ -507,7 +531,8 @@ html,body{overflow-x:clip}
   function show(t){
     tab = t;
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(x){ x.setAttribute("aria-selected", x.getAttribute("data-tab") === t ? "true" : "false"); });
-    ["hk","roll","msg","thanks","ai","codes","health","log"].forEach(function(k){ $("v-" + k).hidden = k !== t; });
+    ["hk","team","roll","msg","thanks","ai","codes","health","log"].forEach(function(k){ $("v-" + k).hidden = k !== t; });
+    if(t === "team") loadTeams();
     if(t === "msg") loadMsgs();
     if(t === "log") loadLog();
     if(t === "ai") loadNotes();
@@ -521,10 +546,78 @@ html,body{overflow-x:clip}
         D = j; $("msg").textContent = "";
         if(LINKFIND){ $("fq").value = LINKFIND; LINKFIND = ""; }
         renderHk(); renderFind(); renderReqs(); renderCodes(); renderHealth(); renderPick(); renderThanks();
-        if(["hk","roll","msg","thanks","ai","codes","health","log"].indexOf(LINKTAB) >= 0){ show(LINKTAB); LINKTAB = ""; }
+        if(["hk","team","roll","msg","thanks","ai","codes","health","log"].indexOf(LINKTAB) >= 0){ show(LINKTAB); LINKTAB = ""; }
       })
       .catch(function(e){ $("msg").innerHTML = '<span class="err">' + esc(e.message) + "</span>"; });
   }
+
+  /* ---------- team codes (2 Nov 2026) ---------- */
+  var CAPI = window.PHH_CLEAN_API, T = null;
+  function tcall(route, body){
+    return fetch(CAPI + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(Object.assign({ code: CODE }, body || {})) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+  function leadShort(n){ return String(n || "").replace(/\s*\(.*\)\s*$/, ""); }
+  /* Welcome for a team member: positive, the guide and video always included (Ian, 28 Oct). */
+  function teamMsg(m, leadName){
+    return "Hi " + first(m.name) + ", you're set up on Clean Check for the cleans you do for " + leadShort(leadName) + ". It's our short end-of-clean checklist with a few photos, about 5 minutes, and your feedback shapes how it works.\n\nYour code is " + m.code + ". Open " + SITE + " on your phone, add it to your home screen, then tap Turn on for notifications.\n\nHow it works (1-page guide): " + GUIDE_PDF + "\nShort video: " + GUIDE_VIDEO + "\n\nThanks, Professional Holiday Homes";
+  }
+  function loadTeams(){
+    $("terr").textContent = "";
+    return tcall("team-list").then(function(j){ T = j; renderTeamPick(); renderTeam(); renderAllTeams(); })
+      .catch(function(e){ $("tall").innerHTML = '<p class="err">' + esc(e.message) + "</p>"; });
+  }
+  function membersOf(id){ return T ? T.members.filter(function(m){ return m.lead === id; }) : []; }
+  function renderTeamPick(){
+    var sel = $("tlead"), cur = sel.value;
+    var withTeam = T.leads.filter(function(l){ return membersOf(l.id).length; }), rest = T.leads.filter(function(l){ return !membersOf(l.id).length; });
+    var opt = function(l){ var n = membersOf(l.id).length; return '<option value="' + esc(l.id) + '">' + esc(l.name) + (n ? " (" + n + " in team)" : "") + (l.active ? "" : " - paused") + "</option>"; };
+    sel.innerHTML = '<option value="">Pick the housekeeper</option>' + (withTeam.length ? '<optgroup label="Has a team">' + withTeam.map(opt).join("") + "</optgroup>" : "") + '<optgroup label="Everyone else">' + rest.map(opt).join("") + "</optgroup>";
+    sel.value = cur;
+  }
+  function renderTeam(){
+    var id = $("tlead").value; $("tadd").hidden = !id;
+    if(!id){ $("tlist").innerHTML = ""; return; }
+    var lead = T.leads.filter(function(l){ return l.id === id; })[0] || { name: "" }, ms = membersOf(id);
+    if(!ms.length){ $("tlist").innerHTML = '<p class="muted">No team members yet for ' + esc(leadShort(lead.name)) + ". Add the first one above.</p>"; return; }
+    $("tlist").innerHTML = table(["Team member", "Code", "Status", "Signed in", "Notifications", ""], ms.map(function(m){
+      var mob = m.mobile ? '<div class="sub">' + esc(m.mobile) + "</div>" : "";
+      return '<tr><td class="col-prop"><span class="prop">' + esc(m.name) + "</span>" + mob + '</td><td data-l="Code"><span class="code">' + esc(m.code) + '</span></td><td data-l="Status">' + (m.active ? '<span class="chip ok">Active</span>' : '<span class="chip">Paused</span>') + '</td><td data-l="Signed in">' + (m.lastSeenAt ? esc(ago(m.lastSeenAt)) : '<span class="sub">Not yet</span>') + '</td><td data-l="Notifications">' + (m.phones ? "On" : '<span class="sub">Off</span>') + "</td>" +
+        '<td><button class="btn ghost small" type="button" data-tcopy="' + esc(m.member) + '">Copy code message</button> <button class="btn ghost small" type="button" data-tact="newcode" data-tm="' + esc(m.member) + '">New code</button> <button class="btn ghost small" type="button" data-tact="' + (m.active ? "pause" : "resume") + '" data-tm="' + esc(m.member) + '">' + (m.active ? "Pause" : "Resume") + '</button> <button class="btn ghost small" type="button" data-tact="remove" data-tm="' + esc(m.member) + '">Remove</button></td></tr>';
+    }));
+  }
+  function renderAllTeams(){
+    var leads = T.leads.filter(function(l){ return membersOf(l.id).length; });
+    $("tall").innerHTML = leads.length ? table(["Housekeeper", "Team members", ""], leads.map(function(l){
+      var ms = membersOf(l.id);
+      return '<tr><td class="col-prop"><span class="prop">' + esc(l.name) + '</span></td><td data-l="Team">' + ms.map(function(m){ return esc(m.name) + (m.active ? "" : " (paused)"); }).join(", ") + '</td><td><button class="btn ghost small" type="button" data-topen="' + esc(l.id) + '">Open</button></td></tr>';
+    })) : '<p class="muted">No teams yet.</p>';
+  }
+  $("tlead").addEventListener("change", function(){ $("terr").textContent = ""; renderTeam(); });
+  $("tgo").addEventListener("click", function(){
+    var id = $("tlead").value, name = $("tname").value.trim(), b = this;
+    if(!id) return; if(name.length < 2){ $("terr").textContent = "Add the team member's name."; return; }
+    b.disabled = true; $("terr").textContent = "";
+    tcall("team-add", { leadId: id, name: name, mobile: $("tmob").value.trim() }).then(function(j){
+      $("tname").value = ""; $("tmob").value = ""; toast(j.member.name + " added. Code " + j.code + ".");
+      return loadTeams();
+    }).catch(function(e){ $("terr").textContent = e.message; }).then(function(){ b.disabled = false; });
+  });
+  document.addEventListener("click", function(e){
+    var t = e.target; if(!t || !t.getAttribute) return;
+    var open = t.getAttribute("data-topen");
+    if(open){ $("tlead").value = open; renderTeam(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    var cp = t.getAttribute("data-tcopy");
+    if(cp && T){ var m = T.members.filter(function(x){ return x.member === cp; })[0], l = m && T.leads.filter(function(x){ return x.id === m.lead; })[0]; if(m) copy(teamMsg(m, l ? l.name : "")); return; }
+    var act = t.getAttribute("data-tact"), mid = t.getAttribute("data-tm");
+    if(!act || !mid || !T) return;
+    var mm = T.members.filter(function(x){ return x.member === mid; })[0]; if(!mm) return;
+    if(act === "remove" && !confirm("Remove " + mm.name + "? Their code stops working. Their past clean checks keep their name.")) return;
+    if(act === "newcode" && !confirm("Give " + mm.name + " a new code? The old one stops working straight away.")) return;
+    t.disabled = true;
+    tcall("team-update", { member: mid, action: act }).then(function(j){ toast(act === "newcode" ? "New code " + j.code : act === "remove" ? mm.name + " removed" : act === "pause" ? mm.name + " paused" : mm.name + " active again"); return loadTeams(); })
+      .catch(function(err){ $("terr").textContent = err.message; t.disabled = false; });
+  });
 
   /* ---------- forgotten code finder ---------- */
   $("fq").addEventListener("input", renderFind);

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105083505"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105090249"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -14,7 +14,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <!-- admin-api is called directly (built from parts so the WordPress plugin does not rewrite it to its pass-through). -->
 <script>window.PHH_ADMIN_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/admin-api";
-/* Team codes live on clean-api (staging: clean-api-v11). */ window.PHH_CLEAN_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/clean-api-v11";</script>
+/* Team codes live on clean-api (staging: clean-api-v11). */ window.PHH_CLEAN_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/clean-api-v11";
+/* Settings (owner maintenance done email) live on admin-settings-staging, so the live admin-api is untouched. */ window.PHH_SETTINGS_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/admin-settings-staging";</script>
 <title>Clean Check Admin</title>
 <style>
 /* Office view v2 (23 Oct 2026). Laid out like HomHero's Cleaning screen so staff feel at home:
@@ -450,6 +451,17 @@ html,body{overflow-x:clip}
     <div class="box"><h3>Office and staff</h3><div id="stafflist"></div></div>
     <div class="box"><h3>Other phones with notifications on</h3><div id="phonelist"></div></div>
     <div class="box"><h3>Owner dashboard</h3><div id="ownerlist"></div></div>
+    <!-- Owner "maintenance done" email (Craig, 5 Nov 2026). Staging only. Saved by admin-settings-staging. Default Off. -->
+    <div class="box" id="omdbox">
+      <h3>Owner gets a 'maintenance done' email</h3>
+      <p class="muted">When a HomHero maintenance job at their property is marked complete. Email only, from Professional Holiday Homes. Owners never get app or office access.</p>
+      <div class="row2" role="radiogroup" aria-label="Owner gets a 'maintenance done' email" id="omdopts">
+        <label><input type="radio" name="omd" value="off"> Off</label>
+        <label><input type="radio" name="omd" value="owner_only"> Only jobs the owner logged</label>
+        <label><input type="radio" name="omd" value="all"> All jobs</label>
+      </div>
+      <p class="sub" id="omdres"></p>
+    </div>
   </section>
 
   <!-- System health -->
@@ -536,8 +548,28 @@ html,body{overflow-x:clip}
     if(t === "msg") loadMsgs();
     if(t === "log") loadLog();
     if(t === "ai") loadNotes();
+    if(t === "codes") loadOmd();
     if(t === "roll" && !$("rbody").children.length) loadPlan();
   }
+
+  /* ---------- owner 'maintenance done' email setting (admin-settings-staging) ---------- */
+  var SAPI = window.PHH_SETTINGS_API, OMD = { off:"Off", owner_only:"Only jobs the owner logged", all:"All jobs" }, omdBusy = false;
+  function scall(route, body){
+    return fetch(SAPI + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(Object.assign({ code: CODE }, body || {})) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+  function omdShow(v, live){
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="omd"]'), function(x){ x.checked = x.value === v; });
+    $("omdres").textContent = "Now: " + (OMD[v] || "Off") + "." + (live ? "" : " Sending is still locked on staging, so nothing goes to owners yet.");
+  }
+  function loadOmd(){ scall("settings").then(function(j){ omdShow(j.ownerMaintDone, j.sendLive); }).catch(function(e){ $("omdres").textContent = e.message; }); }
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="omd"]'), function(x){
+    x.addEventListener("change", function(){
+      if(omdBusy) return; omdBusy = true; $("omdres").textContent = "Saving...";
+      scall("setting-set", { value: x.value }).then(function(j){ omdShow(j.ownerMaintDone, j.sendLive); toast("Saved"); })
+        .catch(function(e){ $("omdres").textContent = e.message; loadOmd(); }).then(function(){ omdBusy = false; });
+    });
+  });
   Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(b){ b.addEventListener("click", function(){ show(b.getAttribute("data-tab")); }); });
 
   function load(){

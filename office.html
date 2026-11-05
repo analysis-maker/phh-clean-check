@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105072240"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105100525"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -139,6 +139,36 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
 
 .msg{margin:12px 0;color:var(--muted)}
 .err{color:var(--miss);font-weight:500}
+/* Spring cleans tab (5 Nov 2026) */
+.spgrid{display:grid;gap:12px;grid-template-columns:1fr;background:#fff;border:1px solid var(--line);border-radius:4px;padding:14px 16px;margin-bottom:12px}
+@media (min-width:900px){.spgrid{grid-template-columns:repeat(4,minmax(0,1fr))}.spgrid .wide{grid-column:span 2}.spgrid .full{grid-column:1 / -1}}
+.spgrid h2{margin:0;font-size:16px;font-weight:500}
+.spgrid label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.spgrid input[type=text],.spgrid input[type=date],.spgrid input[type=search],.spgrid select,.spgrid textarea{width:100%;border:1px solid #c8cfd3;border-radius:4px;padding:8px 10px;min-height:38px;background:#fff}
+.spgrid textarea{min-height:64px;resize:vertical;font:inherit}
+.spgrid .hint{margin:4px 0 0;color:var(--faint);font-size:12px}
+.spgrid .owner{display:flex;gap:10px;align-items:flex-start;background:var(--warn-soft);border:1px solid #f3cdbd;border-radius:4px;padding:10px 12px}
+.spgrid .owner input{width:20px;height:20px;margin:1px 0 0;flex:0 0 auto}
+.spgrid .owner label{margin:0;font-size:14px;color:var(--ink)}
+.spgrid .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.splist td .btn{margin:2px 6px 2px 0}
+.st-sp-requested{background:var(--pend);color:var(--pend-ink)}
+.st-sp-blocked{background:var(--info-soft);color:var(--info)}
+.st-sp-waiting{background:#fff3c4;color:var(--pend-ink)}
+.st-sp-done{background:var(--ok);color:var(--ok-ink)}
+.st-sp-cancelled{background:var(--idle);color:var(--idle-ink)}
+.spblk{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+.spblk input[type=text]{width:9em;border:1px solid #c8cfd3;border-radius:4px;padding:6px 8px;min-height:32px;font:inherit}
+.spblk label{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--ink)}
+.spblk .msg{margin:0;font-size:12px}
+.sprev{display:grid;gap:12px;grid-template-columns:1fr}
+@media (min-width:900px){.sprev{grid-template-columns:1fr 1fr}}
+.sprev .pics{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
+.sprev .pics a{display:block}
+.sprev .pics img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:4px;background:var(--line-2)}
+.sprev h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-ink)}
+.sprev ul{margin:0;padding-left:18px;font-size:13px}
+.sprev .na{color:var(--muted)}
 
 /* Phones: rows become stacked cards with the status as a left stripe. */
 @media (max-width:760px){
@@ -310,6 +340,7 @@ html,body{overflow-x:clip}
   <button class="tab" role="tab" data-tab="attention" aria-selected="false">Needs attention<span class="n" id="attnN" hidden></span></button>
   <button class="tab" role="tab" data-tab="hk" aria-selected="false">Housekeepers</button>
   <button class="tab" role="tab" data-tab="props" aria-selected="false">Properties</button>
+  <button class="tab" role="tab" data-tab="spring" aria-selected="false">Spring cleans<span class="n" id="springN" hidden></span></button>
 </nav>
 
 <main>
@@ -353,6 +384,70 @@ html,body{overflow-x:clip}
       </table>
     </div>
     <p class="msg" id="msg">Loading...</p>
+  </section>
+
+  <!-- Spring cleans (5 Nov 2026, Craig): book with owner approval, CST asked by HelpScout to add the HomHero block, staff mark it blocked, housekeeper does it in the app -->
+  <section id="springView" hidden>
+    <form class="spgrid" id="spForm" autocomplete="off">
+      <h2 class="full">Book a spring clean</h2>
+      <div class="wide">
+        <label for="spProp">Property</label>
+        <input type="search" id="spPropQ" placeholder="Type to filter properties" aria-label="Filter properties">
+        <select id="spProp" aria-label="Property" style="margin-top:6px"><option value="">Loading properties...</option></select>
+        <p class="hint" id="spPropHint"></p>
+      </div>
+      <div>
+        <label for="spFrom">First day</label>
+        <input type="date" id="spFrom">
+      </div>
+      <div>
+        <label for="spTo">Last day</label>
+        <input type="date" id="spTo">
+      </div>
+      <div class="wide">
+        <label for="spHk">Housekeeper</label>
+        <select id="spHk" aria-label="Housekeeper"><option value="">Pick the housekeeper</option></select>
+        <p class="hint" id="spHkHint">Filled in from recent cleans at the property. Change it if someone else is doing it.</p>
+      </div>
+      <div class="wide">
+        <label for="spNotes">Notes for the housekeeper (optional)</label>
+        <textarea id="spNotes" maxlength="1000" placeholder="For example: owner asked for the outdoor furniture to be washed"></textarea>
+      </div>
+      <div class="full owner">
+        <input type="checkbox" id="spOwner">
+        <label for="spOwner"><b>The owner has approved this spring clean.</b> No reply from the owner is not a yes. Only tick this once they have said yes.</label>
+      </div>
+      <div class="wide">
+        <label for="spBy">Approved by (owner's name)</label>
+        <input type="text" id="spBy" maxlength="80" placeholder="For example: Craig Reid">
+      </div>
+      <div>
+        <label for="spOn">Date approved</label>
+        <input type="date" id="spOn">
+      </div>
+      <div class="row full">
+        <button class="btn" type="submit" id="spBook">Book spring clean</button>
+        <span class="msg" id="spMsg" style="margin:0"></span>
+      </div>
+      <p class="hint full">Booking sends CST one HelpScout ticket asking them to add a Maintenance Block in HomHero for these dates (Requires Clean off). Once the block is in, enter its number below (or tick Blocked). The housekeeper then gets a phone notification and sees the spring clean in their app with the spring clean checklist. Approve it here once their photos come in.</p>
+    </form>
+    <div class="toprow">
+      <h2>Spring cleans</h2>
+      <select id="spShow" aria-label="Show">
+        <option value="open">Open</option>
+        <option value="waiting">Waiting for approval</option>
+        <option value="done">Done</option>
+        <option value="cancelled">Cancelled</option>
+        <option value="">All</option>
+      </select>
+    </div>
+    <div class="tablewrap splist">
+      <table>
+        <thead><tr><th>Status</th><th>Property</th><th>Dates</th><th>Housekeeper</th><th>Owner approval</th><th>Blocked in HomHero</th><th>Booked by</th><th></th></tr></thead>
+        <tbody id="spRows"></tbody>
+      </table>
+    </div>
+    <p class="msg" id="spListMsg"></p>
   </section>
 
   <!-- Housekeepers / Properties -->
@@ -405,6 +500,13 @@ html,body{overflow-x:clip}
   function cpost(route, body){
     body.code = CODE;
     return fetch(CLEAN_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+  /* Spring cleans (5 Nov 2026): their own function, spring-api. */
+  var SPRING_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/spring-api";
+  function spost(route, body){
+    body.code = CODE;
+    return fetch(SPRING_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
       .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
   }
   function absentFlags(r){
@@ -575,7 +677,7 @@ html,body{overflow-x:clip}
   if(!/^\d{4}-\d{2}-\d{2}$/.test(state.date)) state.date = sydToday();
   /* Deep links (Ask PHH): ?tab=cleans|attention|hk|props &status= &who= &q= &open=<booking> */
   var LINK = { tab: params.get("tab") || "", open: params.get("open") || "" };
-  if(["cleans","attention","hk","props"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
+  if(["cleans","attention","hk","props","spring"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
   if(["checked","missing","cleaned","waiting"].indexOf(params.get("status") || "") >= 0) state.status = params.get("status");
   state.who = (params.get("who") || "").slice(0, 120); state.q = (params.get("q") || "").slice(0, 120);
   if(/^[A-Za-z0-9-]{3,40}$/.test(LINK.open)) state.open[LINK.open] = true; else LINK.open = "";
@@ -882,14 +984,186 @@ html,body{overflow-x:clip}
   }
   $("hkNotesQ").addEventListener("input", function(){ if(notesCache) renderNotes(); });
 
-  var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties" };
+  /* ---------- Spring cleans (5 Nov 2026) ---------- */
+  var SP = { loaded:false, props:[], hks:[], rows:[], open:{} };
+  var SPST = { requested:["Waiting for block", "requested"], blocked:["Blocked in HomHero", "blocked"], waiting:["Waiting for approval", "waiting"], done:["Done", "done"], cancelled:["Cancelled", "cancelled"] };
+  function spDay(d){ return d ? new Date(d + "T12:00:00Z").toLocaleDateString("en-AU", { timeZone:"UTC", weekday:"short", day:"numeric", month:"short" }) : ""; }
+  function spState(r){ if(r.status === "cancelled" || r.status === "done") return r.status; if(r.extra && r.extra.status === "submitted") return "waiting"; return r.status; }
+  function spPropOptions(){
+    var q = ($("spPropQ").value || "").trim().toLowerCase(), sel = $("spProp"), cur = sel.value;
+    sel.innerHTML = "";
+    var first = el("option", "", SP.props.length ? "Pick the property" : "No properties found"); first.value = ""; sel.appendChild(first);
+    SP.props.filter(function(p){ return !q || p.name.toLowerCase().indexOf(q) >= 0; }).forEach(function(p){ var o = el("option", "", p.name); o.value = p.id; sel.appendChild(o); });
+    if(cur && sel.querySelector('option[value="' + cur + '"]')) sel.value = cur;
+  }
+  function spHkOptions(){
+    var sel = $("spHk"); sel.innerHTML = ""; var o0 = el("option", "", "Pick the housekeeper"); o0.value = ""; sel.appendChild(o0);
+    SP.hks.forEach(function(h){ var o = el("option", "", h.name + (h.test ? " (test)" : "")); o.value = h.id; sel.appendChild(o); });
+  }
+  function spPropChanged(){
+    var p = SP.props.filter(function(x){ return x.id === $("spProp").value; })[0];
+    $("spPropHint").textContent = p ? (p.lastSpringClean ? "Last spring clean: " + spDay(p.lastSpringClean) + "." : "No spring clean recorded in Clean Check yet.") : "";
+    if(p && p.defaultCleanerId){ $("spHk").value = p.defaultCleanerId; $("spHkHint").textContent = "Usual housekeeper from recent cleans: " + p.usualCleaner + "."; }
+    else if(p){ $("spHk").value = ""; $("spHkHint").textContent = p.usualCleaner ? "Recent cleans were by " + p.usualCleaner + ", who is not on Clean Check yet. Pick the housekeeper." : "No recent cleans with a housekeeper. Pick the housekeeper."; }
+  }
+  function spLoad(){
+        $("spListMsg").className = "msg"; $("spListMsg").textContent = "Loading...";
+    var t = TEST ? { includeTest:true } : {};
+    var a = SP.loaded ? Promise.resolve() : spost("spring-properties", Object.assign({}, t)).then(function(j){
+      SP.props = j.properties || []; SP.hks = j.housekeepers || []; SP.loaded = true; spPropOptions(); spHkOptions(); spPropChanged();
+    });
+    return a.then(function(){ return spost("spring-list", Object.assign({}, t)); }).then(function(j){ SP.rows = j.rows || []; spRender(); })
+      .catch(function(e){ $("spListMsg").className = "msg err"; $("spListMsg").textContent = e.message; });
+  }
+  function spCount(){
+    var n = SP.rows.filter(function(r){ return spState(r) === "waiting"; }).length;
+    $("springN").textContent = n; $("springN").hidden = !n;
+  }
+  function spRender(){
+    spCount();
+    var show = $("spShow").value, body = $("spRows"); body.innerHTML = "";
+    var list = SP.rows.filter(function(r){ var s = spState(r); return !show || (show === "open" ? (s === "requested" || s === "blocked" || s === "waiting") : s === show); });
+    list.forEach(function(r){
+      var s = spState(r), tr = el("tr", "r");
+      var st = el("td", "st"); var sc = el("div", "stc st-sp-" + SPST[s][1], SPST[s][0]); st.appendChild(sc); tr.appendChild(st);
+      var cell = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
+      var pc = cell("Property", "", "col-prop"); pc.appendChild(el("span", "prop", r.property)); if(r.test) pc.appendChild(el("span", "sub", " (test, never sent to HomHero)"));
+      if(r.notes) { pc.appendChild(el("br")); pc.appendChild(el("span", "sub", r.notes)); }
+      cell("Dates", r.from === r.to ? spDay(r.from) : spDay(r.from) + " to " + spDay(r.to), "nowrap");
+      cell("Housekeeper", r.cleaner || "");
+      cell("Owner approval", "Yes, " + (r.approvedBy || "") + (r.approvedOn ? " (" + spDay(r.approvedOn) + ")" : ""));
+      var hc = cell("Blocked in HomHero", ""); spBlockCell(r, hc);
+      cell("Booked by", (r.requestedBy || "") + (r.cancelledBy ? ". Cancelled by " + r.cancelledBy : ""));
+      var act = cell("", "", "e"); act.removeAttribute("data-l");
+      if(s === "waiting" || (r.extra && r.extra.status !== "draft")){
+        var rv = el("button", "btn ghost small", SP.open[r.id] ? "Hide" : "Review"); rv.type = "button";
+        rv.addEventListener("click", function(ev){ ev.stopPropagation(); SP.open[r.id] = !SP.open[r.id]; spRender(); });
+        act.appendChild(rv);
+      }
+      if(s === "requested" || s === "blocked"){
+        var cb = el("button", "btn ghost small", "Cancel"); cb.type = "button";
+        cb.addEventListener("click", function(ev){
+          ev.stopPropagation();
+          if(!confirm("Cancel the spring clean at " + r.property + "?" + (r.cstSentAt || r.blockedAt ? " CST will get a ticket to cancel the HomHero block." : ""))) return;
+          cb.disabled = true;
+          spost("spring-cancel", { id: r.id }).then(spLoad).catch(function(e){ cb.disabled = false; alert(e.message); });
+        });
+        act.appendChild(cb);
+      }
+      body.appendChild(tr);
+      if(SP.open[r.id]){ var d = el("tr", "d"), td = el("td"); td.colSpan = 8; d.appendChild(td); body.appendChild(d); spReview(r, td); }
+    });
+    $("spListMsg").className = "msg";
+    $("spListMsg").textContent = list.length ? "" : (SP.rows.length ? "Nothing to show here." : "No spring cleans booked yet.");
+  }
+  /* Blocked in HomHero (5 Nov rework): CST adds the Maintenance Block by hand from a HelpScout ticket. Staff enter its number
+     here (or tick Blocked), or the read-only HomHero check fills it in. Saving sets status blocked, then the housekeeper is pinged. */
+  function spBlockCell(r, td){
+    var s = spState(r), t = function(x){ td.appendChild(el("div", "", x)); }, sub = function(x){ td.appendChild(el("div", "sub", x)); };
+    var tk = r.test ? " (test)" : "";
+    if(r.status === "cancelled"){
+      t(r.hhBlockId ? "Block #" + r.hhBlockId : (r.blockedAt ? "Blocked" : "Not blocked"));
+      if(r.cstCancelSentAt) sub("CST asked to cancel the block " + spDay(r.cstCancelSentAt.slice(0, 10)));
+      else if(r.cstCancelDryAt) sub("Dry run: CST cancel ticket recorded, not sent" + tk);
+      else if(r.cstSentAt || r.blockedAt) sub("CST will be asked to cancel the block");
+      return;
+    }
+    if(r.status === "blocked" || r.status === "done" || s === "waiting"){
+      t(r.hhBlockId ? "Yes, block #" + r.hhBlockId : "Yes");
+      if(r.blockedBy) sub((r.blockedSource === "homhero-check" ? "Found in HomHero" : "Marked by " + r.blockedBy) + (r.blockedAt ? ", " + spDay(r.blockedAt.slice(0, 10)) : ""));
+      if(r.blockCheck && !/^ok/.test(r.blockCheck)){ var w = el("div", "sub err", "Check: " + r.blockCheck); td.appendChild(w); }
+      if(r.pingSentAt) sub("Housekeeper notified");
+      else if(r.pingDryAt) sub("Dry run: phone ping went to the tester only");
+    } else {
+      t("Not yet");
+      if(r.cstSentAt) sub("CST asked " + spDay(r.cstSentAt.slice(0, 10)));
+      else if(r.cstDryRunAt) sub("Dry run: CST ticket recorded, not sent" + tk);
+      else sub(r.cstError ? "CST ticket problem: " + r.cstError : "CST ticket goes in the next few minutes");
+      if(r.hhDetect && r.hhDetect.note) sub("HomHero has a Maintenance block here (#" + r.hhDetect.blockId + ") without SPRING in its notes. Check it, then enter it.");
+    }
+    if(r.status !== "requested" && r.status !== "blocked") return;
+    if(r.status === "blocked" && r.hhBlockId && !(r.blockCheck && !/^ok/.test(r.blockCheck))) return;
+    var f = el("div", "spblk"), inp = el("input"); inp.type = "text"; inp.inputMode = "numeric"; inp.placeholder = "Block number"; inp.maxLength = 9;
+    inp.setAttribute("aria-label", "HomHero block number for " + r.property); if(r.hhBlockId) inp.value = r.hhBlockId;
+    var lab = el("label"), tick = el("input"); tick.type = "checkbox"; lab.appendChild(tick); lab.appendChild(document.createTextNode(r.status === "blocked" ? "Fix number" : "Blocked"));
+    var sv = el("button", "btn small", "Save"); sv.type = "button";
+    var m = el("span", "msg");
+    sv.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      var v = inp.value.replace(/[#\s]/g, "");
+      if(!v && !tick.checked){ m.className = "msg err"; m.textContent = "Enter the block number or tick Blocked."; return; }
+      if(v && !/^\d{5,8}$/.test(v)){ m.className = "msg err"; m.textContent = "Use the HomHero block number, for example 267120."; return; }
+      sv.disabled = true; m.className = "msg"; m.textContent = "Saving...";
+      spost("spring-mark-blocked", { id: r.id, blockId: v }).then(spLoad).catch(function(e){ sv.disabled = false; m.className = "msg err"; m.textContent = e.message; });
+    });
+    [inp, tick].forEach(function(x){ x.addEventListener("click", function(ev){ ev.stopPropagation(); }); });
+    f.appendChild(inp); if(r.status === "requested") f.appendChild(lab); f.appendChild(sv); f.appendChild(m); td.appendChild(f);
+  }
+  function spReview(r, host){
+    host.appendChild(el("p", "msg", "Loading photos..."));
+    spost("spring-review", { id: r.id }).then(function(j){
+      var x = j.extra; host.innerHTML = "";
+      var wrap = el("div", "detail"), g = el("div", "sprev");
+      ["before", "after"].forEach(function(k){
+        var box = el("div"); box.appendChild(el("h4", "", (k === "before" ? "Before" : "After") + " photos"));
+        var pics = el("div", "pics");
+        x.photos.filter(function(p){ return p.kind === k && p.url; }).forEach(function(p){ var a = el("a"); a.href = p.url; a.target = "_blank"; a.rel = "noopener"; var im = el("img"); im.src = p.url; im.alt = k + " photo " + p.n; im.loading = "lazy"; a.appendChild(im); pics.appendChild(a); });
+        box.appendChild(pics); g.appendChild(box);
+      });
+      var ck = el("div"); ck.appendChild(el("h4", "", "Checklist"));
+      var nNa = 0, ul = el("ul");
+      (x.sections || []).forEach(function(sec){ sec.items.forEach(function(it){ if(x.checklist[it.id] === "na"){ nNa++; ul.appendChild(el("li", "na", it.text + " (N/A)")); } }); });
+      var total = (x.sections || []).reduce(function(a, sec){ return a + sec.items.length; }, 0);
+      ck.appendChild(el("p", "", (total - nNa) + " of " + total + " ticked" + (nNa ? ", " + nNa + " marked N/A:" : ".")));
+      if(nNa) ck.appendChild(ul);
+      var nt = el("div"); nt.appendChild(el("h4", "", "From " + (x.cleaner || "the housekeeper"))); nt.appendChild(el("p", "", x.note || ""));
+      if(x.submittedAt) nt.appendChild(el("p", "sub", "Sent " + new Date(x.submittedAt).toLocaleString("en-AU", { timeZone:TZ, day:"numeric", month:"short", hour:"numeric", minute:"2-digit" })));
+      g.appendChild(ck); g.appendChild(nt); wrap.appendChild(g);
+      var dec = el("div", "agree");
+      if(x.status === "submitted"){
+        var note = el("input"); note.type = "text"; note.placeholder = "Note for the housekeeper (needed to decline)"; note.maxLength = 500;
+        var ok = el("button", "btn", "Approve"); ok.type = "button";
+        var no = el("button", "btn ghost", "Decline"); no.type = "button";
+        var m = el("span", "msg"); m.style.margin = "0";
+        var go = function(d){ ok.disabled = no.disabled = true; m.className = "msg"; m.textContent = "Saving...";
+          spost("spring-decide", { id: r.id, decision: d, note: note.value }).then(function(){ SP.loaded = false; SP.open[r.id] = false; return spLoad(); })
+            .catch(function(e){ ok.disabled = no.disabled = false; m.className = "msg err"; m.textContent = e.message; }); };
+        ok.addEventListener("click", function(){ go("approved"); }); no.addEventListener("click", function(){ go("declined"); });
+        dec.appendChild(note); dec.appendChild(ok); dec.appendChild(no); dec.appendChild(m);
+      } else dec.appendChild(el("p", "", (x.status === "approved" ? "Approved" : "Declined") + " by " + (x.decidedBy || "the office") + (x.officeNote ? ": " + x.officeNote : ".")));
+      wrap.appendChild(dec); host.appendChild(wrap);
+    }).catch(function(e){ host.innerHTML = ""; host.appendChild(el("p", "msg err", e.message)); });
+  }
+  $("spPropQ").addEventListener("input", function(){ spPropOptions(); spPropChanged(); });
+  $("spProp").addEventListener("change", spPropChanged);
+  $("spShow").addEventListener("change", spRender);
+  $("spFrom").addEventListener("change", function(){ if(!$("spTo").value || $("spTo").value < this.value) $("spTo").value = this.value; });
+  $("spForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var m = $("spMsg"); m.className = "msg";
+    var body = { propertyId: $("spProp").value, from: $("spFrom").value, to: $("spTo").value || $("spFrom").value, cleanerId: $("spHk").value,
+      ownerApproved: $("spOwner").checked, approvedBy: $("spBy").value.trim(), approvedOn: $("spOn").value, notes: $("spNotes").value.trim() };
+    var miss = !body.propertyId ? "Pick the property." : !body.from ? "Pick the first day." : !body.cleanerId ? "Pick the housekeeper." :
+      !body.ownerApproved ? "Tick that the owner has approved it. No reply is not a yes." : body.approvedBy.length < 2 ? "Add who approved it." : !body.approvedOn ? "Add the date the owner approved it." : "";
+    if(miss){ m.className = "msg err"; m.textContent = miss; return; }
+    if(TEST) body.includeTest = true;
+    $("spBook").disabled = true; m.textContent = "Booking...";
+    spost("spring-create", body).then(function(j){
+      m.textContent = "Booked." + (j.test ? " Test housekeeper: no ticket goes to CST." : " CST gets a ticket to add the HomHero block in the next few minutes. Enter the block number below once it is in.") + ((j.warnings || []).length ? " " + j.warnings.join(" ") : "");
+      $("spOwner").checked = false; $("spBy").value = ""; $("spNotes").value = "";
+      return spLoad();
+    }).catch(function(err){ m.className = "msg err"; m.textContent = err.message; }).then(function(){ $("spBook").disabled = false; });
+  });
+  $("spOn").value = sydToday(); $("spOn").max = sydToday(); $("spFrom").min = sydToday();
+
+  var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans" };
   function setTab(t){
     state.tab = t;
     document.querySelectorAll(".tab").forEach(function(b){ b.setAttribute("aria-selected", String(b.getAttribute("data-tab") === t)); });
     $("sectionTitle").textContent = TITLES[t];
-    var day = t === "cleans" || t === "attention";
-    $("dayView").hidden = !day; $("insView").hidden = day;
-    if(day){ if(state.rows.length) renderRows(); } else loadIns();
+    var day = t === "cleans" || t === "attention", spring = t === "spring";
+    $("dayView").hidden = !day; $("insView").hidden = day || spring; $("springView").hidden = !spring;
+    if(spring) spLoad(); else if(day){ if(state.rows.length) renderRows(); } else loadIns();
   }
   document.querySelectorAll(".tab").forEach(function(b){ b.addEventListener("click", function(){ setTab(b.getAttribute("data-tab")); }); });
 
@@ -908,6 +1182,8 @@ html,body{overflow-x:clip}
   $("status").value = state.status; $("q").value = state.q;
   if(state.tab !== "cleans") setTab(state.tab);
   loadDay();
+  /* Waiting-for-approval count on the Spring cleans tab. */
+  if(state.tab !== "spring") spost("spring-list", TEST ? { includeTest:true } : {}).then(function(j){ SP.rows = j.rows || []; spCount(); }).catch(function(){});
 })();
 </script>
 <!-- ASK-PHH START (tools/ask_panel.html, injected by tools/inject_ask.py: edit the source, not this copy) -->

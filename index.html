@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105072240"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105100525"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -153,6 +153,15 @@ li.na .nabtn{color:var(--ink);background:var(--offset)}
 .callbtn:hover{background:var(--teal-hl);color:var(--teal)}
 .tag{flex:none;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);background:var(--teal-hl);border-radius:9999px;padding:4px 10px}
 .chev{flex:none;color:var(--faint);font-weight:700}
+/* Spring clean (5 Nov 2026): its own item in the list and its own screen (?spring=<id>) */
+.tag.sp{color:#5c4300;background:#fff3c4}
+#springsec .sechead h2{font-size:1rem}
+.spphotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:10px}
+.spphotos .ph{min-height:0}
+.spphotos .ph.add .shot{font-weight:700}
+.sptop .notes{margin:10px 0 0;padding:10px 12px;border-radius:10px;background:var(--teal-hl);font-size:.95rem}
+.spdone{text-align:center;padding:24px 8px}
+.spdone .big{font-size:1.3rem;font-weight:700;margin:0 0 8px}
 .go{margin-top:12px;width:100%}
 .back{display:inline-block;margin-top:14px;color:var(--primary);font-weight:700;font-size:.92rem;text-decoration:none}
 .due{margin-top:14px;padding:10px 14px;border-radius:var(--radius-md);background:var(--warn-soft);border:1px solid rgba(180,84,26,.35);color:var(--ink);font-size:.92rem;font-weight:700}
@@ -300,6 +309,7 @@ body.photomode .ph .hint, body.photomode .ph .stamp{display:none}
     </div>
   </div>
   <section class="sec"><ul class="items" id="picklist" hidden></ul></section>
+  <section class="sec" id="springsec" hidden><div class="sechead"><h2>Spring clean</h2></div><ul class="items" id="springlist"></ul></section>
   <p class="note" id="pickmsg"></p>
   <p class="note" id="obnote" hidden></p>
   <div class="hktools" id="hktools" hidden>
@@ -327,6 +337,7 @@ body.photomode .ph .hint, body.photomode .ph .stamp{display:none}
   <p class="note" id="notme" hidden><a class="back" href="#" id="switchcode">Not you? Enter a different code</a></p>
 </div>
 
+<div class="wrap" id="springapp" hidden></div>
 <div class="wrap" id="app">
   <header class="top">
     <div class="badgerow"><span class="badge">Clean check</span><a class="back topback" id="back" href="./" hidden>&lsaquo; My cleans</a></div>
@@ -503,7 +514,9 @@ window.PHH_CHECKLIST = {
   var RES = params.get("res");
   var TOKEN = params.get("t") || "";
   var LIVE = !!(API && RES);
-  var PICK = !!(API && !RES && params.get("demo") !== "1");
+  var SPRING_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/spring-api"; /* spring cleans (5 Nov 2026) */
+  var SPRING_ID = /^[0-9a-f-]{36}$/i.test(params.get("spring") || "") ? params.get("spring") : "";
+  var PICK = !!(API && !RES && !SPRING_ID && params.get("demo") !== "1");
   var FROM_LIST = params.get("from") === "list";
   var state = { items:{}, photos:{}, cleaner:"", cleanerSel:"", startedAt:new Date().toISOString(), consumables:"", noBbq:false, rooms:null, roomsEdited:false, maint:[], absent:{}, extra:{ guests:"", guestsNote:"", gas:{}, slots:[], captions:{}, note:"", nextNote:"" } };
   /* Office decisions for this property ("Not at this property"): {ph_oven:"confirmed"|"rejected"}, from /clean. */
@@ -1483,6 +1496,24 @@ window.PHH_CHECKLIST = {
       $("dtoday").addEventListener("click", function(){ loadOfficeDay(code, todayYmd()).catch(function(e){ msg(e.message, true); }); });
       $("dpick").addEventListener("change", function(){ if(/^\d{4}-\d{2}-\d{2}$/.test(this.value)) loadOfficeDay(code, this.value).catch(function(e){ msg(e.message, true); }); });
     }
+    /* Spring cleans the office has booked for this housekeeper (today or tomorrow): their own item, opens the spring clean screen. */
+    function showSpring(list){
+      var sec = $("springsec"), ul = $("springlist"); if(!sec) return;
+      ul.innerHTML = ""; sec.hidden = !list.length;
+      var today = todayYmd(), STATE = { new:"", draft:"Started", submitted:"Sent", approved:"Done", declined:"See note" };
+      list.forEach(function(c){
+        var li = document.createElement("li"); li.className = "item" + (c.state === "submitted" || c.state === "approved" ? " done" : "");
+        var b = document.createElement("button"); b.type = "button"; b.className = "tick pickrow";
+        b.innerHTML = '<span class="txt"></span><span class="chev" aria-hidden="true">&rsaquo;</span>';
+        b.querySelector(".txt").textContent = roomFirst(c.property);
+        var sub = document.createElement("span"); sub.className = "sub";
+        sub.textContent = "Spring clean " + (c.from === c.to ? dayLabel(c.from) : dayLabel(c.from) + " to " + dayLabel(c.to)) + (c.from > today ? " (opens " + dayLabel(c.from) + ")" : "");
+        b.querySelector(".txt").appendChild(sub);
+        var t = document.createElement("span"); t.className = "tag sp"; t.textContent = STATE[c.state] || "Spring clean"; b.insertBefore(t, b.querySelector(".chev"));
+        b.addEventListener("click", function(){ location.href = "?spring=" + encodeURIComponent(c.id) + "&from=list"; });
+        li.appendChild(b); ul.appendChild(li);
+      });
+    }
     function show(list){
       var ul = $("picklist"); ul.innerHTML = "";
       list.forEach(function(c){
@@ -1515,6 +1546,7 @@ window.PHH_CHECKLIST = {
       $("codebox").hidden = false; $("searchbox").hidden = true; $("picklist").hidden = true; $("notme").hidden = true; if($("me")) $("me").hidden = true;
       if($("daybar")) $("daybar").hidden = true; officeDay = ""; try{ sessionStorage.removeItem("phh-office-day"); }catch(x){}
       if($("pushbox")) $("pushbox").hidden = true;
+      if($("springsec")) $("springsec").hidden = true;
       if($("hktools")) $("hktools").hidden = true;
       if($("phhmsgs")){ $("phhmsgs").hidden = true; $("phhmsgs").innerHTML = ""; }
       $("pickh1").textContent = "Today's cleans"; $("pickmeta").textContent = "Enter your code to see your cleans for today.";
@@ -1532,7 +1564,7 @@ window.PHH_CHECKLIST = {
           /* Staff: office view, or the maintenance dashboard for a maintenance code (staging asks office-api which one). */
           return fetch(OFFICE_API + "-v2/login", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
             .then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
-            .then(function(v){ var mv = v && v.view === "maintenance"; try{ localStorage.setItem("phh-staff-view", mv ? "maintenance" : "office"); }catch(e){} location.href = mv ? "maintenance.html?v=1030d" : "office.html?v=1102a"; });
+            .then(function(v){ var mv = v && v.view === "maintenance"; try{ localStorage.setItem("phh-staff-view", mv ? "maintenance" : "office"); }catch(e){} location.href = mv ? "maintenance.html?v=1030d" : "office.html?v=1105s"; });
         })
         .catch(function(e){ reset(e.message, true); });
     }
@@ -1568,6 +1600,8 @@ window.PHH_CHECKLIST = {
           try{ localStorage.setItem(KEY, code); }catch(e){}
           signedIn = true; $("callphh").hidden = false;
           office = !!j.office; all = j.cleans || [];
+          if(!office) fetch(SPRING_API + "/spring-today", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
+            .then(function(r){ return r.ok ? r.json() : null; }).then(function(sj){ var l = (sj && sj.springCleans) || []; showSpring(l); if(l.length && !all.length) msg(""); }).catch(function(){});
           showMe(office ? "PHH office" : String(j.cleaner || "").split(" ")[0]);
           try{ if(office) localStorage.removeItem("phh-cleaner-name"); else localStorage.setItem("phh-cleaner-name", String(j.cleaner || "")); }catch(e){}
           $("pickh1").textContent = office ? "All cleans today" : "Hi " + String(j.cleaner || "").split(" ")[0];
@@ -1609,13 +1643,164 @@ window.PHH_CHECKLIST = {
     $("switchcode").addEventListener("click", function(e){ e.preventDefault(); $("code").value = ""; reset(""); });
     var staffSaved = ""; try{ staffSaved = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
     var staffView = ""; try{ staffView = localStorage.getItem("phh-staff-view") || ""; }catch(e){}
-    if(staffSaved){ location.replace(staffView === "maintenance" ? "maintenance.html?v=1030d" : "office.html?v=1102a"); return; }
+    if(staffSaved){ location.replace(staffView === "maintenance" ? "maintenance.html?v=1030d" : "office.html?v=1105s"); return; }
     var ownerSaved = ""; try{ ownerSaved = localStorage.getItem("phh-owner-code") || ""; }catch(e){}
     if(ownerSaved){ location.replace("owner.html"); return; }
     var saved = ""; try{ saved = localStorage.getItem(KEY) || ""; }catch(e){}
     if(saved) loadList(saved); else { $("codebox").hidden = false; }
   }
 
+
+  /* ---------- Spring clean screen (?spring=<id>, 5 Nov 2026) ----------
+     Booked by the office (owner approved, HomHero blocked). Same record as an Extra clean "Spring clean": before photos,
+     the PHH spring clean checklist, after photos, a note, then the office approves it. Photos are camera photos taken now
+     (same 15-minute rule and time stamp as the clean check). Ticks are kept on the phone until it is sent. */
+  function springFlow(){
+    $("app").hidden = true; $("foot").hidden = true; $("pick").hidden = true;
+    var box = $("springapp"); box.hidden = false;
+    var code = ""; try{ code = localStorage.getItem("phh-cleaner-code") || ""; }catch(e){}
+    var SKEY = "phh-spring-" + SPRING_ID, sp = null, ticks = {}, note = "", photos = { before:[], after:[] }, busy = 0;
+    try{ var sv = JSON.parse(localStorage.getItem(SKEY) || "null"); if(sv){ ticks = sv.ticks || {}; note = sv.note || ""; } }catch(e){}
+    function keep(){ try{ localStorage.setItem(SKEY, JSON.stringify({ ticks: ticks, note: note })); }catch(e){} }
+    function call(route, body){
+      body.code = code; body.id = SPRING_ID;
+      return fetch(SPRING_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
+        .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+    }
+    function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined && text !== null) e.textContent = text; return e; }
+    function day(d){ return new Date(d + "T12:00:00Z").toLocaleDateString("en-AU", { timeZone:"UTC", weekday:"short", day:"numeric", month:"short" }); }
+    function back(){ var a = el("a", "textlink", "Back to my cleans"); a.href = "./"; return a; }
+    if(!code){ box.appendChild(el("p", "note err", "Open the app and enter your code first.")); box.appendChild(back()); return; }
+    box.appendChild(el("p", "note", "Loading your spring clean..."));
+    call("spring-open", {}).then(function(j){ sp = j; (j.photos || []).forEach(function(p){ if(photos[p.kind]) photos[p.kind][p.n - 1] = { url: p.url, stampedAt: p.stampedAt, saved: true }; }); draw(); })
+      .catch(function(e){ box.innerHTML = ""; box.appendChild(el("p", "note err", e.message)); box.appendChild(back()); });
+
+    function draw(){
+      box.innerHTML = "";
+      var top = el("header", "top sptop");
+      top.appendChild(el("span", "badge", "Spring clean"));
+      top.appendChild(el("h1", "", roomFirst(sp.property)));
+      top.appendChild(el("div", "meta", sp.from === sp.to ? day(sp.from) : day(sp.from) + " to " + day(sp.to)));
+      if(sp.notes) top.appendChild(el("p", "notes", "From the office: " + sp.notes));
+      box.appendChild(top);
+      var ex = sp.extra;
+      if(ex && ex.status !== "draft"){
+        var d = el("section", "sec spdone");
+        d.appendChild(el("p", "big", ex.status === "approved" ? "All done. Thanks!" : ex.status === "declined" ? "The office has a note for you" : "Thanks, your spring clean has been sent to PHH."));
+        d.appendChild(el("p", "note", ex.status === "declined" ? (ex.officeNote || "Please call the office.") : ex.status === "approved" ? "The office has approved it." : "The office will have a look at the photos."));
+        box.appendChild(d); box.appendChild(back()); return;
+      }
+      if(!sp.open){ box.appendChild(el("p", "note", "This spring clean opens the day before it is booked. See you then.")); box.appendChild(back()); return; }
+      box.appendChild(photoSec("before", "Before photos", "Before you start, take a few photos of the property as it is now. At least one."));
+      sp.checklist.forEach(function(sec){
+        var el2 = el("section", "sec"); var h = el("div", "sechead"); h.appendChild(el("h2", "", sec.title));
+        var cnt = el("span", "secount"); h.appendChild(cnt); el2.appendChild(h);
+        var ul = el("ul", "items");
+        sec.items.forEach(function(it){
+          var li = el("li", "item"); li.dataset.id = it.id;
+          var b = el("button", "tick"); b.type = "button"; b.innerHTML = '<span class="box" aria-hidden="true"></span><span class="txt"></span>'; b.querySelector(".txt").textContent = it.text;
+          var n = el("button", "nabtn", "N/A"); n.type = "button"; n.setAttribute("aria-label", "Not applicable: " + it.text);
+          b.addEventListener("click", function(){ ticks[it.id] = ticks[it.id] === "done" ? undefined : "done"; if(!ticks[it.id]) delete ticks[it.id]; keep(); upd(); });
+          n.addEventListener("click", function(){ ticks[it.id] = ticks[it.id] === "na" ? undefined : "na"; if(!ticks[it.id]) delete ticks[it.id]; keep(); upd(); });
+          li.appendChild(b); li.appendChild(n); ul.appendChild(li);
+        });
+        el2.appendChild(ul); el2.dataset.sec = sec.id; box.appendChild(el2);
+      });
+      box.appendChild(photoSec("after", "After photos", "Once you're finished, take photos of the same areas. At least one."));
+      var ns = el("section", "sec"); ns.appendChild(el("div", "sechead")).appendChild(el("h2", "", "Anything to tell the office?"));
+      var ta = el("textarea"); ta.id = "spnote"; ta.maxLength = 1000; ta.placeholder = "Optional. For example: air con filter was very dusty, shower curtain needs replacing"; ta.value = note;
+      ta.style.cssText = "width:100%;min-height:90px;box-sizing:border-box;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line)";
+      ta.addEventListener("input", function(){ note = this.value; keep(); });
+      ns.appendChild(ta); box.appendChild(ns);
+      var go = el("button", "submit go", "Send spring clean to PHH"); go.type = "button"; go.id = "spsend";
+      var msg2 = el("p", "note"); msg2.id = "spmsg";
+      go.addEventListener("click", function(){
+        go.disabled = true; msg2.className = "note"; msg2.textContent = "Sending...";
+        call("spring-submit", { checklist: ticks, note: note }).then(function(){
+          try{ localStorage.removeItem(SKEY); }catch(e){}
+          sp.extra = { status: "submitted" }; draw(); window.scrollTo(0, 0);
+        }).catch(function(e){ go.disabled = false; msg2.className = "note err"; msg2.textContent = e.message; });
+      });
+      box.appendChild(go); box.appendChild(msg2); box.appendChild(back());
+      upd();
+    }
+    function photoSec(kind, title, help){
+      var sec = el("section", "sec"); sec.id = "sp_" + kind;
+      var h = el("div", "sechead"); h.appendChild(el("h2", "", title)); var c = el("span", "secount"); c.id = "spc_" + kind; h.appendChild(c); sec.appendChild(h);
+      sec.appendChild(el("p", "note", help));
+      var g = el("div", "photos spphotos"); g.id = "spg_" + kind; sec.appendChild(g);
+      tiles(kind, g);
+      return sec;
+    }
+    function tiles(kind, g){
+      g = g || $("spg_" + kind); if(!g) return;
+      g.innerHTML = "";
+      var list = photos[kind];
+      list.forEach(function(x, i){ if(x) g.appendChild(tile(kind, i + 1, x)); });
+      var next = 0; for(var i = 0; i < 12; i++){ if(!list[i]){ next = i + 1; break; } }
+      if(next) g.appendChild(tile(kind, next, null));
+    }
+    function tile(kind, n, x){
+      var d = el("label", "ph" + (x ? " has" : " add")); d.dataset.id = kind + n;
+      var inp = el("input"); inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("capture", "environment");
+      if(x && x.url){ var im = el("img"); im.src = x.url; im.alt = (kind === "before" ? "Before" : "After") + " photo " + n; d.appendChild(im); }
+      else d.appendChild(el("div", "shot", x ? "Sending..." : "+ " + (kind === "before" ? "Before" : "After") + " photo"));
+      var cap = el("div", "cap", (kind === "before" ? "Before " : "After ") + n);
+      if(x && x.stampedAt){ cap.appendChild(el("span", "stamp", fmt(new Date(x.stampedAt)) + "  (tap to retake)")); }
+      if(x && x.error){ cap.appendChild(el("span", "flag", x.error)); }
+      d.appendChild(cap); d.appendChild(inp);
+      inp.addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; e.target.value = ""; if(f) take(kind, n, f); });
+      return d;
+    }
+    function take(kind, n, file){
+      var takenAt = null;
+      file.slice(0, 131072).arrayBuffer().then(function(buf){ takenAt = exifDate(buf); }).catch(function(){}).then(function(){
+        var when = takenAt || (file.lastModified > 1577836800000 ? new Date(file.lastModified) : null);
+        if(when && (new Date() - when) > MAX_PHOTO_AGE_MIN * 60000){ photos[kind][n - 1] = { error: "This photo was taken more than " + MAX_PHOTO_AGE_MIN + " minutes ago. Take a new one now." }; tiles(kind); upd(); return; }
+        return decodePhoto(file).then(function(pic){
+          var sc = Math.min(1, 1280 / Math.max(pic.w, pic.h)), w = Math.round(pic.w * sc), h = Math.round(pic.h * sc);
+          var c = document.createElement("canvas"); c.width = w; c.height = h; var g = c.getContext("2d"); g.drawImage(pic.src, 0, 0, w, h); pic.done();
+          var now = new Date(), band = Math.max(36, Math.round(h * 0.07));
+          g.fillStyle = "rgba(0,0,0,.62)"; g.fillRect(0, h - band, w, band); g.fillStyle = "#fff"; g.font = "bold " + Math.round(band * 0.38) + "px sans-serif"; g.textBaseline = "middle";
+          g.fillText((kind === "before" ? "Before " : "After ") + n + "  |  " + sp.property + "  |  " + fmt(now), Math.round(band * 0.3), h - band / 2);
+          c.toBlob(function(blob){
+            c.width = c.height = 0;
+            var x = { url: URL.createObjectURL(blob), stampedAt: now.toISOString(), saved: false };
+            photos[kind][n - 1] = x; tiles(kind); upd(); send(kind, n, x, blob, takenAt);
+          }, "image/jpeg", 0.72);
+        });
+      }).catch(function(){ photos[kind][n - 1] = { error: "That photo could not be read. Tap to take it again." }; tiles(kind); upd(); });
+    }
+    function send(kind, n, x, blob, takenAt){
+      busy++; upd();
+      call("spring-upload-url", { kind: kind, n: n }).then(function(j){
+        return fetch(j.signedUrl, { method:"PUT", headers:{ "content-type":"image/jpeg" }, body: blob }).then(function(r){
+          if(!r.ok) throw new Error("upload");
+          return call("spring-save-photo", { kind: kind, n: n, path: j.path, stampedAt: x.stampedAt, takenAt: takenAt ? takenAt.toISOString() : null });
+        });
+      }).then(function(){ x.saved = true; x.error = null; })
+        .catch(function(){ x.error = "Not sent yet. Check your signal and tap to take it again."; })
+        .then(function(){ busy--; if(photos[kind][n - 1] === x) tiles(kind); upd(); });
+    }
+    function upd(){
+      var go = $("spsend"); if(!go || !sp) return;
+      var all = [], left = 0;
+      sp.checklist.forEach(function(sec){
+        var n = 0; sec.items.forEach(function(it){
+          var v = ticks[it.id], li = box.querySelector('li[data-id="' + it.id + '"]');
+          if(li){ li.classList.toggle("done", v === "done"); li.classList.toggle("na", v === "na"); li.querySelector(".box").textContent = v === "done" ? "✓" : (v === "na" ? "N/A" : ""); }
+          if(v) n++; else left++; all.push(it);
+        });
+        var c = box.querySelector('section[data-sec="' + sec.id + '"] .secount'); if(c){ c.textContent = n + " / " + sec.items.length; c.classList.toggle("ok", n === sec.items.length); }
+      });
+      var nb = photos.before.filter(function(x){ return x && x.saved; }).length, na = photos.after.filter(function(x){ return x && x.saved; }).length;
+      $("spc_before").textContent = nb ? nb + " sent" : ""; $("spc_after").textContent = na ? na + " sent" : "";
+      var bits = [];
+      if(!nb) bits.push("a before photo"); if(left) bits.push(left + " checklist item" + (left > 1 ? "s" : "")); if(!na) bits.push("an after photo");
+      go.disabled = !!bits.length || busy > 0;
+      var m = $("spmsg"); if(m && !/err/.test(m.className)) m.textContent = busy ? "Photos sending..." : (bits.length ? "Still to do: " + bits.join(", ") + "." : "All done. Tap Send when you're ready.");
+    }
+  }
   load();
   if(FROM_LIST) $("back").hidden = false;
   function obNote(){
@@ -1632,7 +1817,9 @@ window.PHH_CHECKLIST = {
   window.addEventListener("online", kick);
   document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible") kick(); });
   setInterval(kick, 20000);
-  if(PICK){
+  if(SPRING_ID && API){
+    springFlow();
+  } else if(PICK){
     onOutbox = obNote;
     pick();
     sendOutbox();

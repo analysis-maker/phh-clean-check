@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261106065530"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261106070301"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -156,14 +156,16 @@ li.na .nabtn{color:var(--ink);background:var(--offset)}
 /* Spring clean (5 Nov 2026): its own item in the list and its own screen (?spring=<id>) */
 .tag.sp{color:#5c4300;background:#fff3c4}
 #springsec .sechead h2{font-size:1rem}
-/* Coming up (6 Nov 2026, Milly): read-only week strip of the housekeeper's next 7 days of cleans */
+/* Coming up (6 Nov 2026, Milly): read-only 4-week calendar of the housekeeper's cleans, Monday to Sunday rows */
 #comingsec .sechead h2{font-size:1rem}
-.cstrip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:8px 0 10px}
-.cday{font:inherit;border:2px solid var(--line);border-radius:var(--radius-md);background:var(--surface);color:var(--ink);padding:6px 0;text-align:center;cursor:pointer;min-height:58px}
-.cday .dw{display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;color:var(--muted)}
-.cday .dn{display:block;font-size:1.05rem;font-weight:700;font-variant-numeric:tabular-nums}
+.cstrip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:8px 0 10px}
+.cwh{font-size:.68rem;font-weight:700;text-transform:uppercase;color:var(--muted);text-align:center;padding-bottom:2px}
+.cday{font:inherit;border:2px solid var(--line);border-radius:var(--radius-md);background:var(--surface);color:var(--ink);padding:4px 0;text-align:center;cursor:pointer;min-height:50px}
+.cday .dm{display:block;font-size:.62rem;font-weight:700;text-transform:uppercase;color:var(--muted);line-height:1.1}
+.cday .dn{display:block;font-size:1rem;font-weight:700;font-variant-numeric:tabular-nums}
 .cday .dc{display:block;font-size:.78rem;font-weight:700;color:var(--teal);min-height:1.1em}
 .cday.none{opacity:.45;cursor:default}
+.cday.out{border-color:transparent;background:transparent;opacity:.35;cursor:default}
 .cday.on{border-color:var(--teal);background:var(--teal-hl)}
 .clist li{padding:12px 14px;border-top:1px solid var(--divider)}
 .clist li:first-child{border-top:0}
@@ -1580,7 +1582,8 @@ window.PHH_CHECKLIST = {
         li.appendChild(b); ul.appendChild(li);
       });
     }
-    /* Coming up (6 Nov 2026, Milly): read-only week strip of the housekeeper's cleans from tomorrow to 7 days ahead.
+    /* Coming up (6 Nov 2026, Milly): read-only 4-week calendar of the housekeeper's cleans, tomorrow to 28 days ahead.
+       Rows run Monday to Sunday; days before tomorrow or after 28 days show faint. Tap a day to list its properties.
        Database lookup qa_coming_up (housekeeper and team codes only, same wrong-code lockout as qa_clean_guests).
        Nothing here opens a clean: the checklist and entry codes still open from the day before. */
     function showComing(code){
@@ -1591,26 +1594,33 @@ window.PHH_CHECKLIST = {
         .then(function(j){
           if(!signedIn || !j || !Array.isArray(j.cleans) || !j.cleans.length){ sec.hidden = true; return; }
           var byDay = {}; j.cleans.forEach(function(c){ (byDay[c.date] = byDay[c.date] || []).push(c.property); });
-          var days = []; for(var i = 1; i <= 7; i++) days.push(todayYmd(i));
+          var start = todayYmd(1), end = todayYmd(28);
+          var dow = function(ymd){ return (new Date(ymd + "T12:00:00Z").getUTCDay() + 6) % 7; }; /* Monday = 0 */
+          var from = addDays(todayYmd(0), -dow(todayYmd(0))), to = addDays(end, 6 - dow(end));
           var strip = $("cstrip"), list = $("clist"), first = "";
           strip.innerHTML = "";
+          ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(function(w){ var h = document.createElement("span"); h.className = "cwh"; h.setAttribute("aria-hidden", "true"); h.textContent = w; strip.appendChild(h); });
           function pickDay(ymd){
-            Array.prototype.forEach.call(strip.children, function(b){ b.classList.toggle("on", b.getAttribute("data-day") === ymd); b.setAttribute("aria-pressed", b.getAttribute("data-day") === ymd ? "true" : "false"); });
+            Array.prototype.forEach.call(strip.querySelectorAll("button.cday"), function(b){ var on = b.getAttribute("data-day") === ymd; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
             list.innerHTML = "";
             var h = document.createElement("li"); h.className = "ch"; h.textContent = dayLabel(ymd); list.appendChild(h);
             (byDay[ymd] || []).sort().forEach(function(p){ var li = document.createElement("li"); li.textContent = roomFirst(p); list.appendChild(li); });
           }
-          days.forEach(function(ymd){
-            var d = new Date(ymd + "T12:00:00Z"), n = (byDay[ymd] || []).length;
-            var b = document.createElement("button"); b.type = "button"; b.className = "cday" + (n ? "" : " none"); b.setAttribute("data-day", ymd);
-            b.innerHTML = '<span class="dw"></span><span class="dn"></span><span class="dc"></span>';
-            b.querySelector(".dw").textContent = d.toLocaleDateString("en-AU", { timeZone:"UTC", weekday:"short" });
+          for(var ymd = from; ymd <= to; ymd = addDays(ymd, 1)){
+            var d = new Date(ymd + "T12:00:00Z"), n = (byDay[ymd] || []).length, inRange = ymd >= start && ymd <= end;
+            var b = document.createElement(inRange ? "button" : "span");
+            b.className = "cday" + (!inRange ? " out" : n ? "" : " none");
+            b.innerHTML = '<span class="dm"></span><span class="dn"></span><span class="dc"></span>';
+            if(d.getUTCDate() === 1 || ymd === start) b.querySelector(".dm").textContent = d.toLocaleDateString("en-AU", { timeZone:"UTC", month:"short" });
             b.querySelector(".dn").textContent = String(d.getUTCDate());
-            b.querySelector(".dc").textContent = n ? String(n) : "";
-            b.setAttribute("aria-label", dayLabel(ymd) + ": " + (n ? n + (n === 1 ? " clean" : " cleans") : "no cleans"));
-            if(n){ if(!first) first = ymd; b.addEventListener("click", function(){ pickDay(ymd); }); } else b.disabled = true;
+            if(inRange){
+              b.type = "button"; b.setAttribute("data-day", ymd);
+              b.querySelector(".dc").textContent = n ? String(n) : "";
+              b.setAttribute("aria-label", dayLabel(ymd) + ": " + (n ? n + (n === 1 ? " clean" : " cleans") : "no cleans"));
+              if(n){ if(!first) first = ymd; (function(day){ b.addEventListener("click", function(){ pickDay(day); }); })(ymd); } else b.disabled = true;
+            } else b.setAttribute("aria-hidden", "true");
             strip.appendChild(b);
-          });
+          }
           sec.hidden = false; pickDay(first);
         }).catch(function(){ sec.hidden = true; });
     }

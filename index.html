@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261106070301"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261106071450"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -156,7 +156,7 @@ li.na .nabtn{color:var(--ink);background:var(--offset)}
 /* Spring clean (5 Nov 2026): its own item in the list and its own screen (?spring=<id>) */
 .tag.sp{color:#5c4300;background:#fff3c4}
 #springsec .sechead h2{font-size:1rem}
-/* Coming up (6 Nov 2026, Milly): read-only 4-week calendar of the housekeeper's cleans, Monday to Sunday rows */
+/* Coming up (6 Nov 2026, Milly): read-only month calendar of the housekeeper's cleans, a year ahead, Monday to Sunday rows */
 #comingsec .sechead h2{font-size:1rem}
 .cstrip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:8px 0 10px}
 .cwh{font-size:.68rem;font-weight:700;text-transform:uppercase;color:var(--muted);text-align:center;padding-bottom:2px}
@@ -167,6 +167,11 @@ li.na .nabtn{color:var(--ink);background:var(--offset)}
 .cday.none{opacity:.45;cursor:default}
 .cday.out{border-color:transparent;background:transparent;opacity:.35;cursor:default}
 .cday.on{border-color:var(--teal);background:var(--teal-hl)}
+.cmonth{display:flex;align-items:center;gap:8px;margin-top:8px}
+.cmlabel{flex:1;text-align:center}
+.cmlabel b{display:block;font-size:1rem}
+.cmlabel span{display:block;font-size:.8rem;color:var(--muted)}
+.cmonth .dbtn:disabled{opacity:.35;cursor:default}
 .clist li{padding:12px 14px;border-top:1px solid var(--divider)}
 .clist li:first-child{border-top:0}
 .clist .ch{font-weight:700;color:var(--muted);font-size:.85rem}
@@ -328,6 +333,11 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
   <section class="sec" id="springsec" hidden><div class="sechead"><h2>Spring clean</h2></div><ul class="items" id="springlist"></ul></section>
   <section class="sec" id="comingsec" hidden>
     <div class="sechead"><h2>Coming up</h2></div>
+    <div class="cmonth">
+      <button class="dbtn" id="cprev" type="button" aria-label="Previous month">&lsaquo;</button>
+      <div class="cmlabel"><b id="cmname"></b><span id="cmcount"></span></div>
+      <button class="dbtn" id="cnext" type="button" aria-label="Next month">&rsaquo;</button>
+    </div>
     <div class="cstrip" id="cstrip"></div>
     <ul class="items clist" id="clist"></ul>
     <p class="note">As booked now, so it can change. Your full calendar is in HomHero Cleaner.</p>
@@ -1582,10 +1592,10 @@ window.PHH_CHECKLIST = {
         li.appendChild(b); ul.appendChild(li);
       });
     }
-    /* Coming up (6 Nov 2026, Milly): read-only 4-week calendar of the housekeeper's cleans, tomorrow to 28 days ahead.
-       Rows run Monday to Sunday; days before tomorrow or after 28 days show faint. Tap a day to list its properties.
-       Database lookup qa_coming_up (housekeeper and team codes only, same wrong-code lockout as qa_clean_guests).
-       Nothing here opens a clean: the checklist and entry codes still open from the day before. */
+    /* Coming up (6 Nov 2026, Milly; a year ahead, Ian): read-only month calendar of the housekeeper's cleans, tomorrow to
+       365 days ahead. One month at a time with arrows; rows run Monday to Sunday; days outside the window show faint.
+       Tap a day to list its properties. Database lookup qa_coming_up (housekeeper and team codes only, same wrong-code
+       lockout as qa_clean_guests). Nothing here opens a clean: the checklist and entry codes still open from the day before. */
     function showComing(code){
       var sec = $("comingsec"); if(!sec) return;
       fetch("https://rxhpnowszmetjxbwylil" + ".supabase.co/rest/v1/rpc/qa_coming_up", { method:"POST",
@@ -1594,34 +1604,48 @@ window.PHH_CHECKLIST = {
         .then(function(j){
           if(!signedIn || !j || !Array.isArray(j.cleans) || !j.cleans.length){ sec.hidden = true; return; }
           var byDay = {}; j.cleans.forEach(function(c){ (byDay[c.date] = byDay[c.date] || []).push(c.property); });
-          var start = todayYmd(1), end = todayYmd(28);
+          var start = todayYmd(1), end = todayYmd(365);
+          var firstMonth = todayYmd(0).slice(0, 7), lastMonth = end.slice(0, 7);
           var dow = function(ymd){ return (new Date(ymd + "T12:00:00Z").getUTCDay() + 6) % 7; }; /* Monday = 0 */
-          var from = addDays(todayYmd(0), -dow(todayYmd(0))), to = addDays(end, 6 - dow(end));
-          var strip = $("cstrip"), list = $("clist"), first = "";
-          strip.innerHTML = "";
-          ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(function(w){ var h = document.createElement("span"); h.className = "cwh"; h.setAttribute("aria-hidden", "true"); h.textContent = w; strip.appendChild(h); });
+          var addMonth = function(ym, n){ var d = new Date(ym + "-01T12:00:00Z"); d.setUTCMonth(d.getUTCMonth() + n); return d.toISOString().slice(0, 7); };
+          var strip = $("cstrip"), list = $("clist");
           function pickDay(ymd){
             Array.prototype.forEach.call(strip.querySelectorAll("button.cday"), function(b){ var on = b.getAttribute("data-day") === ymd; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
             list.innerHTML = "";
             var h = document.createElement("li"); h.className = "ch"; h.textContent = dayLabel(ymd); list.appendChild(h);
             (byDay[ymd] || []).sort().forEach(function(p){ var li = document.createElement("li"); li.textContent = roomFirst(p); list.appendChild(li); });
           }
-          for(var ymd = from; ymd <= to; ymd = addDays(ymd, 1)){
-            var d = new Date(ymd + "T12:00:00Z"), n = (byDay[ymd] || []).length, inRange = ymd >= start && ymd <= end;
-            var b = document.createElement(inRange ? "button" : "span");
-            b.className = "cday" + (!inRange ? " out" : n ? "" : " none");
-            b.innerHTML = '<span class="dm"></span><span class="dn"></span><span class="dc"></span>';
-            if(d.getUTCDate() === 1 || ymd === start) b.querySelector(".dm").textContent = d.toLocaleDateString("en-AU", { timeZone:"UTC", month:"short" });
-            b.querySelector(".dn").textContent = String(d.getUTCDate());
-            if(inRange){
-              b.type = "button"; b.setAttribute("data-day", ymd);
-              b.querySelector(".dc").textContent = n ? String(n) : "";
-              b.setAttribute("aria-label", dayLabel(ymd) + ": " + (n ? n + (n === 1 ? " clean" : " cleans") : "no cleans"));
-              if(n){ if(!first) first = ymd; (function(day){ b.addEventListener("click", function(){ pickDay(day); }); })(ymd); } else b.disabled = true;
-            } else b.setAttribute("aria-hidden", "true");
-            strip.appendChild(b);
+          function showMonth(ym){
+            showComing.month = ym;
+            $("cmname").textContent = new Date(ym + "-01T12:00:00Z").toLocaleDateString("en-AU", { timeZone:"UTC", month:"long", year:"numeric" });
+            $("cprev").disabled = ym <= firstMonth; $("cnext").disabled = ym >= lastMonth;
+            strip.innerHTML = "";
+            ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(function(w){ var h = document.createElement("span"); h.className = "cwh"; h.setAttribute("aria-hidden", "true"); h.textContent = w; strip.appendChild(h); });
+            var first = ym + "-01", last = addDays(addMonth(ym, 1) + "-01", -1), pick = "", total = 0;
+            for(var k = 0; k < dow(first); k++){ var e = document.createElement("span"); e.className = "cday out"; e.setAttribute("aria-hidden", "true"); strip.appendChild(e); }
+            for(var ymd = first; ymd <= last; ymd = addDays(ymd, 1)){
+              var n = (byDay[ymd] || []).length, inRange = ymd >= start && ymd <= end;
+              var b = document.createElement(inRange ? "button" : "span");
+              b.className = "cday" + (!inRange ? " out" : n ? "" : " none");
+              b.innerHTML = '<span class="dn"></span><span class="dc"></span>';
+              b.querySelector(".dn").textContent = String(Number(ymd.slice(8)));
+              if(inRange){
+                b.type = "button"; b.setAttribute("data-day", ymd);
+                b.querySelector(".dc").textContent = n ? String(n) : "";
+                b.setAttribute("aria-label", dayLabel(ymd) + ": " + (n ? n + (n === 1 ? " clean" : " cleans") : "no cleans"));
+                if(n){ total += n; if(!pick) pick = ymd; (function(day){ b.addEventListener("click", function(){ pickDay(day); }); })(ymd); } else b.disabled = true;
+              } else b.setAttribute("aria-hidden", "true");
+              strip.appendChild(b);
+            }
+            $("cmcount").textContent = total ? total + (total === 1 ? " clean" : " cleans") : "No cleans booked for you yet";
+            if(pick) pickDay(pick); else list.innerHTML = "";
+            list.hidden = !pick;
           }
-          sec.hidden = false; pickDay(first);
+          if(!showComing.wired){ showComing.wired = true;
+            $("cprev").addEventListener("click", function(){ if(showComing.go) showComing.go(-1); });
+            $("cnext").addEventListener("click", function(){ if(showComing.go) showComing.go(1); }); }
+          showComing.go = function(n){ var m = addMonth(showComing.month, n); if(m >= firstMonth && m <= lastMonth) showMonth(m); };
+          sec.hidden = false; showMonth(firstMonth);
         }).catch(function(){ sec.hidden = true; });
     }
     function show(list){

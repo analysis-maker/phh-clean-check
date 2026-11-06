@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261106071450"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261106072201"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -288,6 +288,11 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
 .badgerow .topback{margin:0}
 .glbox{margin-top:14px;padding:10px 14px;border-radius:var(--radius-md);background:#e8f6ee;border:1px solid #9fd3b3;font-size:.92rem;color:var(--ink)}
 .pickrow .sub.gl{color:#1d7a45;font-weight:600}
+/* Compact (6 Nov 2026, Ian, STAGING trial): everything 15% smaller so the bottom of the clean screen is less cramped.
+   The camera screen keeps full size. Text boxes stay 16px on screen so iPhone does not zoom in when typing. */
+html{zoom:.85}
+#camov{zoom:1.1765}
+input,textarea,select{font-size:19px}
 </style>
 
 <nav class="nav"><div class="wrap"><img src="../logo.png" alt="Professional Holiday Homes" width="183" height="34" fetchpriority="high"><div class="me" id="me" hidden><span id="mename"></span><a href="#" id="signout">Sign out</a></div></div></nav>

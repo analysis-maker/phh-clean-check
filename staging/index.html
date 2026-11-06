@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261105232646"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261106064147"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -156,6 +156,18 @@ li.na .nabtn{color:var(--ink);background:var(--offset)}
 /* Spring clean (5 Nov 2026): its own item in the list and its own screen (?spring=<id>) */
 .tag.sp{color:#5c4300;background:#fff3c4}
 #springsec .sechead h2{font-size:1rem}
+/* Coming up (6 Nov 2026, Milly): read-only week strip of the housekeeper's next 7 days of cleans */
+#comingsec .sechead h2{font-size:1rem}
+.cstrip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:8px 0 10px}
+.cday{font:inherit;border:2px solid var(--line);border-radius:var(--radius-md);background:var(--surface);color:var(--ink);padding:6px 0;text-align:center;cursor:pointer;min-height:58px}
+.cday .dw{display:block;font-size:.7rem;font-weight:700;text-transform:uppercase;color:var(--muted)}
+.cday .dn{display:block;font-size:1.05rem;font-weight:700;font-variant-numeric:tabular-nums}
+.cday .dc{display:block;font-size:.78rem;font-weight:700;color:var(--teal);min-height:1.1em}
+.cday.none{opacity:.45;cursor:default}
+.cday.on{border-color:var(--teal);background:var(--teal-hl)}
+.clist li{padding:12px 14px;border-top:1px solid var(--divider)}
+.clist li:first-child{border-top:0}
+.clist .ch{font-weight:700;color:var(--muted);font-size:.85rem}
 .spphotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:10px}
 .spphotos .ph{min-height:0}
 .spphotos .ph.add .shot{font-weight:700}
@@ -312,6 +324,12 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
   </div>
   <section class="sec"><ul class="items" id="picklist" hidden></ul></section>
   <section class="sec" id="springsec" hidden><div class="sechead"><h2>Spring clean</h2></div><ul class="items" id="springlist"></ul></section>
+  <section class="sec" id="comingsec" hidden>
+    <div class="sechead"><h2>Coming up</h2></div>
+    <div class="cstrip" id="cstrip"></div>
+    <ul class="items clist" id="clist"></ul>
+    <p class="note">As booked now, so it can change. Your full calendar is in HomHero Cleaner.</p>
+  </section>
   <p class="note" id="pickmsg"></p>
   <p class="note" id="obnote" hidden></p>
   <div class="hktools" id="hktools" hidden>
@@ -1562,6 +1580,40 @@ window.PHH_CHECKLIST = {
         li.appendChild(b); ul.appendChild(li);
       });
     }
+    /* Coming up (6 Nov 2026, Milly): read-only week strip of the housekeeper's cleans from tomorrow to 7 days ahead.
+       Database lookup qa_coming_up (housekeeper and team codes only, same wrong-code lockout as qa_clean_guests).
+       Nothing here opens a clean: the checklist and entry codes still open from the day before. */
+    function showComing(code){
+      var sec = $("comingsec"); if(!sec) return;
+      fetch("https://rxhpnowszmetjxbwylil" + ".supabase.co/rest/v1/rpc/qa_coming_up", { method:"POST",
+        headers:{ "content-type":"application/json", "apikey":"sb_publishable_JaFEZTFufkk0hrminCZdXQ_fQFJ0kLb" }, body: JSON.stringify({ p_code: code }) })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(j){
+          if(!signedIn || !j || !Array.isArray(j.cleans) || !j.cleans.length){ sec.hidden = true; return; }
+          var byDay = {}; j.cleans.forEach(function(c){ (byDay[c.date] = byDay[c.date] || []).push(c.property); });
+          var days = []; for(var i = 1; i <= 7; i++) days.push(todayYmd(i));
+          var strip = $("cstrip"), list = $("clist"), first = "";
+          strip.innerHTML = "";
+          function pickDay(ymd){
+            Array.prototype.forEach.call(strip.children, function(b){ b.classList.toggle("on", b.getAttribute("data-day") === ymd); b.setAttribute("aria-pressed", b.getAttribute("data-day") === ymd ? "true" : "false"); });
+            list.innerHTML = "";
+            var h = document.createElement("li"); h.className = "ch"; h.textContent = dayLabel(ymd); list.appendChild(h);
+            (byDay[ymd] || []).sort().forEach(function(p){ var li = document.createElement("li"); li.textContent = roomFirst(p); list.appendChild(li); });
+          }
+          days.forEach(function(ymd){
+            var d = new Date(ymd + "T12:00:00Z"), n = (byDay[ymd] || []).length;
+            var b = document.createElement("button"); b.type = "button"; b.className = "cday" + (n ? "" : " none"); b.setAttribute("data-day", ymd);
+            b.innerHTML = '<span class="dw"></span><span class="dn"></span><span class="dc"></span>';
+            b.querySelector(".dw").textContent = d.toLocaleDateString("en-AU", { timeZone:"UTC", weekday:"short" });
+            b.querySelector(".dn").textContent = String(d.getUTCDate());
+            b.querySelector(".dc").textContent = n ? String(n) : "";
+            b.setAttribute("aria-label", dayLabel(ymd) + ": " + (n ? n + (n === 1 ? " clean" : " cleans") : "no cleans"));
+            if(n){ if(!first) first = ymd; b.addEventListener("click", function(){ pickDay(ymd); }); } else b.disabled = true;
+            strip.appendChild(b);
+          });
+          sec.hidden = false; pickDay(first);
+        }).catch(function(){ sec.hidden = true; });
+    }
     function show(list){
       var ul = $("picklist"); ul.innerHTML = "";
       list.forEach(function(c){
@@ -1595,6 +1647,7 @@ window.PHH_CHECKLIST = {
       if($("daybar")) $("daybar").hidden = true; officeDay = ""; try{ sessionStorage.removeItem("phh-office-day"); }catch(x){}
       if($("pushbox")) $("pushbox").hidden = true;
       if($("springsec")) $("springsec").hidden = true;
+      if($("comingsec")) $("comingsec").hidden = true;
       if($("hktools")) $("hktools").hidden = true;
       if($("phhmsgs")){ $("phhmsgs").hidden = true; $("phhmsgs").innerHTML = ""; }
       $("pickh1").textContent = "Today's cleans"; $("pickmeta").textContent = "Enter your code to see your cleans for today.";
@@ -1650,6 +1703,7 @@ window.PHH_CHECKLIST = {
           office = !!j.office; all = j.cleans || [];
           if(!office) fetch(SPRING_API + "/spring-today", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
             .then(function(r){ return r.ok ? r.json() : null; }).then(function(sj){ var l = (sj && sj.springCleans) || []; showSpring(l); if(l.length && !all.length) msg(""); }).catch(function(){});
+          if(!office) showComing(code);
           showMe(office ? "PHH office" : String(j.cleaner || "").split(" ")[0]);
           try{ if(office) localStorage.removeItem("phh-cleaner-name"); else localStorage.setItem("phh-cleaner-name", String(j.cleaner || "")); }catch(e){}
           $("pickh1").textContent = office ? "All cleans today" : "Hi " + String(j.cleaner || "").split(" ")[0];

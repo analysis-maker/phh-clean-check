@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261107014134"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261107022728"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -157,6 +157,10 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
 .st-sp-waiting{background:#fff3c4;color:var(--pend-ink)}
 .st-sp-done{background:var(--ok);color:var(--ok-ink)}
 .st-sp-cancelled{background:var(--idle);color:var(--idle-ink)}
+.st-cons-ordered{background:var(--idle);color:var(--idle-ink)}
+.st-cons-ready{background:var(--pend);color:var(--pend-ink)}
+.st-cons-late{background:var(--miss);color:var(--miss-ink)}
+.st-cons-got{background:var(--ok);color:var(--ok-ink)}
 .spblk{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
 .spblk input[type=text]{width:9em;border:1px solid #c8cfd3;border-radius:4px;padding:6px 8px;min-height:32px;font:inherit}
 .spblk label{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--ink)}
@@ -341,6 +345,7 @@ html,body{overflow-x:clip}
   <button class="tab" role="tab" data-tab="hk" aria-selected="false">Housekeepers</button>
   <button class="tab" role="tab" data-tab="props" aria-selected="false">Properties</button>
   <button class="tab" role="tab" data-tab="spring" aria-selected="false">Spring cleans<span class="n" id="springN" hidden></span></button>
+  <button class="tab" role="tab" data-tab="cons" aria-selected="false">Consumables<span class="n" id="consN" hidden></span></button>
 </nav>
 
 <main>
@@ -448,6 +453,19 @@ html,body{overflow-x:clip}
       </table>
     </div>
     <p class="msg" id="spListMsg"></p>
+  </section>
+
+  <!-- Consumables (7 Nov 2026, staging): Process Street consumables orders, labelled by CST, collected by the housekeeper -->
+  <section id="consView" hidden>
+    <div class="toprow"><h2>Consumables orders, last 30 days</h2></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Status</th><th>Property</th><th>Housekeeper</th><th>Ordered</th><th>Bags labelled</th><th>Phone ping</th><th>Collected</th></tr></thead>
+        <tbody id="consRows"></tbody>
+      </table>
+    </div>
+    <p class="msg" id="consMsg"></p>
+    <p class="hint">From the Process Street consumables order form. When CST ticks Labeling Bags, the housekeeper gets a phone notification (if they have them on) and a card in the app until they tap Got them.</p>
   </section>
 
   <!-- Housekeepers / Properties -->
@@ -677,7 +695,7 @@ html,body{overflow-x:clip}
   if(!/^\d{4}-\d{2}-\d{2}$/.test(state.date)) state.date = sydToday();
   /* Deep links (Ask PHH): ?tab=cleans|attention|hk|props &status= &who= &q= &open=<booking> */
   var LINK = { tab: params.get("tab") || "", open: params.get("open") || "" };
-  if(["cleans","attention","hk","props","spring"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
+  if(["cleans","attention","hk","props","spring","cons"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
   if(["checked","missing","cleaned","waiting"].indexOf(params.get("status") || "") >= 0) state.status = params.get("status");
   state.who = (params.get("who") || "").slice(0, 120); state.q = (params.get("q") || "").slice(0, 120);
   if(/^[A-Za-z0-9-]{3,40}$/.test(LINK.open)) state.open[LINK.open] = true; else LINK.open = "";
@@ -1156,14 +1174,49 @@ html,body{overflow-x:clip}
   });
   $("spOn").value = sydToday(); $("spOn").max = sydToday(); $("spFrom").min = sydToday();
 
-  var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans" };
+  /* Consumables tab (7 Nov 2026, staging). rpc qa_consumables_office: staff codes (not maintenance) or the office code. */
+  function consLoad(render){
+    return fetch("https://rxhpnowszmetjxbwylil.supabase.co/rest/v1/rpc/qa_consumables_office", { method:"POST",
+      headers:{ "content-type":"application/json", "apikey":"sb_publishable_JaFEZTFufkk0hrminCZdXQ_fQFJ0kLb" }, body: JSON.stringify({ p_code: CODE, p_test: TEST }) })
+      .then(function(r){ if(!r.ok) throw new Error("Could not load consumables. Try again in a minute."); return r.json(); })
+      .then(function(j){
+        var rows = (j && j.rows) || [];
+        var waiting = rows.filter(function(r){ return r.labelledAt && !r.pickedUpAt; }).length;
+        $("consN").textContent = waiting; $("consN").hidden = !waiting;
+        if(render) consRender(rows);
+      });
+  }
+  function consWhen(t){ return t ? new Date(t).toLocaleString("en-AU", { timeZone:"Australia/Sydney", weekday:"short", day:"numeric", month:"short", hour:"numeric", minute:"2-digit" }).replace(/\s?(am|pm)/i, function(x){ return x.trim().toLowerCase(); }) : ""; }
+  function consRender(rows){
+    var body = $("consRows"); body.innerHTML = "";
+    rows.forEach(function(r){
+      var days = r.labelledAt ? Math.floor((Date.now() - Date.parse(r.labelledAt)) / 86400000) : 0;
+      var s = r.pickedUpAt ? ["Collected", "got"] : r.labelledAt ? (days >= 3 ? ["Waiting " + days + " days", "late"] : ["Ready", "ready"]) : ["Ordered", "ordered"];
+      var tr = el("tr", "r"); tr.style.cursor = "default";
+      var st = el("td", "st"); st.appendChild(el("div", "stc st-cons-" + s[1], s[0])); tr.appendChild(st);
+      var cell = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
+      var pc = cell("Property", "", "col-prop"); pc.appendChild(el("span", "prop", r.property)); if(r.test) pc.appendChild(el("span", "sub", " (test)"));
+      var items = (r.items || []).map(function(x){ return String(x).replace(/\s*-\s*\$[\d.]+\s*$/, ""); });
+      if(items.length){ pc.appendChild(el("br")); pc.appendChild(el("span", "sub", items.length + (items.length === 1 ? " item: " : " items: ") + items.slice(0, 6).join(", ") + (items.length > 6 ? "..." : ""))); }
+      var hc = cell("Housekeeper", r.housekeeper || ""); if(!r.matched){ hc.appendChild(el("br")); hc.appendChild(el("span", "sub", "Not matched to a Clean Check housekeeper, no ping")); }
+      cell("Ordered", consWhen(r.orderedAt), "nowrap");
+      cell("Bags labelled", r.labelledAt ? consWhen(r.labelledAt) : "Not yet", "nowrap");
+      cell("Phone ping", r.pingAt ? consWhen(r.pingAt) : (r.pingDryAt ? "Test run only" : (r.labelledAt ? "None" : "")), "nowrap");
+      cell("Collected", r.pickedUpAt ? consWhen(r.pickedUpAt) + (r.pickedUpBy ? ", " + r.pickedUpBy : "") : "", "nowrap");
+      body.appendChild(tr);
+    });
+    $("consMsg").className = "msg"; $("consMsg").textContent = rows.length ? "" : "No consumables orders in the last 30 days.";
+  }
+
+  var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables" };
   function setTab(t){
     state.tab = t;
     document.querySelectorAll(".tab").forEach(function(b){ b.setAttribute("aria-selected", String(b.getAttribute("data-tab") === t)); });
     $("sectionTitle").textContent = TITLES[t];
-    var day = t === "cleans" || t === "attention", spring = t === "spring";
-    $("dayView").hidden = !day; $("insView").hidden = day || spring; $("springView").hidden = !spring;
-    if(spring) spLoad(); else if(day){ if(state.rows.length) renderRows(); } else loadIns();
+    var day = t === "cleans" || t === "attention", spring = t === "spring", cons = t === "cons";
+    $("dayView").hidden = !day; $("insView").hidden = day || spring || cons; $("springView").hidden = !spring; $("consView").hidden = !cons;
+    if(cons){ $("consMsg").className = "msg"; $("consMsg").textContent = "Loading..."; consLoad(true).catch(function(e){ $("consMsg").className = "msg err"; $("consMsg").textContent = e.message; }); }
+    else if(spring) spLoad(); else if(day){ if(state.rows.length) renderRows(); } else loadIns();
   }
   document.querySelectorAll(".tab").forEach(function(b){ b.addEventListener("click", function(){ setTab(b.getAttribute("data-tab")); }); });
 
@@ -1183,6 +1236,7 @@ html,body{overflow-x:clip}
   if(state.tab !== "cleans") setTab(state.tab);
   loadDay();
   /* Waiting-for-approval count on the Spring cleans tab. */
+  if(state.tab !== "cons") consLoad(false).catch(function(){});
   if(state.tab !== "spring") spost("spring-list", TEST ? { includeTest:true } : {}).then(function(j){ SP.rows = j.rows || []; spCount(); }).catch(function(){});
 })();
 </script>

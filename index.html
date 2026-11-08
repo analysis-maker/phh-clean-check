@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261107023957"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108021530"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -568,7 +568,7 @@ window.PHH_CHECKLIST = {
      A clean check in progress stays saved on the phone for that booking. */
   function signOutAll(e){ if(e) e.preventDefault(); try{ ["phh-cleaner-code","phh-cleaner-name","phh-staff-code","phh-owner-code"].forEach(function(k){ localStorage.removeItem(k); }); Object.keys(localStorage).forEach(function(k){ if(k.indexOf("phh-cc-access-") === 0) localStorage.removeItem(k); }); }catch(x){} location.href = location.pathname; }
   /* Saved entry codes are kept 3 days at most. */
-  try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf("phh-cc-access-") === 0){ var c = JSON.parse(localStorage.getItem(k) || "null"); if(!c || Date.now() - c.at > 3 * 86400000) localStorage.removeItem(k); } }); }catch(x){}
+  try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf("phh-cc-access-") === 0){ var c = JSON.parse(localStorage.getItem(k) || "null"); if(!c || Date.now() - c.at > 3 * 86400000) localStorage.removeItem(k); } if(k.indexOf("phh-cc-arrived-") === 0 && Date.now() - (+localStorage.getItem(k) || 0) > 3 * 86400000) localStorage.removeItem(k); }); }catch(x){}
   function showMe(name){ var me = $("me"); if(!me) return; $("mename").textContent = name || ""; me.hidden = false; }
   if($("signout")) $("signout").addEventListener("click", signOutAll);
   (function(){ var c = "", n = ""; try{ c = localStorage.getItem("phh-cleaner-code") || ""; n = localStorage.getItem("phh-cleaner-name") || ""; }catch(e){} if(c) showMe(n ? n.split(" ")[0] : ""); })();
@@ -1406,6 +1406,7 @@ window.PHH_CHECKLIST = {
           if(LIVE){ var xk = state.photos[s.key]; xk.kept = photoPut({ res:RES, k:s.key, blob:blob, label:s.label, stampedAt:xk.stampedAt, takenAt:xk.takenAt, path:null }).catch(function(){}); }
           showPhoto(s, tile, state.photos[s.key]);
           if(LIVE){ upload(s.key); } update();
+          if(LIVE && s.key === "ph_keys") arrivedPing();
         }, "image/jpeg", 0.72);
       }).catch(function(){ photoError(tile, "That photo could not be read. Tap to take it again."); });
     });
@@ -1431,6 +1432,16 @@ window.PHH_CHECKLIST = {
 
   function api(path, body){ return apiAt(RES, TOKEN, path, body); }
 
+  /* Arrival ping (8 Nov, office Today board): when the keys photo is taken, quietly tell the office this clean is in progress.
+     Nothing shows on the phone and nothing is sent to anyone; if there's no signal it tries again with the next photo. */
+  function arrivedPing(){
+    var key = "phh-cc-arrived-" + RES; try{ if(localStorage.getItem(key)) return; }catch(e){}
+    var code = ""; try{ code = localStorage.getItem("phh-cleaner-code") || ""; }catch(e){}
+    if(!code) return;
+    var url = (/-v11$/.test(String(API)) ? OFFICE_API + "-v2" : OFFICE_API) + "/arrived";
+    fetch(url, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code, res: RES, staging: /\/staging\//.test(location.pathname) }) })
+      .then(function(r){ if(r.ok){ try{ localStorage.setItem(key, String(Date.now())); }catch(e){} } }).catch(function(){});
+  }
   function upload(k){
     var x = state.photos[k]; if(!x || x.path || x.sending || !x.blob || completing) return;
     x.sending = true; pending++; update();
@@ -1444,7 +1455,7 @@ window.PHH_CHECKLIST = {
     }).catch(function(){ x.waiting = true; if(state.photos[k] === x) markTile(k); })
       .then(function(){ x.sending = false; pending--; update(); });
   }
-  function sendWaiting(){ if(!LIVE || completing) return; Object.keys(state.photos).forEach(function(k){ var x = state.photos[k]; if(x && !x.path && x.blob) upload(k); }); }
+  function sendWaiting(){ if(LIVE && state.photos.ph_keys) arrivedPing(); if(!LIVE || completing) return; Object.keys(state.photos).forEach(function(k){ var x = state.photos[k]; if(x && !x.path && x.blob) upload(k); }); }
   function markTile(k){
     var t = document.querySelector('.ph[data-id="' + k + '"]'); if(!t) return;
     var x = state.photos[k], cap = t.querySelector(".cap"), w = cap && cap.querySelector(".wait");
@@ -1713,7 +1724,7 @@ window.PHH_CHECKLIST = {
           /* Staff: office view, or the maintenance dashboard for a maintenance code (staging asks office-api which one). */
           return fetch(OFFICE_API + "-v2/login", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
             .then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
-            .then(function(v){ var mv = v && v.view === "maintenance"; try{ localStorage.setItem("phh-staff-view", mv ? "maintenance" : "office"); }catch(e){} location.href = mv ? "maintenance.html?v=1030d" : "office.html?v=1107c"; });
+            .then(function(v){ var mv = v && v.view === "maintenance"; try{ localStorage.setItem("phh-staff-view", mv ? "maintenance" : "office"); }catch(e){} location.href = mv ? "maintenance.html?v=1108b" : "office.html?v=1108b"; });
         })
         .catch(function(e){ reset(e.message, true); });
     }
@@ -1818,7 +1829,7 @@ window.PHH_CHECKLIST = {
     $("switchcode").addEventListener("click", function(e){ e.preventDefault(); $("code").value = ""; reset(""); });
     var staffSaved = ""; try{ staffSaved = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
     var staffView = ""; try{ staffView = localStorage.getItem("phh-staff-view") || ""; }catch(e){}
-    if(staffSaved){ location.replace(staffView === "maintenance" ? "maintenance.html?v=1030d" : "office.html?v=1107c"); return; }
+    if(staffSaved){ location.replace(staffView === "maintenance" ? "maintenance.html?v=1108b" : "office.html?v=1108b"); return; }
     var ownerSaved = ""; try{ ownerSaved = localStorage.getItem("phh-owner-code") || ""; }catch(e){}
     if(ownerSaved){ location.replace("owner.html"); return; }
     var saved = ""; try{ saved = localStorage.getItem(KEY) || ""; }catch(e){}

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261107023957"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108121447"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -161,6 +161,17 @@ body{padding-block:0 48px}
 @media (hover:hover) and (pointer:fine){.lb-nav{display:block}}
 .lb-nav:disabled{opacity:.25;cursor:default}
 body.lb-open{overflow:hidden}
+/* Batch 3 (staging): not at this property, this property's own items, messages with the housekeeper (office only). */
+li.absent{background:var(--surface-2)}
+li.absent .box{border-color:var(--faint);color:var(--muted);font-size:.5rem}
+li.absent .txt{color:var(--muted)}
+.ownt{color:var(--muted);font-size:.8rem}
+.thr{margin-top:28px;padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.thr .m{margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--surface-2);white-space:pre-wrap;word-break:break-word}
+.thr .m.hk{background:var(--teal-hl)}
+.thr .m b{display:block;font-size:.75rem;color:var(--muted)}
+.thr textarea{width:100%;min-height:70px;margin-top:10px;font:inherit;font-size:1rem;padding:10px;border:1px solid var(--line);border-radius:var(--radius-md);box-sizing:border-box}
+.thr button{margin-top:8px;font:inherit;font-weight:700;padding:10px 16px;border:0;border-radius:var(--radius-md);background:var(--teal);color:#fff;cursor:pointer}
 </style>
 
 <nav class="nav"><div class="wrap"><img src="logo.png" alt="Professional Holiday Homes" width="183" height="34"></div></nav>
@@ -183,6 +194,8 @@ body.lb-open{overflow:hidden}
     <p class="note">Tap a photo to open it, then swipe left or right. Photo links last one hour. Reload this page for fresh links.</p>
   </section>
   <div id="sections"></div>
+  <section class="thr" id="thr" hidden><h2>Messages with the housekeeper</h2><p class="note" style="margin-top:4px">Shows in the housekeeper's app for this clean. They can reply. No notification is sent.</p><div id="thrlist"></div>
+    <textarea id="thrtext" maxlength="1000" placeholder="Write to the housekeeper about this clean" aria-label="Message to the housekeeper"></textarea><button type="button" id="thrsend">Send</button><p class="note" id="thrmsg"></p></section>
 </div>
 <script>
 window.PHH_API = window.PHH_API || "";
@@ -201,7 +214,29 @@ window.PHH_API = window.PHH_API || "";
   function chip(t, warn){ if(OWNER && warn) return; var c = document.createElement("span"); c.className = "chip" + (warn ? " warn" : ""); c.textContent = t; $("sum").appendChild(c); }
   function fail(m){ $("prop").textContent = "Clean check not found"; $("err").hidden = false; $("err").textContent = m; }
   if(!window.PHH_API || !id){ fail("This link is incomplete."); return; }
-  fetch(window.PHH_API + "/view", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ id:id }) })
+  /* Batch 3: office pages send the staff code, so the keys photo location (office only) comes back. */
+  var OFFICE = /^(office|officelist)$/.test(qs.get("from") || ""), SCODE = "";
+  try{ SCODE = OFFICE ? (localStorage.getItem("phh-staff-code") || (qs.get("from") === "officelist" ? localStorage.getItem("phh-cleaner-code") || "" : "")) : ""; }catch(x){}
+  function locText(k){
+    if(!k) return "";
+    if(k.none) return "No location";
+    if(k.distM === null || k.distM === undefined) return "Location saved (no map point for this property yet)";
+    if(k.distM <= Math.max(150, k.acc || 0)) return "At property";
+    return k.distM < 1000 ? k.distM + " m from property" : (Math.round(k.distM / 100) / 10) + " km from property";
+  }
+  function thr(route, body){ body.code = SCODE; return fetch(window.PHH_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) }).then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); }); }
+  function drawThr(j){
+    var host = $("thrlist"); host.innerHTML = "";
+    (j.comments || []).forEach(function(c){ var m = document.createElement("div"); m.className = "m" + (c.kind === "housekeeper" ? " hk" : ""); var b = document.createElement("b"); b.textContent = (c.kind === "office" ? c.name + " (office)" : c.name) + ", " + fmt(c.at); m.appendChild(b); m.appendChild(document.createTextNode(c.text)); host.appendChild(m); });
+    if(!(j.comments || []).length){ var p = document.createElement("p"); p.className = "note"; p.textContent = "No messages yet."; host.appendChild(p); }
+    $("thr").hidden = false;
+  }
+  if(OFFICE && SCODE){
+    thr("thread", { id: id }).then(function(j){ if(j.me === "office") drawThr(j); }).catch(function(){});
+    $("thrsend").addEventListener("click", function(){ var t = $("thrtext").value.trim(); if(!t) return; $("thrsend").disabled = true;
+      thr("thread-post", { id: id, text: t }).then(function(j){ $("thrtext").value = ""; $("thrsend").disabled = false; $("thrmsg").textContent = ""; drawThr(j); }).catch(function(e){ $("thrsend").disabled = false; $("thrmsg").textContent = e.message; }); });
+  }
+  fetch(window.PHH_API + "/view", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(SCODE ? { id:id, code:SCODE } : { id:id }) })
     .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })
     .then(function(j){
       document.title = "Clean check - " + j.property;
@@ -251,7 +286,7 @@ window.PHH_API = window.PHH_API || "";
         var a = document.createElement("a"); a.className = "ph has"; a.target = "_blank"; a.rel = "noopener";
         if(p.url){ a.href = p.url; var im = document.createElement("img"); im.loading = "lazy"; im.alt = p.label; im.src = p.url; a.appendChild(im); }
         var cap = document.createElement("div"); cap.className = "cap"; cap.textContent = p.label;
-        var st = document.createElement("span"); st.className = "stamp"; st.textContent = fmt(p.stampedAt); cap.appendChild(st);
+        var st = document.createElement("span"); st.className = "stamp"; st.textContent = fmt(p.stampedAt) + (j.keysLoc && !OWNER && /^Guest keys/.test(p.label || "") ? ". " + locText(j.keysLoc) : ""); cap.appendChild(st);
         if(p.oldPhoto && !OWNER){ var fl = document.createElement("span"); fl.className = "flag"; fl.textContent = "Photo file is older than 12 hours"; cap.appendChild(fl); }
         if(!p.url){ var f2 = document.createElement("span"); f2.className = "flag"; f2.textContent = "Photo file not found"; cap.appendChild(f2); }
         a.appendChild(cap); $("photos").appendChild(a);
@@ -267,10 +302,12 @@ window.PHH_API = window.PHH_API || "";
         el.querySelector("h2").textContent = sec.title; el.querySelector(".secount").textContent = String(sec.items.length);
         var ul = document.createElement("ul"); ul.className = "items";
         sec.items.forEach(function(it){
-          var li = document.createElement("li"); li.className = "item ro " + (it.status === "na" ? "na" : "done");
+          var li = document.createElement("li"); li.className = "item ro " + (it.status === "absent" ? "absent" : it.status === "na" ? "na" : "done");
           li.innerHTML = '<span class="box" aria-hidden="true"></span><span class="txt"></span>';
-          li.querySelector(".box").textContent = it.status === "na" ? "N/A" : "\u2713";
-          li.querySelector(".txt").textContent = it.text; ul.appendChild(li);
+          li.querySelector(".box").textContent = it.status === "absent" ? "Not here" : it.status === "na" ? "N/A" : "\u2713";
+          li.querySelector(".txt").textContent = it.text + (it.status === "absent" ? " (not at this property)" : "");
+          if(it.own){ var ot = document.createElement("span"); ot.className = "ownt"; ot.textContent = " (this property)"; li.querySelector(".txt").appendChild(ot); }
+          ul.appendChild(li);
         });
         el.appendChild(ul); $("sections").appendChild(el);
       });

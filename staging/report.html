@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#5bbfb5">
+<link rel="icon" type="image/png" sizes="180x180" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<script>window.PHH_REPORT_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/report-api-staging";</script>
+<title>Property report</title>
+<style>
+/* Owner report (Batch 4 item 12, staging 8 Nov 2026). Read only, opened from a link the office made and chose to send.
+   Shows photos and the checklist only. No housekeeper names, scores, AI review, times, location or internal notes. */
+:root{
+  color-scheme:light;
+  --teal:#5bbfb5; --teal-ink:#23807a; --teal-soft:#e6f5f3;
+  --bg:#f4f5f5; --ink:#26323a; --muted:#5d6b73; --faint:#8b979e; --line:#e1e5e7; --line-2:#eef1f2;
+  --ok-ink:#2f5d12; --warn:#b2461d; --warn-soft:#fdece5;
+  --font:"Roboto", "Helvetica Neue", Arial, sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0;overflow-x:clip}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--font)}
+:focus-visible{outline:3px solid #1f6f9a;outline-offset:2px}
+.bar{background:var(--teal);color:#fff;padding:14px 16px;padding-top:max(14px,env(safe-area-inset-top));display:flex;align-items:center;gap:10px;font-weight:500;font-size:17px}
+.bar img{height:26px;width:26px;border-radius:5px;background:#fff;padding:2px}
+main{max-width:900px;margin:0 auto;padding:18px 16px 40px}
+.head{margin-bottom:14px}
+.kicker{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--teal-ink);font-weight:700}
+h1{font-size:26px;font-weight:500;margin:2px 0 4px;line-height:1.2}
+.date{color:var(--muted)}
+.box{background:#fff;border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:14px}
+h2{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--teal-ink)}
+.note{white-space:pre-wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.grid a{display:block;text-decoration:none;color:var(--muted);font-size:13px}
+.grid img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:4px;background:var(--line-2)}
+.grid span{display:block;padding:4px 2px 0}
+h3{font-size:14px;margin:14px 0 6px;font-weight:700}
+h3:first-of-type{margin-top:0}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;gap:10px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line-2)}
+li:last-child{border-bottom:0}
+.tag{flex:0 0 auto;font-size:12px;font-weight:700;border-radius:10px;padding:1px 8px;min-width:58px;text-align:center}
+.t-done,.t-ok{background:#eaf5df;color:var(--ok-ink)}
+.t-na{background:var(--line);color:var(--muted)}
+.t-issue{background:var(--warn-soft);color:var(--warn)}
+.foot{color:var(--faint);font-size:13px;text-align:center;margin-top:20px}
+.test{background:var(--warn-soft);color:var(--warn);border:1px solid #f1c9b8;padding:8px 12px;border-radius:4px;margin-bottom:12px;font-size:13px}
+.msg{background:#fff;border:1px solid var(--line);border-radius:6px;padding:20px;text-align:center;color:var(--muted)}
+@media print{.bar{background:#fff;color:var(--ink)}body{background:#fff}.box{break-inside:avoid}}
+</style>
+</head><body>
+<header class="bar"><img src="icon-180.png" alt="" width="26" height="26">Professional Holiday Homes</header>
+<main>
+  <p class="msg" id="msg">Loading...</p>
+  <div id="rep" hidden>
+    <div class="test" id="test" hidden>Test report. Not a real clean.</div>
+    <div class="head">
+      <div class="kicker" id="kicker"></div>
+      <h1 id="prop"></h1>
+      <div class="date" id="date"></div>
+    </div>
+    <div class="box" id="noteBox" hidden><h2>Note</h2><div class="note" id="note"></div></div>
+    <div class="box" id="phBox" hidden><h2 id="phH">Photos</h2><div id="phWrap"></div></div>
+    <div class="box" id="ckBox" hidden><h2>Checklist</h2><div id="ck"></div></div>
+    <p class="foot" id="foot"></p>
+  </div>
+</main>
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var API = window.PHH_REPORT_API || "";
+  var t = new URLSearchParams(location.search).get("t") || "";
+  function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined && text !== null) e.textContent = text; return e; }
+  function dayStr(d){ return d ? new Date(String(d).slice(0, 10) + "T12:00:00Z").toLocaleDateString("en-AU", { timeZone:"UTC", weekday:"long", day:"numeric", month:"long", year:"numeric" }) : ""; }
+  var TAG = { done:["Done","t-done"], ok:["OK","t-ok"], na:["N/A","t-na"], issue:["Needs attention","t-issue"] };
+  function grid(list){
+    var g = el("div", "grid");
+    list.forEach(function(p, i){
+      var a = el("a"); a.href = p.url; a.target = "_blank"; a.rel = "noopener";
+      var im = el("img"); im.src = p.url; im.alt = p.label || ("Photo " + (i + 1)); im.loading = "lazy"; a.appendChild(im);
+      if(p.label) a.appendChild(el("span", "", p.label));
+      g.appendChild(a);
+    });
+    return g;
+  }
+  if(!/^[A-Za-z0-9_-]{40,64}$/.test(t)){ $("msg").textContent = "This link is not valid. Please ask Professional Holiday Homes for a new one."; return; }
+  fetch(API + "/report", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ t: t }) })
+    .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || "This report could not be opened."); return j; }); })
+    .then(function(j){
+      $("msg").hidden = true; $("rep").hidden = false;
+      $("test").hidden = !j.test;
+      $("kicker").textContent = j.title || "Report";
+      $("prop").textContent = j.property || "";
+      document.title = (j.title || "Report") + ": " + (j.property || "");
+      $("date").textContent = j.kind === "spring" && j.from ? (j.from === j.to ? dayStr(j.from) : dayStr(j.from) + " to " + dayStr(j.to)) : dayStr(j.date);
+      if(j.ownerNote){ $("noteBox").hidden = false; $("note").textContent = j.ownerNote; }
+      var ph = j.photos || [];
+      if(ph.length){
+        $("phBox").hidden = false; var w = $("phWrap");
+        if(j.kind === "spring"){
+          ["before", "after"].forEach(function(k){
+            var l = ph.filter(function(p){ return p.kind === k; }); if(!l.length) return;
+            w.appendChild(el("h3", "", k === "before" ? "Before" : "After")); w.appendChild(grid(l));
+          });
+        } else w.appendChild(grid(ph));
+      }
+      var secs = j.sections || [];
+      if(secs.length){
+        $("ckBox").hidden = false; var ck = $("ck");
+        secs.forEach(function(s){
+          ck.appendChild(el("h3", "", s.title));
+          var ul = el("ul");
+          s.items.forEach(function(it){ var li = el("li"); var tg = TAG[it.status] || ["", ""]; li.appendChild(el("span", "tag " + tg[1], tg[0])); li.appendChild(el("span", "", it.text)); ul.appendChild(li); });
+          ck.appendChild(ul);
+        });
+      }
+      $("foot").textContent = "Prepared by Professional Holiday Homes. This link works until " + dayStr(new Date(j.expiresAt).toISOString()) + ".";
+    })
+    .catch(function(e){ $("msg").textContent = e.message; });
+})();
+</script>
+</body></html>

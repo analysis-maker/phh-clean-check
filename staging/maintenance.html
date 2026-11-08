@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108020657"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108130634"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -108,6 +108,35 @@ tr.rep td:first-child{box-shadow:inset 4px 0 0 #c62828}
 .metabox label{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
 .metabox select{padding:6px 8px;border:1px solid var(--line);border-radius:4px;font:inherit}
 .metabox .sub{font-size:12px}
+/* Batch 4 (8 Nov 2026, staging): bill to owner, trade job links, asset register. */
+.chip.bill{background:#fff3cd;color:#6b4e00}
+.b4box{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.b4box h3{margin:0 0 6px}
+.b4box .row,.box2 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.b4box input[type=text]{padding:7px 8px;border:1px solid var(--line);border-radius:4px;font:inherit;min-width:0}
+.b4box input.amt{flex:0 1 150px}
+.b4box .grow{flex:1 1 200px}
+.b4box p{margin:4px 0}
+label.ck{display:flex;align-items:center;gap:6px;font-weight:500;margin-bottom:6px;cursor:pointer}
+.box2{background:#fff;border:1px solid var(--line);border-radius:4px;padding:12px 16px;margin-top:14px}
+.box2 h3{margin:0 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-ink)}
+.box2 .hint{margin:0 0 10px;color:var(--muted);font-size:13px}
+.box2 label{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+.box2 input[type=date]{padding:7px 8px;border:1px solid var(--line);border-radius:4px;font:inherit}
+#billBox .row{align-items:flex-end}
+.as .grow{flex:1 1 220px;min-width:0}
+.as .asgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 12px}
+.as .asgrid .wide{grid-column:1 / -1}
+.as .asgrid input,.as .asgrid textarea,.as select,.as input[type=search]{display:block;width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:4px;font:inherit}
+.as .asgrid input[type=file]{border:0;padding:4px 0}
+.as select{margin-top:6px}
+.as .tablewrap{margin-top:8px}
+.as .asform{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.as .asform h4{margin:0 0 8px;font-size:13px;color:var(--teal-ink)}
+.as .asform .row{margin-top:10px}
+.as .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.as .asimg{width:64px;height:48px;object-fit:cover;border-radius:4px;border:1px solid var(--line);display:block}
+.msg.err{color:var(--warn)}
 .nowrap{white-space:nowrap}
 .empty{padding:28px 16px;color:var(--muted);text-align:center;background:#fff}
 
@@ -338,20 +367,22 @@ html,body{overflow-x:clip}
 <header class="bar">
   <div class="brand"><img src="icon-180.png" alt="" width="24" height="24">Clean Check</div>
   <div class="section">Maintenance</div>
-  <div class="me" id="me"><span id="mename"></span><a href="office.html?v=1102a" id="toOffice" hidden>Cleaning</a><a href="admin.html?v=1102t" id="toAdmin" hidden>Admin<span class="adn" id="adminN" hidden></span></a><button type="button" id="signout">Sign out</button></div>
+  <div class="me" id="me"><span id="mename"></span><a href="office.html?v=1108b4" id="toOffice" hidden>Cleaning</a><a href="admin.html?v=1102t" id="toAdmin" hidden>Admin<span class="adn" id="adminN" hidden></span></a><button type="button" id="signout">Sign out</button></div>
 </header>
 <nav class="tabs" role="tablist" aria-label="Views">
   <button class="tab" role="tab" data-tab="open" aria-selected="true">Open<span class="n" id="openN" hidden></span></button>
   <button class="tab" role="tab" data-tab="done" aria-selected="false">Complete</button>
   <button class="tab" role="tab" data-tab="all" aria-selected="false">All</button>
   <button class="tab" role="tab" data-tab="props" aria-selected="false">By property</button>
+  <button class="tab" role="tab" data-tab="bills" aria-selected="false">Bill to owner</button>
+  <button class="tab" role="tab" data-tab="assets" aria-selected="false">Assets</button>
 </nav>
 <main>
   <p class="trial">Maintenance issues housekeepers log in Clean Check, with their photos. Each one is also a HomHero maintenance job: assign and update it in HomHero as usual. Status here follows HomHero (checked every 10 minutes).</p>
   <div class="pushbox" id="pushbox" hidden></div>
   <section class="repeatbox" id="repeatbox" hidden aria-labelledby="reph"><h2 id="reph">Repeat faults</h2><ul id="replist"></ul></section>
   <section class="gasbox" id="gasbox" hidden aria-labelledby="gash"><h2 id="gash">Gas requests from housekeepers</h2><ul id="gaslist"></ul></section>
-  <div class="filters">
+  <div class="filters" id="filters">
     <input type="search" id="q" placeholder="Search property or issue" aria-label="Search property or issue" autocomplete="off">
     <select id="urg" aria-label="Priority"><option value="">All priorities</option><option value="urgent">Urgent</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option></select>
     <select id="for" aria-label="Who it is for"><option value="">For everyone</option><option value="maint">Maintenance (Angus)</option><option value="house">Housekeeping (CST)</option></select>
@@ -366,6 +397,22 @@ html,body{overflow-x:clip}
       <tbody id="rows"></tbody>
     </table>
   </div>
+  <!-- Batch 4 (8 Nov 2026, staging): bill to owner (item 23) export, asset register (item 21). -->
+  <section class="box2" id="billBox" hidden>
+    <h3>Export for HomHero billing</h3>
+    <p class="hint">Every issue tagged "Bill to owner" in the dates you pick (by clean date): property, date, issue, amount and note. Opens in Excel. Enter them into HomHero billing by hand.</p>
+    <div class="row">
+      <div><label for="billFrom">From</label><input type="date" id="billFrom"></div>
+      <div><label for="billTo">To</label><input type="date" id="billTo"></div>
+      <button class="btn small" id="billGo" type="button">Download</button>
+    </div>
+    <p class="msg" id="billMsg"></p>
+  </section>
+  <section class="box2" id="assetBox" hidden>
+    <h3>Asset register</h3>
+    <p class="hint">Appliances, hot water system and the like for one property: brand, model, install date, warranty and a photo of the label. The office sees and edits the same list.</p>
+    <div id="assetHost"></div>
+  </section>
 </main>
 
 <div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Photo viewer">
@@ -444,13 +491,13 @@ html,body{overflow-x:clip}
   var $ = function(id){ return document.getElementById(id); };
   var params = new URLSearchParams(location.search);
   var FOCUS = params.get("k") || "";
-  var state = { tab: FOCUS ? "all" : "open", q: "", urg: "", forr: "", days: 60, issues: [], repeats: [], open: {} };
+  var state = { tab: FOCUS ? "all" : "open", q: "", urg: "", forr: "", days: 60, issues: [], repeats: [], open: {}, bills: {}, trades: {} };
   /* Filters are remembered on this device (Batch 1, 8 Nov). Deep links override them. */
   var LKEY = "phh-maint-last";
   try{ var last = JSON.parse(localStorage.getItem(LKEY) || "null"); if(last){ state.urg = last.urg || ""; state.forr = last.forr || ""; state.days = [60,90,180].indexOf(+last.days) >= 0 ? +last.days : 60; } }catch(e){}
   function remember(){ try{ localStorage.setItem(LKEY, JSON.stringify({ urg: state.urg, forr: state.forr, days: state.days })); }catch(e){} }
   /* Deep links (Ask PHH): ?tab=open|done|all|props &q=<property or issue> */
-  if(["open","done","all","props"].indexOf(params.get("tab") || "") >= 0) state.tab = params.get("tab");
+  if(["open","done","all","props","bills","assets"].indexOf(params.get("tab") || "") >= 0) state.tab = params.get("tab");
   state.q = (params.get("q") || "").slice(0, 120);
   if(FOCUS) state.open[FOCUS] = true;
 
@@ -519,6 +566,7 @@ html,body{overflow-x:clip}
     return state.issues.filter(function(i){
       if(state.tab === "open" && isDone(i)) return false;
       if(state.tab === "done" && !isDone(i)) return false;
+      if(state.tab === "bills" && !state.bills[i.key]) return false;
       if(state.urg && i.priority !== state.urg) return false;
       if(state.forr && i.route !== state.forr) return false;
       if(q && (i.property + " " + i.text + " " + i.housekeeper).toLowerCase().indexOf(q) < 0) return false;
@@ -594,6 +642,7 @@ html,body{overflow-x:clip}
     pick("For", "for-" + i.key.replace(/[^a-z0-9]/gi, ""), [["maint","Maintenance (Angus)"],["house","Housekeeping (CST)"]], i.route, "route");
     mb.appendChild(said);
     right.appendChild(mb);
+    billBox(i, right); tradeBox(i, right);
     if((i.repeatOf || []).length){
       var rp = el("p", "sub"); rp.style.color = "#a11d1d"; rp.style.fontWeight = "600";
       rp.textContent = "Repeat fault: logged at this property " + (i.repeatOf.length + 1) + " times within 30 days.";
@@ -604,6 +653,90 @@ html,body{overflow-x:clip}
     right.appendChild(acts);
     return tr;
   }
+
+  /* ---------- Batch 4 (8 Nov 2026, staging). office-api-v2 b4-* routes. Nothing here writes to HomHero or contacts anyone. ---------- */
+  function b4Copy(text, btn){
+    var done = function(){ var t = btn.textContent; btn.textContent = "Copied"; setTimeout(function(){ btn.textContent = t; }, 1500); };
+    try{ navigator.clipboard.writeText(text).then(done, function(){ prompt("Copy this:", text); }); }catch(e){ prompt("Copy this:", text); }
+  }
+  function b4Day(ts){ return ts ? new Date(ts).toLocaleDateString("en-AU", { timeZone:TZ, day:"numeric", month:"short" }) : ""; }
+  /* Item 23: Bill to owner tag, amount and note, for entering into HomHero billing by hand. */
+  function billBox(i, host){
+    var b = state.bills[i.key] || null;
+    var box = el("div", "b4box"); box.addEventListener("click", function(e){ e.stopPropagation(); });
+    var lab = el("label", "ck"); var cb = el("input"); cb.type = "checkbox"; cb.checked = !!b; lab.appendChild(cb); lab.appendChild(document.createTextNode(" Bill to owner"));
+    box.appendChild(lab);
+    var f = el("div", "row"); f.hidden = !b;
+    var am = el("input"); am.type = "text"; am.inputMode = "decimal"; am.placeholder = "Amount, e.g. 185.50"; am.setAttribute("aria-label", "Amount"); am.value = b && b.amount !== null ? b.amount.toFixed(2) : ""; am.className = "amt";
+    var nt = el("input"); nt.type = "text"; nt.maxLength = 500; nt.placeholder = "Note for the owner bill"; nt.setAttribute("aria-label", "Bill note"); nt.value = b ? b.note : ""; nt.className = "grow";
+    var sv = el("button", "btn small", "Save"); sv.type = "button";
+    var m = el("span", "sub", b && b.by ? "Last set by " + b.by : "");
+    f.appendChild(am); f.appendChild(nt); f.appendChild(sv); box.appendChild(f); box.appendChild(m);
+    function save(on){
+      sv.disabled = cb.disabled = true; m.textContent = "Saving...";
+      post("b4-bill-save", { key: i.key, bill: on, amount: am.value, note: nt.value }).then(function(){
+        if(on) state.bills[i.key] = { amount: am.value.trim() === "" ? null : Math.round(parseFloat(am.value.replace(/[$,\s]/g, "")) * 100) / 100, note: nt.value.trim(), by: "you" };
+        else delete state.bills[i.key];
+        m.textContent = "Saved."; render();
+      }).catch(function(e){ m.textContent = e.message; }).then(function(){ sv.disabled = cb.disabled = false; });
+    }
+    cb.addEventListener("change", function(){ f.hidden = !cb.checked; if(cb.checked){ am.focus(); save(true); } else save(false); });
+    sv.addEventListener("click", function(){ save(true); });
+    host.appendChild(box);
+  }
+  /* Item 24: one-job link for a tradesperson (no app, no code). Shown here to copy; nothing is emailed or texted. */
+  function tradeBox(i, host){
+    var box = el("div", "b4box"); box.addEventListener("click", function(e){ e.stopPropagation(); });
+    box.appendChild(el("h3", "", "Trade job link"));
+    var links = state.trades[i.key] || [], now = new Date().toISOString();
+    var live = links.filter(function(l){ return !l.revoked && (l.doneAt || l.expiresAt > now); })[0];
+    if(live && live.doneAt){
+      box.appendChild(el("p", "", "Marked done by " + live.doneName + ", " + when(live.doneAt) + ": " + live.doneNote));
+      if(live.photos.length){
+        var g = el("div", "thumbs");
+        live.photos.forEach(function(u, k){ var a = el("a", "thumb"); a.href = u; a.target = "_blank"; a.rel = "noopener"; var im = el("img"); im.src = u; im.alt = "Trade photo " + (k + 1); a.appendChild(im); g.appendChild(a); });
+        box.appendChild(g);
+      }
+      box.appendChild(el("p", "sub", "This updates Clean Check only. Update the job in HomHero as usual."));
+    } else if(live){
+      var url = new URL("trade.html?t=" + encodeURIComponent(live.token), location.href).href;
+      var row = el("div", "row");
+      var inp = el("input"); inp.type = "text"; inp.readOnly = true; inp.value = url; inp.className = "grow"; inp.setAttribute("aria-label", "Trade link");
+      var cp = el("button", "btn ghost small", "Copy"); cp.type = "button"; cp.addEventListener("click", function(){ b4Copy(url, cp); });
+      var st = el("button", "btn ghost small", "Stop link"); st.type = "button";
+      st.addEventListener("click", function(){ st.disabled = true; post("b4-trade-revoke", { token: live.token }).then(load).catch(function(e){ st.disabled = false; alert(e.message); }); });
+      row.appendChild(inp); row.appendChild(cp); row.appendChild(st); box.appendChild(row);
+      box.appendChild(el("p", "sub", "Made by " + live.by + " " + b4Day(live.at) + ", works until " + b4Day(live.expiresAt) + (live.openedAt ? ". Opened " + when(live.openedAt) : ". Not opened yet") + ". Copy it into your own text or email to the tradesperson."));
+    } else {
+      box.appendChild(el("p", "sub", "A link the tradesperson opens (no app or code) to mark this job done with a note and up to 3 photos. Nothing is sent: copy it into your own message."));
+      var mk = el("button", "btn ghost small", "Make a link"); mk.type = "button";
+      var m = el("span", "sub"); m.style.marginLeft = "8px";
+      mk.addEventListener("click", function(){ mk.disabled = true; m.textContent = "Making the link..."; post("b4-trade-create", { key: i.key }).then(load).catch(function(e){ mk.disabled = false; m.textContent = e.message; }); });
+      box.appendChild(mk); box.appendChild(m);
+    }
+    host.appendChild(box);
+  }
+  /* Bill to owner export (CSV, opens in Excel). */
+  (function(){
+    var today = new Intl.DateTimeFormat("en-CA", { timeZone:TZ }).format(new Date());
+    var d = new Date(today + "T12:00:00Z"); d.setUTCDate(1);
+    $("billFrom").value = d.toISOString().slice(0, 10); $("billTo").value = today;
+    function csvCell(v){ v = v === null || v === undefined ? "" : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+    $("billGo").addEventListener("click", function(){
+      var m = $("billMsg"); m.className = "msg"; m.textContent = "Loading...";
+      post("b4-bill-export", { from: $("billFrom").value, to: $("billTo").value }).then(function(j){
+        var rows = j.rows || [];
+        if(!rows.length){ m.textContent = "No issues tagged Bill to owner in those dates."; return; }
+        var lines = [["Property", "Date", "Issue", "Amount", "Note"].join(",")].concat(rows.map(function(r){ return [r.property, r.date, r.issue, r.amount === null ? "" : r.amount.toFixed(2), r.note].map(csvCell).join(","); }));
+        var blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv" });
+        var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "bill-to-owner-" + $("billFrom").value + "-to-" + $("billTo").value + ".csv";
+        document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        m.textContent = rows.length + " issue" + (rows.length === 1 ? "" : "s") + " downloaded.";
+      }).catch(function(e){ m.className = "msg err"; m.textContent = e.message; });
+    });
+  })();
+  var assetsOn = false;
+  function assetsInit(){ if(assetsOn || !window.phhAssets) return; assetsOn = true; window.phhAssets($("assetHost"), post, {}); }
 
   var PRI = { urgent:0, high:1, normal:2, low:3 };
   function renderRepeats(){
@@ -644,6 +777,10 @@ html,body{overflow-x:clip}
   }
   var ISSUE_HEAD = "<tr><th>Status</th><th>Logged</th><th>Property</th><th>Issue</th><th>Photos</th><th>Logged by</th><th>Assigned to</th></tr>";
   function render(){
+    var assets = state.tab === "assets";
+    $("assetBox").hidden = !assets; $("billBox").hidden = state.tab !== "bills";
+    $("filters").hidden = assets; $("strip").hidden = assets;
+    if(assets){ $("wrap").hidden = true; $("msg").textContent = ""; $("repeatbox").hidden = true; assetsInit(); return; }
     strip(); renderRepeats();
     if(state.tab === "props"){ renderProps(); return; }
     $("thead").innerHTML = ISSUE_HEAD;
@@ -652,7 +789,7 @@ html,body{overflow-x:clip}
     $("msg").className = "msg";
     if(!list.length){
       $("wrap").hidden = true;
-      $("msg").textContent = state.issues.length ? (state.tab === "open" ? "No open maintenance issues. Nice." : "Nothing matches.") : "No maintenance issues logged in Clean Check in the last " + state.days + " days.";
+      $("msg").textContent = state.issues.length ? (state.tab === "open" ? "No open maintenance issues. Nice." : state.tab === "bills" ? "No issues tagged Bill to owner in this period. Open an issue and tick Bill to owner." : "Nothing matches.") : "No maintenance issues logged in Clean Check in the last " + state.days + " days.";
       return;
     }
     $("msg").textContent = ""; $("wrap").hidden = false;
@@ -670,6 +807,8 @@ html,body{overflow-x:clip}
       else if(i.priority === "high") ch.appendChild(el("span", "chip warn", "High"));
       else if(i.priority === "low") ch.appendChild(el("span", "chip", "Low"));
       if(i.route === "house") ch.appendChild(el("span", "chip cst", "For CST"));
+      var bl = state.bills[i.key]; if(bl) ch.appendChild(el("span", "chip bill", "Bill to owner" + (bl.amount !== null ? " $" + bl.amount.toFixed(2) : "")));
+      var tl = (state.trades[i.key] || [])[0]; if(tl && tl.doneAt) ch.appendChild(el("span", "chip ok", "Trade marked done"));
       if(ch.children.length) c3.appendChild(ch);
       tr.appendChild(c3);
       var c4 = el("td"); c4.dataset.l = "Photos";
@@ -689,7 +828,10 @@ html,body{overflow-x:clip}
   function load(){
     loadGas();
     $("msg").className = "msg"; if(!state.issues.length) $("msg").textContent = "Loading...";
+    var extras = Promise.all([post("b4-bill-list").catch(function(){ return null; }), post("b4-trade-list").catch(function(){ return null; })]);
     post("maint", { days: state.days }).then(function(j){
+      return extras.then(function(x){ if(x[0]) state.bills = x[0].bills || {}; if(x[1]) state.trades = x[1].links || {}; return j; });
+    }).then(function(j){
       $("mename").textContent = j.name || "";
       state.issues = j.issues || []; state.repeats = j.repeats || [];
       render();
@@ -1151,4 +1293,126 @@ html.aphh-open body{margin-right:var(--aphh-w,400px)}
 })();
 </script>
 <!-- ASK-PHH END -->
+<script>
+/* Asset register (Batch 4 item 21, staging 8 Nov 2026): appliances, hot water system and so on, per property.
+   Office view and maintenance dashboard can view and edit. office-api-v2 b4-asset-* routes. Same block in office.html and maintenance.html. */
+window.phhAssets = function(host, post, opts){
+  "use strict";
+  opts = opts || {};
+  var TYPES = ["Hot water system", "Air conditioner", "Oven", "Cooktop", "Rangehood", "Dishwasher", "Fridge", "Microwave", "Washing machine", "Dryer", "Smoke alarm", "Pool pump", "Spa", "TV", "BBQ", "Ceiling fan", "Gas heater", "Water filter"];
+  function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined && text !== null) e.textContent = text; return e; }
+  function day(d){ return d ? new Date(d + "T12:00:00Z").toLocaleDateString("en-AU", { timeZone:"UTC", day:"numeric", month:"short", year:"numeric" }) : ""; }
+  var S = { props: [], pid: "", assets: [], edit: null, photoPath: null, removePhoto: false };
+  host.innerHTML = "";
+  host.classList.add("as");
+  var top = el("div", "row");
+  var w1 = el("div", "grow"); var l1 = el("label", "", "Property"); l1.htmlFor = "asProp";
+  var q = el("input"); q.type = "search"; q.placeholder = "Type to filter properties"; q.setAttribute("aria-label", "Filter properties");
+  var sel = el("select"); sel.id = "asProp";
+  w1.appendChild(l1); w1.appendChild(q); w1.appendChild(sel); top.appendChild(w1); host.appendChild(top);
+  var list = el("div"); host.appendChild(list);
+  var msg = el("p", "msg"); host.appendChild(msg);
+  function say(t, err){ msg.className = "msg" + (err ? " err" : ""); msg.textContent = t || ""; }
+  function options(){
+    var f = q.value.trim().toLowerCase(), cur = sel.value; sel.innerHTML = "";
+    var o0 = el("option", "", "Pick the property"); o0.value = ""; sel.appendChild(o0);
+    S.props.filter(function(p){ return !f || p.name.toLowerCase().indexOf(f) >= 0; }).forEach(function(p){ var o = el("option", "", p.name); o.value = p.id; sel.appendChild(o); });
+    sel.value = cur;
+  }
+  function load(){
+    S.pid = sel.value; list.innerHTML = ""; say("");
+    if(!S.pid) return;
+    say("Loading...");
+    post("b4-asset-list", { propertyId: S.pid }).then(function(j){ S.assets = j.assets || []; say(""); render(); }).catch(function(e){ say(e.message, true); });
+  }
+  function render(){
+    list.innerHTML = "";
+    if(S.assets.length){
+      var tw = el("div", "tablewrap"), t = el("table", "hk"); tw.appendChild(t);
+      t.innerHTML = "<thead><tr><th>What</th><th>Brand and model</th><th>Installed</th><th>Warranty until</th><th>Notes</th><th>Photo</th><th></th></tr></thead>";
+      var tb = el("tbody"); t.appendChild(tb);
+      S.assets.forEach(function(a){
+        var tr = el("tr");
+        var c = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
+        c("What", a.type, "name"); c("Brand and model", [a.brand, a.model].filter(Boolean).join(" ")); c("Installed", day(a.installDate));
+        var wt = c("Warranty until", day(a.warrantyUntil)); if(a.warrantyUntil && a.warrantyUntil < new Date().toISOString().slice(0, 10)) wt.appendChild(el("span", "sub", " (ended)"));
+        c("Notes", a.notes);
+        var pc = c("Photo", "");
+        if(a.photo){ var lk = el("a"); lk.href = a.photo; lk.target = "_blank"; lk.rel = "noopener"; var im = el("img"); im.src = a.photo; im.alt = a.type; im.className = "asimg"; lk.appendChild(im); pc.appendChild(lk); }
+        var ac = c("", ""); ac.removeAttribute("data-l");
+        var eb = el("button", "btn ghost small", "Edit"); eb.type = "button"; eb.addEventListener("click", function(){ S.edit = a; form(); });
+        var rb = el("button", "btn ghost small", "Remove"); rb.type = "button";
+        rb.addEventListener("click", function(){ if(!confirm("Remove " + a.type + " from this property?")) return; rb.disabled = true; post("b4-asset-remove", { id: a.id }).then(load).catch(function(e){ rb.disabled = false; say(e.message, true); }); });
+        ac.appendChild(eb); ac.appendChild(document.createTextNode(" ")); ac.appendChild(rb);
+        tb.appendChild(tr);
+      });
+      list.appendChild(tw);
+    } else list.appendChild(el("p", "sub", "Nothing recorded for this property yet."));
+    var add = el("button", "btn small", "Add an item"); add.type = "button"; add.style.marginTop = "10px";
+    add.addEventListener("click", function(){ S.edit = {}; form(); });
+    list.appendChild(add);
+    if(S.edit) form();
+  }
+  function form(){
+    var old = host.querySelector(".asform"); if(old) old.remove();
+    var a = S.edit || {}; S.photoPath = null; S.removePhoto = false;
+    var f = el("form", "asform"); f.setAttribute("autocomplete", "off");
+    f.appendChild(el("h4", "", a.id ? "Edit " + a.type : "Add an item"));
+    var g = el("div", "asgrid"); f.appendChild(g);
+    function field(label, type, val, id, max){
+      var w = el("div"); var l = el("label", "", label); l.htmlFor = id; var i = el("input"); i.type = type; i.id = id; if(max) i.maxLength = max; i.value = val || ""; w.appendChild(l); w.appendChild(i); g.appendChild(w); return i;
+    }
+    var tp = field("What it is", "text", a.type, "asType", 60); tp.setAttribute("list", "asTypes");
+    var dl = el("datalist"); dl.id = "asTypes"; TYPES.forEach(function(x){ var o = el("option"); o.value = x; dl.appendChild(o); }); f.appendChild(dl);
+    var br = field("Brand", "text", a.brand, "asBrand", 80), md = field("Model", "text", a.model, "asModel", 80);
+    var ins = field("Installed", "date", a.installDate, "asIns"), wr = field("Warranty until", "date", a.warrantyUntil, "asWar");
+    var nw = el("div", "wide"); var nl = el("label", "", "Notes (serial number, where it is, who services it)"); nl.htmlFor = "asNotes"; var nt = el("textarea"); nt.id = "asNotes"; nt.maxLength = 1000; nt.value = a.notes || ""; nw.appendChild(nl); nw.appendChild(nt); g.appendChild(nw);
+    var pw = el("div", "wide"); var pl = el("label", "", "Photo (optional, for example the label with the model number)"); pl.htmlFor = "asPhoto";
+    var pf = el("input"); pf.type = "file"; pf.accept = "image/*"; pf.id = "asPhoto"; pw.appendChild(pl); pw.appendChild(pf);
+    var ps = el("span", "sub"); pw.appendChild(ps);
+    if(a.hasPhoto){ var rp = el("label", "sub"); var rc = el("input"); rc.type = "checkbox"; rc.addEventListener("change", function(){ S.removePhoto = rc.checked; }); rp.appendChild(rc); rp.appendChild(document.createTextNode(" Remove the photo")); pw.appendChild(rp); }
+    g.appendChild(pw);
+    var busy = false;
+    pf.addEventListener("change", function(){
+      var file = pf.files && pf.files[0]; if(!file) return;
+      busy = true; ps.textContent = " Sending photo...";
+      shrink(file).then(function(blob){
+        return post("b4-asset-upload-url", { propertyId: S.pid }).then(function(j){
+          return fetch(j.signedUrl, { method:"PUT", headers:{ "content-type":"image/jpeg" }, body: blob }).then(function(r){ if(!r.ok) throw new Error("The photo did not upload. Try again."); S.photoPath = j.path; ps.textContent = " Photo ready."; });
+        });
+      }).catch(function(e){ ps.textContent = " " + (e.message || "The photo did not upload."); }).then(function(){ busy = false; });
+    });
+    var row = el("div", "row"); var sv = el("button", "btn small", "Save"); sv.type = "submit";
+    var cn = el("button", "btn ghost small", "Cancel"); cn.type = "button"; cn.addEventListener("click", function(){ S.edit = null; f.remove(); });
+    var fm = el("span", "msg"); fm.style.margin = "0";
+    row.appendChild(sv); row.appendChild(cn); row.appendChild(fm); f.appendChild(row);
+    f.addEventListener("submit", function(e){
+      e.preventDefault();
+      if(busy){ fm.textContent = "Wait for the photo to finish sending."; return; }
+      var b = { propertyId: S.pid, type: tp.value.trim(), brand: br.value.trim(), model: md.value.trim(), installDate: ins.value || null, warrantyUntil: wr.value || null, notes: nt.value.trim() };
+      if(a.id) b.id = a.id; if(S.photoPath) b.photoPath = S.photoPath; else if(S.removePhoto) b.removePhoto = true;
+      sv.disabled = true; fm.textContent = "Saving...";
+      post("b4-asset-save", b).then(function(){ S.edit = null; load(); }).catch(function(err){ sv.disabled = false; fm.className = "msg err"; fm.textContent = err.message; });
+    });
+    host.appendChild(f);
+    tp.focus();
+  }
+  function shrink(file){
+    return new Promise(function(ok, bad){
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function(){
+        var sc = Math.min(1, 1280 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement("canvas");
+        c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        c.toBlob(function(b){ b ? ok(b) : bad(new Error("That photo could not be read.")); }, "image/jpeg", 0.8);
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); bad(new Error("That photo could not be read.")); };
+      img.src = url;
+    });
+  }
+  q.addEventListener("input", options);
+  sel.addEventListener("change", function(){ S.edit = null; load(); });
+  post("b4-props", opts.includeTest ? { includeTest:true } : {}).then(function(j){ S.props = j.properties || []; options(); }).catch(function(e){ say(e.message, true); });
+};
+</script>
 </body></html>

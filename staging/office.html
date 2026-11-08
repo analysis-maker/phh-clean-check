@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261107023957"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108020657"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://rxhpnowszmetjxbwylil.supabase.co" crossorigin>
-<script>window.PHH_OFFICE_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/office-api";</script>
+<script>window.PHH_OFFICE_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/office-api-v2";</script>
 <script>window.PHH_CLEAN_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/clean-api-v11";</script>
 <title>Clean Check Office</title>
 <style>
@@ -86,6 +86,26 @@ td.st{padding:0;width:118px}
 .st-missing{background:var(--miss);color:var(--miss-ink)}
 .st-cleaned{background:var(--idle);color:var(--idle-ink)}
 .st-waiting{background:var(--pend);color:var(--pend-ink)}
+.st-prog{background:#dbeefa;color:#0b4f7a}
+.strip .go{cursor:pointer}
+.strip .go:hover{background:var(--teal-soft)}
+.strip .go[aria-pressed="true"]{background:var(--teal-soft);box-shadow:inset 0 -3px 0 var(--teal)}
+.views{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0 0}
+.views .vchip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;background:#fff;padding:3px 4px 3px 10px;font-size:13px}
+.views .vchip button{border:0;background:none;font:inherit;cursor:pointer;padding:2px 4px;color:var(--teal-ink)}
+.views .vchip .x{color:var(--muted)}
+.box2{background:#fff;border:1px solid var(--line);border-radius:4px;padding:12px 16px;margin-top:14px}
+.box2 h3{margin:0 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-ink)}
+.box2 .hint{margin:0 0 10px;color:var(--muted);font-size:13px}
+.box2 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.box2 label{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+.box2 select,.box2 input[type=date]{padding:7px 8px;border:1px solid var(--line);border-radius:4px;font:inherit;max-width:100%}
+.nc{list-style:none;margin:0;padding:0}
+.nc>li{padding:10px 0;border-top:1px solid var(--line-2)}
+.nc>li:first-child{border-top:0}
+.nc .pn{margin:0 0 4px;font-weight:600}
+.nc ol{margin:0;padding-left:20px;font-size:14px}
+.nc a{color:var(--teal-ink)}
 .prop{font-weight:500}
 td.col-prop{min-width:170px}
 .sub{color:var(--faint);font-size:12px}
@@ -368,6 +388,8 @@ html,body{overflow-x:clip}
         <option value="missing">Missing check</option>
         <option value="cleaned">Done in HomHero (not on Clean Check)</option>
         <option value="waiting">Not done yet</option>
+        <option value="inprog">In progress (keys photo taken)</option>
+        <option value="notstarted">Not started</option>
       </select>
       <select id="who" aria-label="Housekeeper"><option value="">All housekeepers</option></select>
       <select id="extra" aria-label="Show">
@@ -378,12 +400,13 @@ html,body{overflow-x:clip}
         <option value="precheck">Pre-arrival check pending</option>
       </select>
     </div>
+    <div class="views" id="views"><button class="btn ghost small" id="saveView" type="button">Save this view</button></div>
     <div class="strip" id="strip" hidden></div>
     <div class="tablewrap" id="dayTableWrap" hidden>
       <table>
         <thead><tr>
           <th>Status</th><th>Property</th><th>Housekeeper</th><th>Done in HomHero</th><th>Clean check</th>
-          <th>Check time</th><th>Photos</th><th>AI score</th><th>Flags</th><th>Next guests</th>
+          <th>Time on site</th><th>Photos</th><th>AI score</th><th>Flags</th><th>Next guests</th>
         </tr></thead>
         <tbody id="rows"></tbody>
       </table>
@@ -487,6 +510,22 @@ html,body{overflow-x:clip}
       <input type="search" id="hkNotesQ" placeholder="Search property or note" aria-label="Search housekeeper notes">
       <ul id="hkNotesList"></ul>
       <p class="msg" id="hkNotesMsg"></p>
+    </div>
+    <div class="box2" id="newBox" hidden>
+      <h3>New housekeepers: first 5 clean checks</h3>
+      <p class="hint">Anyone whose first clean check was in the last 14 days, or who has 5 or fewer. Open each one and look at the photos. For the office only.</p>
+      <ul class="nc" id="newList"></ul>
+    </div>
+    <div class="box2" id="expBox" hidden>
+      <h3>Invoice check</h3>
+      <p class="hint">Every clean in the dates you pick, with time on site and whether the clean check was done. Opens in Excel.</p>
+      <div class="row">
+        <div><label for="expWho">Housekeeper</label><select id="expWho"><option value="">Everyone</option></select></div>
+        <div><label for="expFrom">From</label><input type="date" id="expFrom"></div>
+        <div><label for="expTo">To</label><input type="date" id="expTo"></div>
+        <button class="btn small" id="expGo" type="button">Download</button>
+      </div>
+      <p class="msg" id="expMsg"></p>
     </div>
   </section>
 </main>
@@ -696,15 +735,19 @@ html,body{overflow-x:clip}
   /* Deep links (Ask PHH): ?tab=cleans|attention|hk|props &status= &who= &q= &open=<booking> */
   var LINK = { tab: params.get("tab") || "", open: params.get("open") || "" };
   if(["cleans","attention","hk","props","spring","cons"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
-  if(["checked","missing","cleaned","waiting"].indexOf(params.get("status") || "") >= 0) state.status = params.get("status");
+  if(["checked","missing","cleaned","waiting","inprog","notstarted"].indexOf(params.get("status") || "") >= 0) state.status = params.get("status");
   state.who = (params.get("who") || "").slice(0, 120); state.q = (params.get("q") || "").slice(0, 120);
   if(/^[A-Za-z0-9-]{3,40}$/.test(LINK.open)) state.open[LINK.open] = true; else LINK.open = "";
 
   var STATUS = { checked:["Checked","st-checked"], missing:["Missing","st-missing"], cleaned:["Done in HomHero","st-cleaned"], waiting:["Not done","st-waiting"] };
-  function statusLabel(r){ if(r.status === "waiting") return state.date < sydToday() ? "Not done" : "Pending"; return STATUS[r.status][0]; }
+  function statusLabel(r){ if(r.status === "waiting") return r.stage === "inprog" ? "In progress" : (state.date < sydToday() ? "Not done" : "Pending"); return STATUS[r.status][0]; }
+  function statusClass(r){ return r.status === "waiting" && r.stage === "inprog" ? "st-prog" : STATUS[r.status][1]; }
+  /* Today's alerts from the server (Batch 1, 8 Nov): not started by 12pm, no clean check by 3pm. */
+  function lateFlag(r){ return (r.flags || []).some(function(f){ return f.kind === "nocheck" || f.kind === "nostart"; }); }
   function preDue(r){ var d = String(r.nextArrivalAt || "").slice(0,10); return !!d && (d === state.date || d === shift(state.date, 1)); }
   function needsAttention(r){
     if(r.status === "missing") return true;
+    if(lateFlag(r)) return true;
     if(!r.submitted) return false;
     if(r.flags.some(function(f){ return f.tone === "warn"; })) return true;
     if(r.ai && r.ai.status === "done" && r.ai.verdict !== "to_standard") return true;
@@ -718,7 +761,8 @@ html,body{overflow-x:clip}
     return state.rows.filter(function(r){
       if(q && String(r.property).toLowerCase().indexOf(q) < 0) return false;
       if(state.who && r.hhCleaner !== state.who && r.submittedBy !== state.who) return false;
-      if(state.status && r.status !== state.status) return false;
+      if(state.status === "inprog" || state.status === "notstarted"){ if(r.status !== "waiting" || r.stage !== state.status) return false; }
+      else if(state.status && r.status !== state.status) return false;
       if(state.extra === "b2b" && !r.backToBack) return false;
       if(state.extra === "maint" && !r.maintCount) return false;
       if(state.extra === "consumables" && r.consumables !== "yes") return false;
@@ -734,15 +778,37 @@ html,body{overflow-x:clip}
     var scored = rows.filter(function(r){ return r.ai && r.ai.status === "done" && r.ai.score; });
     var avg = scored.length ? (scored.reduce(function(s, r){ return s + r.ai.score; }, 0) / scored.length).toFixed(1) : "-";
     var stats = [
-      [rows.length, "Cleans today", false],
+      [rows.length, state.date === sydToday() ? "Cleans today" : "Cleans", false],
       [n(function(r){ return !!r.hhCleanedAt; }), "Done in HomHero", false],
       [n(function(r){ return r.submitted; }) + " of " + onCC.length, "Clean checks (pilot)", false],
       [n(function(r){ return r.status === "missing"; }), "Missing a check", true],
       [n(needsAttention), "Need attention", true],
       [avg, "Average AI score", false]
     ];
+    /* Today board (Batch 1, 8 Nov): not started / in progress / done, tap one to filter. */
+    if(state.date === sydToday()){
+      var live = onCC.length ? onCC : rows;
+      stats = [
+        [live.filter(function(r){ return r.stage === "notstarted"; }).length, "Not started", false, "notstarted"],
+        [live.filter(function(r){ return r.stage === "inprog"; }).length, "In progress", false, "inprog"],
+        [live.filter(function(r){ return r.stage === "done"; }).length, "Done", false, "done"],
+        [n(lateFlag), "Late (12pm / 3pm)", true, "late"]
+      ].concat(stats.slice(3));
+    }
     var box = $("strip"); box.innerHTML = "";
-    stats.forEach(function(s){ var d = el("div", s[2] && s[0] ? "bad" : ""); d.appendChild(el("b", "", String(s[0]))); d.appendChild(el("span", "", s[1])); box.appendChild(d); });
+    stats.forEach(function(s){
+      var d = el("div", (s[2] && s[0] ? "bad" : "") + (s[3] ? " go" : "")); d.appendChild(el("b", "", String(s[0]))); d.appendChild(el("span", "", s[1]));
+      if(s[3]){
+        var on = (s[3] === "done" && state.status === "checked") || state.status === s[3] || (s[3] === "late" && state.tab === "attention");
+        d.setAttribute("role", "button"); d.tabIndex = 0; d.setAttribute("aria-pressed", String(on));
+        var pick = function(){
+          if(s[3] === "late"){ setTab("attention"); return; }
+          var v = s[3] === "done" ? "checked" : s[3]; state.status = state.status === v ? "" : v; $("status").value = state.status; renderStrip(); renderRows(); remember();
+        };
+        d.addEventListener("click", pick); d.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pick(); } });
+      }
+      box.appendChild(d);
+    });
     box.hidden = false;
     var a = n(needsAttention); $("attnN").textContent = a; $("attnN").hidden = !a;
   }
@@ -780,14 +846,14 @@ html,body{overflow-x:clip}
 
   function rowEls(r){
     var tr = el("tr", "r"); tr.id = "r-" + String(r.res).replace(/[^A-Za-z0-9-]/g, ""); tr.tabIndex = 0; tr.setAttribute("aria-expanded", String(!!state.open[r.res]));
-    var st = el("td", "st"); st.appendChild(el("div", "stc " + STATUS[r.status][1], statusLabel(r))); tr.appendChild(st);
+    var st = el("td", "st"); st.appendChild(el("div", "stc " + statusClass(r), statusLabel(r))); tr.appendChild(st);
     var p = el("td", "col-prop"); var pn = el("div", "prop", roomFirst(r.property) + (r.test ? " (test)" : ""));
-    var sl = el("span", "stlabel " + STATUS[r.status][1], statusLabel(r)); pn.appendChild(sl);
+    var sl = el("span", "stlabel " + statusClass(r), statusLabel(r)); pn.appendChild(sl);
     p.appendChild(pn); p.appendChild(el("div", "sub", (r.bedrooms ? r.bedrooms + " bed, " + r.bathrooms + " bath | " : "") + "#" + r.res)); tr.appendChild(p);
     var h = el("td", "", r.hhCleaner || "Not assigned"); h.setAttribute("data-l", "Housekeeper"); tr.appendChild(h);
     var dh = el("td", "nowrap", r.hhCleanedAt ? localTime(r.hhCleanedAt) : ""); dh.setAttribute("data-l", "HomHero"); tr.appendChild(dh);
     var cc = el("td", "nowrap" + (r.submitted || r.onCleanCheck ? "" : " sub"), r.submitted ? time(r.submittedAt) : (r.onCleanCheck ? "" : "n/a")); cc.setAttribute("data-l", "Clean check"); cc.title = r.onCleanCheck || r.submitted ? "" : "This housekeeper is not on Clean Check yet"; tr.appendChild(cc);
-    var ct = el("td", "nowrap", hm(r.checkMins)); ct.setAttribute("data-l", "Check time"); tr.appendChild(ct);
+    var ct = el("td", "nowrap", r.checkMins === null && r.arrivedAt ? "Since " + time(r.arrivedAt) : hm(r.checkMins)); ct.setAttribute("data-l", "Time on site"); tr.appendChild(ct);
     var ph = el("td", "", r.submitted ? String(r.photoCount || 0) : (r.hhPhotos !== null && r.hhPhotos !== undefined ? r.hhPhotos + " in HH" : "")); ph.setAttribute("data-l", "Photos"); tr.appendChild(ph);
     tr.appendChild(scoreCell(r));
     tr.appendChild(flagCell(r));
@@ -851,7 +917,9 @@ html,body{overflow-x:clip}
       left.appendChild(el("h3", "", "Clean check"));
       left.appendChild(el("p", "", r.status === "missing" ? "Marked done in HomHero at " + localTime(r.hhCleanedAt) + " with no clean check." :
         r.status === "cleaned" ? "Done in HomHero at " + localTime(r.hhCleanedAt) + ". This housekeeper is not on Clean Check yet." :
+        r.stage === "inprog" ? "In progress: keys photo taken at " + time(r.arrivedAt) + "." :
         "Not done yet."));
+      if(r.flags.length){ var lf = el("ul"); r.flags.forEach(function(f){ lf.appendChild(el("li", f.tone === "warn" ? "sev-medium" : "", f.label)); }); left.appendChild(lf); }
     }
     box.appendChild(left);
 
@@ -863,7 +931,8 @@ html,body{overflow-x:clip}
     if(r.submittedBy && r.submittedBy !== r.hhCleaner) add("Checked by", r.submittedBy);
     add("Done in HomHero", r.hhCleanedAt ? localTime(r.hhCleanedAt) : "Not yet");
     add("Clean check", r.submitted ? time(r.submittedAt) : "");
-    add("First photo to Complete", hm(r.checkMins));
+    add("Arrived (keys photo)", r.arrivedAt ? time(r.arrivedAt) : "");
+    add("Time on site (keys photo to Complete)", hm(r.checkMins));
     add("Items N/A", r.submitted ? String(r.naCount) : "");
     add("Next guests", nextGuests(r));
     if(preDue(r) && (r.nextPreInspection !== null || r.nextPreMaintenance !== null))
@@ -938,8 +1007,8 @@ html,body{overflow-x:clip}
     $("insTitle").textContent = hk ? "Housekeepers on Clean Check" : "Properties with clean checks";
     var head = $("insHead"), body = $("insRows"); head.innerHTML = ""; body.innerHTML = "";
     var cols = hk
-      ? ["Housekeeper", "Cleans done", "Checks", "Check rate", "Missing", "AI score", "Below standard", "Typical check time", "Most common flags"]
-      : ["Property", "Checks", "AI score", "Below standard", "Typical check time", "Most common flags"];
+      ? ["Housekeeper", "Cleans done", "Checks", "Check rate", "Missing", "AI score", "Below standard", "Average time on site", "Short visits", "Most common flags"]
+      : ["Property", "Checks", "AI score", "Below standard", "Average time on site", "Short visits", "Most common flags"];
     var htr = el("tr"); cols.forEach(function(c){ htr.appendChild(el("th", "", c)); }); head.appendChild(htr);
     var list = hk ? j.cleaners : j.properties;
     list.forEach(function(x){
@@ -955,7 +1024,8 @@ html,body{overflow-x:clip}
       } else cell("Checks", String(x.checked));
       cell("AI score", x.avgScore === null ? "-" : x.avgScore + "/5");
       cell("Below standard", String(x.belowStandard));
-      cell("Typical check time", hm(x.medianCheckMins) || "-");
+      cell("Average time on site", hm(x.avgCheckMins) || "-");
+      var sv = cell("Short visits", String(x.shortVisits || 0)); if(x.shortVisits) sv.style.color = "var(--miss)";
       cell("Most common flags", topFlags(x.flagCount) || "None");
       body.appendChild(tr);
     });
@@ -966,7 +1036,52 @@ html,body{overflow-x:clip}
       iss.hidden = false;
     } else iss.hidden = true;
     if(hk) $("hknotes").hidden = true; else loadNotes();
-    $("insMsg").textContent = list.length ? "From " + j.from + " to " + j.to + ". Typical check time is the median from the first photo to Complete." : "No clean checks in this period yet.";
+    renderNew(hk ? j.newcomers : null); expSetup(hk ? j : null);
+    $("insMsg").textContent = list.length ? "From " + j.from + " to " + j.to + ". Time on site runs from the keys photo (taken on arrival) to Complete. A short visit is under 45 minutes." : "No clean checks in this period yet.";
+  }
+
+  /* New housekeepers' first 5 checks (Batch 1 item 28). */
+  function renderNew(list){
+    var box = $("newBox"), ul = $("newList"); ul.innerHTML = "";
+    if(!list || !list.length){ box.hidden = true; return; }
+    list.forEach(function(p){
+      var li = el("li"); li.appendChild(el("p", "pn", p.name + " (" + p.total + " check" + (p.total === 1 ? "" : "s") + " so far, first " + new Date(p.firstAt).toLocaleDateString("en-AU", { timeZone:TZ, day:"numeric", month:"short" }) + ")"));
+      var ol = el("ol");
+      p.checks.forEach(function(c){
+        var item = el("li"); var a = el("a", "", c.property || "Clean"); a.href = "view.html?id=" + encodeURIComponent(c.id) + "&from=office"; item.appendChild(a);
+        var bits = [new Date(c.date + "T12:00:00+10:00").toLocaleDateString("en-AU", { timeZone:TZ, day:"numeric", month:"short" })];
+        if(c.score) bits.push("AI " + c.score + "/5"); if(c.mins !== null) bits.push(hm(c.mins) + " on site"); if(c.mins !== null && c.mins < 45) bits.push("short");
+        item.appendChild(document.createTextNode(", " + bits.join(", "))); ol.appendChild(item);
+      });
+      li.appendChild(ol); ul.appendChild(li);
+    });
+    box.hidden = false;
+  }
+
+  /* Invoice check export (Batch 1 item 32): CSV that opens in Excel. */
+  var expReady = false;
+  function expSetup(j){
+    $("expBox").hidden = !j; if(!j) return;
+    var sel = $("expWho"), cur = sel.value; sel.innerHTML = '<option value="">Everyone</option>';
+    (j.cleaners || []).forEach(function(c){ var o = el("option", "", c.name); o.value = c.name; sel.appendChild(o); }); sel.value = cur;
+    if(!$("expFrom").value){ $("expFrom").value = shift(sydToday(), -14); $("expTo").value = sydToday(); }
+    if(expReady) return; expReady = true;
+    $("expGo").addEventListener("click", function(){
+      var from = $("expFrom").value, to = $("expTo").value, whoN = $("expWho").value, btn = this;
+      if(!from || !to || from > to){ $("expMsg").className = "msg err"; $("expMsg").textContent = "Pick a start and end date."; return; }
+      btn.disabled = true; $("expMsg").className = "msg"; $("expMsg").textContent = "Getting the cleans...";
+      post("export", { from: from, to: to, who: whoN }).then(function(x){
+        var head = ["Date","Property","Booking","Housekeeper","Checked by","Done in HomHero","Clean check at","Time on site (min)","Photos","AI score","Status","On Clean Check","Flags"];
+        var lines = [head].concat(x.rows.map(function(r){ return [r.date, r.property, r.booking, r.housekeeper, r.checkedBy, r.doneInHomHero ? String(r.doneInHomHero).replace("T", " ").slice(0, 16) : "",
+          r.cleanCheckAt ? new Date(r.cleanCheckAt).toLocaleString("en-AU", { timeZone:TZ }) : "", r.timeOnSiteMins === null ? "" : r.timeOnSiteMins, r.photos, r.aiScore,
+          { checked:"Checked", missing:"Missing check", cleaned:"Done in HomHero", waiting:"Not done" }[r.status] || r.status, r.onCleanCheck ? "Yes" : "No", r.flags]; }));
+        var csv = "\ufeff" + lines.map(function(l){ return l.map(function(v){ v = String(v === null || v === undefined ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(","); }).join("\r\n");
+        var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type:"text/csv" }));
+        a.download = "PHH cleans " + (whoN ? whoN.replace(/[^A-Za-z0-9 ]+/g, "").trim() + " " : "") + from + " to " + to + ".csv";
+        document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        $("expMsg").textContent = x.rows.length + " clean" + (x.rows.length === 1 ? "" : "s") + " downloaded.";
+      }).catch(function(e){ $("expMsg").className = "msg err"; $("expMsg").textContent = e.message; }).then(function(){ btn.disabled = false; });
+    });
   }
 
   /* ---------- Tabs ---------- */
@@ -1224,10 +1339,39 @@ html,body{overflow-x:clip}
   $("next").addEventListener("click", function(){ state.date = shift(state.date, 1); state.open = {}; loadDay(); });
   $("today").addEventListener("click", function(){ state.date = sydToday(); state.open = {}; loadDay(); });
   $("date").addEventListener("change", function(){ if(/^\d{4}-\d{2}-\d{2}$/.test(this.value)){ state.date = this.value; state.open = {}; loadDay(); } });
-  $("q").addEventListener("input", function(){ state.q = this.value.trim(); renderRows(); });
-  $("status").addEventListener("change", function(){ state.status = this.value; renderRows(); });
-  $("who").addEventListener("change", function(){ state.who = this.value; renderRows(); });
-  $("extra").addEventListener("change", function(){ state.extra = this.value; renderRows(); });
+  $("q").addEventListener("input", function(){ state.q = this.value.trim(); renderRows(); remember(); });
+  $("status").addEventListener("change", function(){ state.status = this.value; renderStrip(); renderRows(); remember(); });
+  $("who").addEventListener("change", function(){ state.who = this.value; renderRows(); remember(); });
+  $("extra").addEventListener("change", function(){ state.extra = this.value; renderRows(); remember(); });
+  /* Saved views (Batch 1 item 31): the last filters are remembered on this device, and named views can be saved as chips. */
+  var VKEY = "phh-office-views", LKEY = "phh-office-last";
+  function remember(){ try{ localStorage.setItem(LKEY, JSON.stringify({ q:state.q, status:state.status, who:state.who, extra:state.extra })); }catch(e){} }
+  function views(){ try{ return JSON.parse(localStorage.getItem(VKEY) || "[]") || []; }catch(e){ return []; } }
+  function applyView(v){
+    state.q = v.q || ""; state.status = v.status || ""; state.who = v.who || ""; state.extra = v.extra || "";
+    $("q").value = state.q; $("status").value = state.status; $("extra").value = state.extra; $("who").value = state.who;
+    if(v.tab && v.tab !== state.tab && (v.tab === "cleans" || v.tab === "attention")) setTab(v.tab);
+    renderStrip(); renderRows(); remember();
+  }
+  function drawViews(){
+    var box = $("views"); Array.prototype.slice.call(box.querySelectorAll(".vchip")).forEach(function(c){ c.remove(); });
+    views().forEach(function(v, i){
+      var c = el("span", "vchip"); var go = el("button", "", v.name); go.type = "button"; go.addEventListener("click", function(){ applyView(v); });
+      var x = el("button", "x", "\u00d7"); x.type = "button"; x.setAttribute("aria-label", "Delete view " + v.name);
+      x.addEventListener("click", function(){ var l = views(); l.splice(i, 1); try{ localStorage.setItem(VKEY, JSON.stringify(l)); }catch(e){} drawViews(); });
+      c.appendChild(go); c.appendChild(x); box.insertBefore(c, $("saveView"));
+    });
+  }
+  $("saveView").addEventListener("click", function(){
+    var name = (prompt("Name this view, for example \"Sharon's missing checks\"") || "").trim().slice(0, 40); if(!name) return;
+    var l = views().filter(function(v){ return v.name !== name; });
+    l.push({ name:name, tab:state.tab, q:state.q, status:state.status, who:state.who, extra:state.extra });
+    try{ localStorage.setItem(VKEY, JSON.stringify(l.slice(-12))); }catch(e){} drawViews();
+  });
+  drawViews();
+  if(!params.get("status") && !params.get("who") && !params.get("q")){
+    try{ var last = JSON.parse(localStorage.getItem(LKEY) || "null"); if(last){ state.q = last.q || ""; state.status = last.status || ""; state.who = last.who || ""; state.extra = last.extra || ""; $("extra").value = state.extra; } }catch(e){}
+  }
   $("days").addEventListener("change", loadIns);
   document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible" && (state.tab === "cleans" || state.tab === "attention")) loadDay(); });
   setInterval(function(){ if(document.visibilityState === "visible" && (state.tab === "cleans" || state.tab === "attention")) loadDay(); }, 5 * 60000);

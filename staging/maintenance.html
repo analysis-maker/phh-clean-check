@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261107023957"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108020657"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -96,6 +96,18 @@ td.col-prop{min-width:170px}
 .chip.warn{background:var(--warn-soft);color:var(--warn)}
 .chip.info{background:var(--info-soft);color:var(--info)}
 .chip.ok{background:#eaf5df;color:var(--ok-ink)}
+.chip.red{background:#c62828;color:#fff;font-weight:600}
+.chip.cst{background:#e8e3f6;color:#4a3b8c}
+.repeatbox{background:#fdecea;border:1px solid #f1b8b3;border-left:5px solid #c62828;border-radius:4px;padding:10px 14px;margin:0 0 14px}
+.repeatbox h2{margin:0 0 6px;font-size:14px;color:#a11d1d;text-transform:uppercase;letter-spacing:.04em}
+.repeatbox ul{margin:0;padding-left:18px}
+.repeatbox li{margin:3px 0}
+.repeatbox a{color:#a11d1d;font-weight:600}
+tr.rep td:first-child{box-shadow:inset 4px 0 0 #c62828}
+.metabox{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 0;align-items:flex-end}
+.metabox label{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+.metabox select{padding:6px 8px;border:1px solid var(--line);border-radius:4px;font:inherit}
+.metabox .sub{font-size:12px}
 .nowrap{white-space:nowrap}
 .empty{padding:28px 16px;color:var(--muted);text-align:center;background:#fff}
 
@@ -332,21 +344,25 @@ html,body{overflow-x:clip}
   <button class="tab" role="tab" data-tab="open" aria-selected="true">Open<span class="n" id="openN" hidden></span></button>
   <button class="tab" role="tab" data-tab="done" aria-selected="false">Complete</button>
   <button class="tab" role="tab" data-tab="all" aria-selected="false">All</button>
+  <button class="tab" role="tab" data-tab="props" aria-selected="false">By property</button>
 </nav>
 <main>
   <p class="trial">Maintenance issues housekeepers log in Clean Check, with their photos. Each one is also a HomHero maintenance job: assign and update it in HomHero as usual. Status here follows HomHero (checked every 10 minutes).</p>
   <div class="pushbox" id="pushbox" hidden></div>
+  <section class="repeatbox" id="repeatbox" hidden aria-labelledby="reph"><h2 id="reph">Repeat faults</h2><ul id="replist"></ul></section>
   <section class="gasbox" id="gasbox" hidden aria-labelledby="gash"><h2 id="gash">Gas requests from housekeepers</h2><ul id="gaslist"></ul></section>
   <div class="filters">
     <input type="search" id="q" placeholder="Search property or issue" aria-label="Search property or issue" autocomplete="off">
-    <select id="urg" aria-label="Priority"><option value="">All priorities</option><option value="urgent">Urgent only</option></select>
+    <select id="urg" aria-label="Priority"><option value="">All priorities</option><option value="urgent">Urgent</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option></select>
+    <select id="for" aria-label="Who it is for"><option value="">For everyone</option><option value="maint">Maintenance (Angus)</option><option value="house">Housekeeping (CST)</option></select>
+    <select id="days" aria-label="Period"><option value="60">Last 60 days</option><option value="90">Last 90 days</option><option value="180">Last 180 days</option></select>
     <button class="btn ghost small" id="refresh" type="button">Refresh</button>
   </div>
   <div class="strip" id="strip"></div>
   <p class="msg" id="msg">Loading...</p>
   <div class="tablewrap" id="wrap" hidden>
     <table>
-      <thead><tr><th>Status</th><th>Logged</th><th>Property</th><th>Issue</th><th>Photos</th><th>Logged by</th><th>Assigned to</th></tr></thead>
+      <thead id="thead"><tr><th>Status</th><th>Logged</th><th>Property</th><th>Issue</th><th>Photos</th><th>Logged by</th><th>Assigned to</th></tr></thead>
       <tbody id="rows"></tbody>
     </table>
   </div>
@@ -428,9 +444,13 @@ html,body{overflow-x:clip}
   var $ = function(id){ return document.getElementById(id); };
   var params = new URLSearchParams(location.search);
   var FOCUS = params.get("k") || "";
-  var state = { tab: FOCUS ? "all" : "open", q: "", urg: "", issues: [], open: {} };
-  /* Deep links (Ask PHH): ?tab=open|done|all &q=<property or issue> */
-  if(["open","done","all"].indexOf(params.get("tab") || "") >= 0) state.tab = params.get("tab");
+  var state = { tab: FOCUS ? "all" : "open", q: "", urg: "", forr: "", days: 60, issues: [], repeats: [], open: {} };
+  /* Filters are remembered on this device (Batch 1, 8 Nov). Deep links override them. */
+  var LKEY = "phh-maint-last";
+  try{ var last = JSON.parse(localStorage.getItem(LKEY) || "null"); if(last){ state.urg = last.urg || ""; state.forr = last.forr || ""; state.days = [60,90,180].indexOf(+last.days) >= 0 ? +last.days : 60; } }catch(e){}
+  function remember(){ try{ localStorage.setItem(LKEY, JSON.stringify({ urg: state.urg, forr: state.forr, days: state.days })); }catch(e){} }
+  /* Deep links (Ask PHH): ?tab=open|done|all|props &q=<property or issue> */
+  if(["open","done","all","props"].indexOf(params.get("tab") || "") >= 0) state.tab = params.get("tab");
   state.q = (params.get("q") || "").slice(0, 120);
   if(FOCUS) state.open[FOCUS] = true;
 
@@ -499,7 +519,8 @@ html,body{overflow-x:clip}
     return state.issues.filter(function(i){
       if(state.tab === "open" && isDone(i)) return false;
       if(state.tab === "done" && !isDone(i)) return false;
-      if(state.urg === "urgent" && !i.urgent) return false;
+      if(state.urg && i.priority !== state.urg) return false;
+      if(state.forr && i.route !== state.forr) return false;
       if(q && (i.property + " " + i.text + " " + i.housekeeper).toLowerCase().indexOf(q) < 0) return false;
       return true;
     });
@@ -510,9 +531,11 @@ html,body{overflow-x:clip}
     var open = state.issues.filter(function(i){ return !isDone(i); });
     var items = [
       [open.length, "Open", open.length ? "" : ""],
-      [open.filter(function(i){ return i.urgent; }).length, "Urgent open", "bad"],
+      [open.filter(function(i){ return i.priority === "urgent"; }).length, "Urgent open", "bad"],
+      [open.filter(function(i){ return (i.repeatOf || []).length; }).length, "Repeat faults open", "bad"],
+      [open.filter(function(i){ return i.route === "house"; }).length, "For housekeeping (CST)", ""],
       [open.filter(function(i){ return !i.homhero || i.homhero.status === "pending"; }).length, "Not assigned yet", ""],
-      [state.issues.filter(isDone).length, "Complete (60 days)", ""]
+      [state.issues.filter(isDone).length, "Complete (" + state.days + " days)", ""]
     ];
     items.forEach(function(x){ var d = el("div", x[0] && x[2] ? x[2] : ""); d.appendChild(el("b", "", String(x[0]))); d.appendChild(el("span", "", x[1])); s.appendChild(d); });
     var n = $("openN"); n.hidden = !open.length; n.textContent = String(open.length);
@@ -541,7 +564,7 @@ html,body{overflow-x:clip}
     function kv(k, v){ if(v === null || v === undefined || v === "") return; dl.appendChild(el("dt", "", k)); dl.appendChild(el("dd", "", v)); }
     var h = i.homhero || {};
     kv("Property", i.property);
-    kv("Priority", i.urgent ? "Urgent" : "Normal");
+    kv("Housekeeper ticked urgent", i.urgent ? "Yes" : "No");
     kv("Logged by", i.housekeeper + (i.loggedAt ? ", " + when(i.loggedAt) : ""));
     kv("Clean date", i.cleanDate ? new Date(i.cleanDate + "T12:00:00").toLocaleDateString("en-AU", { weekday:"short", day:"numeric", month:"short" }) : "");
     kv("HomHero job", h.job ? "#" + h.job : (i.sentToHomHero ? "Not created, office to check" : "Being created (up to 10 minutes)"));
@@ -553,32 +576,101 @@ html,body{overflow-x:clip}
     kv("Contractor notes", h.contractorNotes);
     kv("Checked with HomHero", h.syncedAt ? when(h.syncedAt) : "");
     right.appendChild(dl);
+    /* Priority and who it is for (Batch 1, 8 Nov). Saved beside the housekeeper's words, which never change. */
+    var mb = el("div", "metabox");
+    function pick(label, id, opts, val, field){
+      var w = el("div"); var l = el("label", "", label); l.setAttribute("for", id); var s = el("select"); s.id = id;
+      opts.forEach(function(o){ var op = el("option", "", o[1]); op.value = o[0]; s.appendChild(op); }); s.value = val;
+      s.addEventListener("click", function(e){ e.stopPropagation(); });
+      s.addEventListener("change", function(){
+        var b = {}; b.key = i.key; b[field] = s.value; s.disabled = true; said.textContent = "Saving...";
+        post("maint-meta", b).then(function(){ i[field] = s.value; i.metaBy = "you"; said.textContent = "Saved."; render(); })
+          .catch(function(e){ said.textContent = e.message; s.value = i[field]; }).then(function(){ s.disabled = false; });
+      });
+      w.appendChild(l); w.appendChild(s); mb.appendChild(w);
+    }
+    var said = el("span", "sub", i.metaBy ? "Last set by " + i.metaBy : "");
+    pick("Priority", "pri-" + i.key.replace(/[^a-z0-9]/gi, ""), [["urgent","Urgent"],["high","High"],["normal","Normal"],["low","Low"]], i.priority, "priority");
+    pick("For", "for-" + i.key.replace(/[^a-z0-9]/gi, ""), [["maint","Maintenance (Angus)"],["house","Housekeeping (CST)"]], i.route, "route");
+    mb.appendChild(said);
+    right.appendChild(mb);
+    if((i.repeatOf || []).length){
+      var rp = el("p", "sub"); rp.style.color = "#a11d1d"; rp.style.fontWeight = "600";
+      rp.textContent = "Repeat fault: logged at this property " + (i.repeatOf.length + 1) + " times within 30 days.";
+      right.appendChild(rp);
+    }
     var acts = el("div", "actions");
     var a = el("a", "btn ghost small", "Full clean check"); a.href = "view.html?id=" + encodeURIComponent(i.submissionId) + "&from=maint"; acts.appendChild(a);
     right.appendChild(acts);
     return tr;
   }
 
+  var PRI = { urgent:0, high:1, normal:2, low:3 };
+  function renderRepeats(){
+    var box = $("repeatbox"), ul = $("replist"); ul.innerHTML = "";
+    var open = (state.repeats || []).filter(function(r){ return r.keys.some(function(k){ var i = state.issues.filter(function(x){ return x.key === k; })[0]; return i && !isDone(i); }); });
+    open.forEach(function(r){
+      var li = el("li"); var a = el("a", "", r.property || "Unknown property"); a.href = "#";
+      a.addEventListener("click", function(e){ e.preventDefault(); state.tab = "all"; setTabs(); r.keys.forEach(function(k){ state.open[k] = true; }); state.q = r.property || ""; $("q").value = state.q; render();
+        var row = $("i-" + r.keys[0].replace(/[^a-z0-9]/gi, "")); if(row) row.scrollIntoView({ block:"center" }); });
+      li.appendChild(a); li.appendChild(document.createTextNode(": " + (r.words || []).join(", ") + " logged twice " + (r.days ? "in " + r.days + " day" + (r.days === 1 ? "" : "s") : "on the same day") + "."));
+      ul.appendChild(li);
+    });
+    box.hidden = !open.length;
+  }
+  function setTabs(){ Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(x){ x.setAttribute("aria-selected", x.dataset.tab === state.tab ? "true" : "false"); }); }
+  /* By property (Batch 1 item 22): which properties log the most issues. */
+  function renderProps(){
+    var by = {};
+    state.issues.forEach(function(i){
+      var k = i.property || "Unknown property"; var p = by[k] || (by[k] = { name:k, n:0, open:0, urgent:0, repeat:0, last:"" });
+      p.n++; if(!isDone(i)) p.open++; if(i.priority === "urgent") p.urgent++; if((i.repeatOf || []).length) p.repeat++; if(String(i.loggedAt) > p.last) p.last = i.loggedAt;
+    });
+    var list = Object.keys(by).map(function(k){ return by[k]; }).filter(function(p){ return !state.q || p.name.toLowerCase().indexOf(state.q.toLowerCase()) >= 0; })
+      .sort(function(a, b){ return b.n - a.n || b.open - a.open || a.name.localeCompare(b.name); });
+    $("thead").innerHTML = "<tr><th>Property</th><th>Issues</th><th>Open</th><th>Urgent</th><th>Repeat faults</th><th>Last logged</th></tr>";
+    var tb = $("rows"); tb.innerHTML = "";
+    list.forEach(function(p){
+      var tr = el("tr", "r" + (p.repeat ? " rep" : "")); tr.tabIndex = 0;
+      [[p.name, "Property"], [String(p.n), "Issues"], [String(p.open), "Open"], [String(p.urgent), "Urgent"], [String(p.repeat), "Repeat faults"], [when(p.last), "Logged"]].forEach(function(c, k){
+        var td = el("td", k === 0 ? "col-prop" : "", c[0]); td.dataset.l = c[1]; if(k === 4 && p.repeat){ td.style.color = "#a11d1d"; td.style.fontWeight = "600"; } tr.appendChild(td);
+      });
+      var go = function(){ state.tab = "all"; state.q = p.name; $("q").value = p.name; setTabs(); render(); };
+      tr.addEventListener("click", go); tr.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); go(); } });
+      tb.appendChild(tr);
+    });
+    $("wrap").hidden = !list.length;
+    $("msg").className = "msg"; $("msg").textContent = list.length ? "Last " + state.days + " days, most issues first. Tap a property to see its issues." : "No maintenance issues in this period.";
+  }
+  var ISSUE_HEAD = "<tr><th>Status</th><th>Logged</th><th>Property</th><th>Issue</th><th>Photos</th><th>Logged by</th><th>Assigned to</th></tr>";
   function render(){
-    strip();
-    var list = filtered();
+    strip(); renderRepeats();
+    if(state.tab === "props"){ renderProps(); return; }
+    $("thead").innerHTML = ISSUE_HEAD;
+    var list = filtered().sort(function(a, b){ return ((a.repeatOf || []).length ? 0 : 1) - ((b.repeatOf || []).length ? 0 : 1) || (PRI[a.priority] - PRI[b.priority]) || String(b.loggedAt).localeCompare(String(a.loggedAt)); });
     var tb = $("rows"); tb.innerHTML = "";
     $("msg").className = "msg";
     if(!list.length){
       $("wrap").hidden = true;
-      $("msg").textContent = state.issues.length ? (state.tab === "open" ? "No open maintenance issues. Nice." : "Nothing matches.") : "No maintenance issues logged in Clean Check in the last 60 days.";
+      $("msg").textContent = state.issues.length ? (state.tab === "open" ? "No open maintenance issues. Nice." : "Nothing matches.") : "No maintenance issues logged in Clean Check in the last " + state.days + " days.";
       return;
     }
     $("msg").textContent = ""; $("wrap").hidden = false;
     list.forEach(function(i){
       var st = statusOf(i), open = !!state.open[i.key];
-      var tr = el("tr", "r"); tr.tabIndex = 0; tr.setAttribute("aria-expanded", open ? "true" : "false"); tr.id = "i-" + i.key.replace(/[^a-z0-9]/gi, "");
+      var tr = el("tr", "r" + ((i.repeatOf || []).length ? " rep" : "")); tr.tabIndex = 0; tr.setAttribute("aria-expanded", open ? "true" : "false"); tr.id = "i-" + i.key.replace(/[^a-z0-9]/gi, "");
       var c0 = el("td", "st"); var stc = el("div", "stc " + st[1], st[0]); c0.appendChild(stc); tr.appendChild(c0);
       var c1 = el("td", "nowrap", when(i.loggedAt)); c1.dataset.l = "Logged"; tr.appendChild(c1);
       var c2 = el("td", "col-prop"); var pn = el("div", "prop", i.property || "Unknown property");
       var lab = el("span", "stlabel " + st[1], st[0]); pn.appendChild(lab); c2.appendChild(pn); tr.appendChild(c2);
       var c3 = el("td", "col-flags"); var tx = el("div", "", i.text); c3.appendChild(tx);
-      if(i.urgent){ var ch = el("div", "chips"); ch.appendChild(el("span", "chip warn", "Urgent")); c3.appendChild(ch); }
+      var ch = el("div", "chips");
+      if((i.repeatOf || []).length) ch.appendChild(el("span", "chip red", "Repeat fault"));
+      if(i.priority === "urgent") ch.appendChild(el("span", "chip warn", "Urgent"));
+      else if(i.priority === "high") ch.appendChild(el("span", "chip warn", "High"));
+      else if(i.priority === "low") ch.appendChild(el("span", "chip", "Low"));
+      if(i.route === "house") ch.appendChild(el("span", "chip cst", "For CST"));
+      if(ch.children.length) c3.appendChild(ch);
       tr.appendChild(c3);
       var c4 = el("td"); c4.dataset.l = "Photos";
       if(i.photos && i.photos.length){ var pb = el("button", "btn ghost small", i.photos.length + " photo" + (i.photos.length > 1 ? "s" : "")); pb.type = "button"; pb.addEventListener("click", function(e){ e.stopPropagation(); window.phhViewer.open(photosOf(i), 0); }); c4.appendChild(pb); }
@@ -597,9 +689,9 @@ html,body{overflow-x:clip}
   function load(){
     loadGas();
     $("msg").className = "msg"; if(!state.issues.length) $("msg").textContent = "Loading...";
-    post("maint", { days: 60 }).then(function(j){
+    post("maint", { days: state.days }).then(function(j){
       $("mename").textContent = j.name || "";
-      state.issues = j.issues || [];
+      state.issues = j.issues || []; state.repeats = j.repeats || [];
       render();
       if(FOCUS){ var row = $("i-" + FOCUS.replace(/[^a-z0-9]/gi, "")); if(row) row.scrollIntoView({ block: "center" }); FOCUS = ""; }
     }).catch(function(e){ $("wrap").hidden = true; $("msg").className = "msg err"; $("msg").textContent = e.message; });
@@ -608,14 +700,15 @@ html,body{overflow-x:clip}
   Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(t){
     t.setAttribute("aria-selected", t.dataset.tab === state.tab ? "true" : "false");
     t.addEventListener("click", function(){
-      state.tab = t.dataset.tab;
-      Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(x){ x.setAttribute("aria-selected", x === t ? "true" : "false"); });
-      render();
+      state.tab = t.dataset.tab; setTabs(); render();
     });
   });
   $("q").value = state.q;
   $("q").addEventListener("input", function(){ state.q = this.value.trim(); render(); });
-  $("urg").addEventListener("change", function(){ state.urg = this.value; render(); });
+  $("urg").value = state.urg; $("for").value = state.forr; $("days").value = String(state.days);
+  $("urg").addEventListener("change", function(){ state.urg = this.value; remember(); render(); });
+  $("for").addEventListener("change", function(){ state.forr = this.value; remember(); render(); });
+  $("days").addEventListener("change", function(){ state.days = +this.value; remember(); load(); });
   $("refresh").addEventListener("click", load);
   document.addEventListener("visibilitychange", function(){ if(!document.hidden) load(); });
   setInterval(function(){ if(!document.hidden) load(); }, 120000);

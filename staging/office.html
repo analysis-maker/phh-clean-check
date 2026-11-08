@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108022514"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108102316"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -124,6 +124,17 @@ td.st{padding:0;width:118px}
 .rvbar select,.rvbar input[type=search]{padding:7px 8px;border:1px solid var(--line);border-radius:4px;font:inherit}
 .rvbar label{font-size:14px}
 #rvView .hint{margin:6px 0 10px;color:var(--muted);font-size:13px}
+.rvsel{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+.rvsel select{padding:7px 8px;border:1px solid var(--line);border-radius:4px;font:inherit;max-width:100%}
+.rvcard{background:#fff;border:1px solid var(--line);border-radius:4px;padding:12px 14px;margin-bottom:12px}
+.rvcard h4{margin:0 0 2px;font-size:16px}
+.rvcard .strip{margin:10px 0}
+.rvcard .strip div{flex:1 1 110px}
+.rvcard .strip b{font-size:20px}
+.rvcard table{margin-top:6px}
+.rvcard .sub2{color:var(--muted);font-size:13px;margin:8px 0 2px}
+.rvon{display:inline-flex;align-items:center;gap:6px;background:var(--teal-soft);border-radius:999px;padding:3px 6px 3px 12px;font-size:13px;margin:0 6px 8px 0}
+.rvon button{border:0;background:none;font:inherit;cursor:pointer;color:var(--muted)}
 .rvh{margin:18px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-ink)}
 .prop{font-weight:500}
 td.col-prop{min-width:170px}
@@ -514,18 +525,24 @@ html,body{overflow-x:clip}
   <!-- Reviews (8 Nov 2026, Batch 2): guest reviews linked to the clean before the stay. Office only. -->
   <section id="rvView" hidden>
     <div class="rvbar">
-      <select id="rvDays" aria-label="Period"><option value="14">Last 14 days</option><option value="30" selected>Last 30 days</option><option value="60">Last 60 days</option><option value="90">Last 90 days</option></select>
+      <select id="rvDays" aria-label="Period"><option value="7">Last 7 days</option><option value="14">Last 14 days</option><option value="30" selected>Last 30 days</option><option value="60">Last 60 days</option><option value="90">Last 90 days</option></select>
       <input type="search" id="rvQ" placeholder="Search property, housekeeper or words" aria-label="Search reviews" autocomplete="off">
       <label><input type="checkbox" id="rvLow" checked> Only under 5 stars or cleanliness under 5</label>
+      <label><input type="checkbox" id="rvU35"> Only under 3.5 stars out of 5</label>
     </div>
     <p class="hint">Each guest review is matched to the clean before their stay, with that clean's check and photos. Office only: housekeepers and owners never see this page.</p>
     <h3 class="rvh">Reviews</h3>
+    <div id="rvOn"></div>
     <ul class="rv" id="rvList"></ul>
     <p class="msg" id="rvMsg">Loading...</p>
     <h3 class="rvh">Housekeeper review scores (last 90 days)</h3>
-    <div class="tablewrap"><table class="hk"><thead><tr><th>Housekeeper</th><th>Reviews</th><th>Average stars</th><th>Average cleanliness</th><th>5-star cleanliness</th><th>Cleanliness under 5</th><th>Clean had a check</th></tr></thead><tbody id="rvHk"></tbody></table></div>
+    <div class="rvsel"><select id="rvHkSel" aria-label="Housekeeper"><option value="">All housekeepers</option></select></div>
+    <div id="rvHkCard"></div>
+    <div class="tablewrap" id="rvHkTable"><table class="hk"><thead><tr><th>Housekeeper</th><th>Reviews</th><th>Average stars</th><th>Average cleanliness</th><th>5-star cleanliness</th><th>Cleanliness under 5</th><th>Clean had a check</th></tr></thead><tbody id="rvHk"></tbody></table></div>
     <p class="hint">Scored on the housekeeper who did the clean before each stay. Guests score many things they can't control, so read the reviews before acting on a number.</p>
     <h3 class="rvh">Star rating by property, last 6 months</h3>
+    <div class="rvsel"><select id="rvPropSel" aria-label="Property"><option value="">All properties</option></select></div>
+    <div id="rvPropCard"></div>
     <div class="tablewrap"><table class="hk trend"><thead id="rvTrendHead"></thead><tbody id="rvTrend"></tbody></table></div>
     <p class="hint">Average guest stars per month (number of reviews underneath). Red: down 0.3 or more on the month before. Lowest first.</p>
   </section>
@@ -1375,9 +1392,13 @@ html,body{overflow-x:clip}
   function stars(n){ return n === null || n === undefined ? "-" : (Math.round(n * 10) / 10).toFixed(1); }
   function rvRender(){
     var j = RV.data; if(!j) return;
-    var q = ($("rvQ").value || "").trim().toLowerCase(), lowOnly = $("rvLow").checked;
+    var q = ($("rvQ").value || "").trim().toLowerCase(), lowOnly = $("rvLow").checked, u35 = $("rvU35").checked;
+    var hkSel = $("rvHkSel").value, propSel = $("rvPropSel").value;
+    rvFillSelects(j);
     var list = (j.reviews || []).filter(function(r){
-      if(lowOnly && !r.low) return false;
+      if(u35){ if(!r.under35) return false; } else if(lowOnly && !r.low) return false;
+      if(hkSel && !(r.before && r.before.housekeeper === hkSel)) return false;
+      if(propSel && String(r.listingId) !== propSel) return false;
       if(q && [r.property, r.comment, r.privateNote, r.headline, r.before && r.before.housekeeper].join(" ").toLowerCase().indexOf(q) < 0) return false;
       return true;
     });
@@ -1387,6 +1408,7 @@ html,body{overflow-x:clip}
       h.appendChild(el("b", "", roomFirst(r.property)));
       h.appendChild(el("span", "sub", new Date(r.at).toLocaleDateString("en-AU", { timeZone:TZ, day:"numeric", month:"short" }) + " | " + (r.source || "") + " | #" + r.booking));
       h.appendChild(el("span", "sc" + (r.stars < 5 ? " low" : ""), stars(r.stars) + " stars"));
+      if(r.under35) h.appendChild(el("span", "chip warn", "Under 3.5"));
       if(r.clean !== null && r.clean !== undefined) h.appendChild(el("span", "sc" + (r.clean < 5 ? " low" : ""), "Cleanliness " + stars(r.clean)));
       if(r.mentionsCleaning) h.appendChild(el("span", "chip warn", "Mentions cleaning"));
       li.appendChild(h);
@@ -1407,7 +1429,12 @@ html,body{overflow-x:clip}
       li.appendChild(bf); ul.appendChild(li);
     });
     $("rvMsg").className = "msg";
-    $("rvMsg").textContent = list.length ? (list.length > 200 ? "Showing 200 of " + list.length + "." : list.length + " review" + (list.length === 1 ? "" : "s") + ".") : (lowOnly ? "No reviews under 5 stars in this period." : "No reviews in this period.");
+    $("rvMsg").textContent = list.length ? (list.length > 200 ? "Showing 200 of " + list.length + "." : list.length + " review" + (list.length === 1 ? "" : "s") + ".") : (u35 ? "No reviews under 3.5 stars in this period." : lowOnly ? "No reviews under 5 stars in this period." : "No reviews in this period.");
+    var on = $("rvOn"); on.innerHTML = "";
+    [[hkSel, "Housekeeper: " + hkSel, "rvHkSel"], [propSel, "Property: " + rvPropName(j, propSel), "rvPropSel"]].forEach(function(x){
+      if(!x[0]) return; var s = el("span", "rvon", x[1]); var b = el("button", "", "\u00d7"); b.type = "button"; b.setAttribute("aria-label", "Clear");
+      b.addEventListener("click", function(){ $(x[2]).value = ""; rvRender(); }); s.appendChild(b); on.appendChild(s);
+    });
     var lowN = (j.reviews || []).filter(function(r){ return r.low && Date.parse(r.at) > Date.now() - 7 * 86400000; }).length;
     $("rvN").textContent = lowN; $("rvN").hidden = !lowN;
 
@@ -1420,16 +1447,20 @@ html,body{overflow-x:clip}
       cell("5-star cleanliness", x.fiveStarClean === null ? "-" : x.fiveStarClean + "%");
       var lc = cell("Cleanliness under 5", String(x.lowClean)); if(x.lowClean) lc.style.color = "var(--miss)";
       cell("Clean had a check", x.withCheck + " of " + x.reviews);
-      tr.style.cursor = "pointer"; tr.addEventListener("click", function(){ $("rvQ").value = x.name; $("rvLow").checked = false; rvRender(); $("rvList").scrollIntoView({ block:"start" }); });
+      tr.style.cursor = "pointer"; tr.addEventListener("click", function(){ $("rvHkSel").value = x.name; rvRender(); $("rvHkSel").scrollIntoView({ block:"start" }); });
       hb.appendChild(tr);
     });
     if(!(j.housekeepers || []).length) hb.innerHTML = '<tr><td colspan="7" class="sub">No matched reviews yet.</td></tr>';
+    var hk = hkSel ? (j.housekeepers || []).filter(function(x){ return x.name === hkSel; })[0] : null;
+    $("rvHkTable").hidden = !!hk; rvHkCard(hk, j);
 
     var months = (j.trend && j.trend.months) || [], MN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     var th = el("tr"); th.appendChild(el("th", "", "Property")); months.forEach(function(m){ th.appendChild(el("th", "", MN[+m.slice(5, 7) - 1] + " " + m.slice(2, 4))); }); th.appendChild(el("th", "", "6 months"));
     $("rvTrendHead").innerHTML = ""; $("rvTrendHead").appendChild(th);
     var tb = $("rvTrend"); tb.innerHTML = "";
-    ((j.trend && j.trend.properties) || []).filter(function(p){ return !q || String(p.name).toLowerCase().indexOf(q) >= 0; }).forEach(function(p){
+    var prop = propSel ? ((j.trend && j.trend.properties) || []).filter(function(p){ return String(p.listingId) === propSel; })[0] : null;
+    rvPropCard(prop, j);
+    ((j.trend && j.trend.properties) || []).filter(function(p){ return prop ? p === prop : (!q || String(p.name).toLowerCase().indexOf(q) >= 0); }).forEach(function(p){
       var tr = el("tr"); var n = el("td", "name", roomFirst(p.name)); n.setAttribute("data-l", "Property"); tr.appendChild(n);
       var prev = null;
       p.cells.forEach(function(c, i){
@@ -1440,9 +1471,93 @@ html,body{overflow-x:clip}
         tr.appendChild(td);
       });
       var all = el("td", "m", stars(p.avg)); all.appendChild(el("small", "", p.reviews + " reviews")); all.setAttribute("data-l", "6 months"); tr.appendChild(all);
+      if(!prop){ tr.style.cursor = "pointer"; tr.addEventListener("click", function(){ $("rvPropSel").value = String(p.listingId); rvRender(); $("rvPropSel").scrollIntoView({ block:"start" }); }); }
       tb.appendChild(tr);
     });
   }
+  /* Housekeeper and property dropdowns (Ian 8 Nov): pick one to see all its stats; the review list follows the pick. */
+  var MN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function monLabel(m){ return MN[+m.slice(5, 7) - 1] + " " + m.slice(2, 4); }
+  function rvPropName(j, id){ var p = ((j.trend && j.trend.properties) || []).filter(function(x){ return String(x.listingId) === id; })[0]; return p ? roomFirst(p.name) : id; }
+  function rvFillSelects(j){
+    var hs = $("rvHkSel"), cur = hs.value, names = (j.housekeepers || []).map(function(x){ return x.name; }).sort(function(a, b){ return a.localeCompare(b); });
+    if(hs.options.length !== names.length + 1){
+      hs.innerHTML = '<option value="">All housekeepers</option>'; names.forEach(function(n){ var o = el("option", "", n); o.value = n; hs.appendChild(o); });
+      hs.value = names.indexOf(cur) >= 0 ? cur : "";
+    }
+    var ps = $("rvPropSel"), pc = ps.value, props = ((j.trend && j.trend.properties) || []).slice().sort(function(a, b){ return roomFirst(a.name).localeCompare(roomFirst(b.name)); });
+    if(ps.options.length !== props.length + 1){
+      ps.innerHTML = '<option value="">All properties</option>'; props.forEach(function(p){ var o = el("option", "", roomFirst(p.name)); o.value = String(p.listingId); ps.appendChild(o); });
+      ps.value = props.some(function(p){ return String(p.listingId) === pc; }) ? pc : "";
+    }
+  }
+  function tiles(list){
+    var s = el("div", "strip");
+    list.forEach(function(x){ var d = el("div", x[2] ? "bad" : ""); d.appendChild(el("b", "", String(x[0]))); d.appendChild(el("span", "", x[1])); s.appendChild(d); });
+    return s;
+  }
+  function monthTable(months, cells){
+    var w = el("div", "tablewrap"), tb = el("table", "hk trend"), h = el("tr"), r = el("tr"), prev = null;
+    months.forEach(function(m, i){
+      h.appendChild(el("th", "", monLabel(m)));
+      var c = cells[i], td = el("td", "m"); td.setAttribute("data-l", monLabel(m));
+      if(c){ td.appendChild(document.createTextNode(stars(c.avg))); td.appendChild(el("small", "", c.n + (c.n === 1 ? " review" : " reviews") + (c.clean !== null && c.clean !== undefined ? ", clean " + stars(c.clean) : "")));
+        if(prev !== null && c.avg - prev <= -0.3) td.className += " down"; else if(prev !== null && c.avg - prev >= 0.3) td.className += " up"; prev = c.avg; }
+      r.appendChild(td);
+    });
+    var th = el("thead"); th.appendChild(h); var bd = el("tbody"); bd.appendChild(r); tb.appendChild(th); tb.appendChild(bd); w.appendChild(tb); return w;
+  }
+  function smallTable(head, rows){
+    var w = el("div", "tablewrap"), tb = el("table", "hk"), th = el("thead"), h = el("tr");
+    head.forEach(function(x){ h.appendChild(el("th", "", x)); }); th.appendChild(h); tb.appendChild(th);
+    var bd = el("tbody");
+    rows.forEach(function(r){ var tr = el("tr"); r.forEach(function(v, i){ var td = el("td", i === 0 ? "name" : "", v === null || v === undefined ? "-" : String(v)); td.setAttribute("data-l", head[i]); tr.appendChild(td); }); bd.appendChild(tr); });
+    tb.appendChild(bd); w.appendChild(tb); return w;
+  }
+  function rvHkCard(x, j){
+    var box = $("rvHkCard"); box.innerHTML = ""; if(!x) return;
+    var c = el("div", "rvcard"); c.appendChild(el("h4", "", x.name));
+    c.appendChild(el("p", "sub", "Reviews of stays this housekeeper cleaned before, last 90 days. Office only."));
+    c.appendChild(tiles([
+      [x.reviews, "Reviews"], [stars(x.avgStars), "Average stars", x.avgStars < 4.7], [x.avgClean === null ? "-" : stars(x.avgClean), "Average cleanliness", x.avgClean !== null && x.avgClean < 4.8],
+      [x.fiveStarClean === null ? "-" : x.fiveStarClean + "%", "5-star cleanliness"], [x.lowClean, "Cleanliness under 5", x.lowClean > 0], [x.under35 || 0, "Under 3.5 stars", (x.under35 || 0) > 0],
+      [x.mentionsCleaning || 0, "Mention cleaning"]
+    ]));
+    var l30 = x.last30 || {};
+    c.appendChild(tiles([
+      [l30.reviews || 0, "Reviews, last 30 days"], [stars(l30.avgStars), "Stars, last 30 days"], [l30.avgClean === null || l30.avgClean === undefined ? "-" : stars(l30.avgClean), "Cleanliness, last 30 days"],
+      [x.withCheck + " of " + x.reviews, "Clean had a clean check"], [x.aiAvg ? stars(x.aiAvg) + "/5" : "-", "AI score on those cleans"], [x.avgMins ? hm(x.avgMins) : "-", "Time on site on those cleans"]
+    ]));
+    c.appendChild(el("p", "sub2", "Month by month (stars, number of reviews, cleanliness)"));
+    c.appendChild(monthTable((j.trend && j.trend.months) || [], x.months || []));
+    if((x.properties || []).length){
+      c.appendChild(el("p", "sub2", "By property, last 90 days"));
+      c.appendChild(smallTable(["Property", "Reviews", "Stars", "Cleanliness", "Under 3.5"], x.properties.map(function(p){ return [roomFirst(p.name), p.reviews, stars(p.avgStars), p.avgClean === null ? "-" : stars(p.avgClean), p.under35]; })));
+    }
+    c.appendChild(el("p", "sub2", "Their reviews are in the list above (period and filters apply)."));
+    box.appendChild(c);
+  }
+  function rvPropCard(p, j){
+    var box = $("rvPropCard"); box.innerHTML = ""; if(!p) return;
+    var c = el("div", "rvcard"); c.appendChild(el("h4", "", roomFirst(p.name)));
+    c.appendChild(el("p", "sub", "Guest reviews, last 6 months."));
+    c.appendChild(tiles([
+      [p.reviews, "Reviews"], [stars(p.avg), "Average stars", p.avg < 4.7], [p.avgClean === null || p.avgClean === undefined ? "-" : stars(p.avgClean), "Average cleanliness", p.avgClean !== null && p.avgClean < 4.8],
+      [p.lowClean || 0, "Cleanliness under 5", (p.lowClean || 0) > 0], [p.under35 || 0, "Under 3.5 stars", (p.under35 || 0) > 0],
+      [p.change === null || p.change === undefined ? "-" : (p.change > 0 ? "+" : "") + p.change.toFixed(2), "Change on last month", p.change !== null && p.change <= -0.3]
+    ]));
+    var hks = (p.housekeepers || []);
+    if(hks.length){
+      c.appendChild(el("p", "sub2", "Who cleaned before the reviewed stays"));
+      c.appendChild(smallTable(["Housekeeper", "Reviews", "Stars", "Cleanliness", "Under 3.5"], hks.map(function(h){ return [h.name, h.reviews, stars(h.avgStars), h.avgClean === null ? "-" : stars(h.avgClean), h.under35]; })));
+    }
+    if(p.noClean) c.appendChild(el("p", "sub2", p.noClean + " review" + (p.noClean === 1 ? "" : "s") + " could not be matched to a clean (stays before 23 Sep)."));
+    c.appendChild(el("p", "sub2", "Its reviews are in the list above (period and filters apply)."));
+    box.appendChild(c);
+  }
+  $("rvU35").addEventListener("change", function(){ if(RV.data) rvRender(); });
+  $("rvHkSel").addEventListener("change", function(){ if(RV.data) rvRender(); });
+  $("rvPropSel").addEventListener("change", function(){ if(RV.data) rvRender(); });
   $("rvDays").addEventListener("change", rvLoad);
   $("rvQ").addEventListener("input", function(){ if(RV.data) rvRender(); });
   $("rvLow").addEventListener("change", function(){ if(RV.data) rvRender(); });

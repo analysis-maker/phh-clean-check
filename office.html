@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108103054"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108113525"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -114,6 +114,10 @@ td.st{padding:0;width:118px}
 .rv .sc.low{color:var(--miss)}
 .rv .tx{margin:4px 0;white-space:pre-wrap;font-size:14px}
 .rv .pv{margin:4px 0;white-space:pre-wrap;font-size:14px;background:#fff7e6;border-left:3px solid #e0a100;padding:4px 8px}
+.rv .bn{margin:6px 0;padding:6px 10px;background:#f2f6fb;border-left:3px solid #5b7fb1;font-size:14px}
+.rv .bn b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#3d5f8f;margin-bottom:2px}
+.rv .bn p{margin:2px 0;white-space:pre-wrap}
+.rv .bn .k{color:var(--muted)}
 .rv .bf{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted)}
 .rv .bf a{color:var(--teal-ink);font-weight:600}
 .trend td.m{text-align:center;white-space:nowrap}
@@ -529,6 +533,7 @@ html,body{overflow-x:clip}
       <input type="search" id="rvQ" placeholder="Search property, housekeeper or words" aria-label="Search reviews" autocomplete="off">
       <label><input type="checkbox" id="rvLow" checked> Only under 5 stars or cleanliness under 5</label>
       <label><input type="checkbox" id="rvU35"> Only under 3.5 stars out of 5</label>
+      <label><input type="checkbox" id="rvNotes"> Only with booking notes</label>
     </div>
     <p class="hint">Each guest review is matched to the clean before their stay, with that clean's check and photos. Office only: housekeepers and owners never see this page.</p>
     <h3 class="rvh">Reviews</h3>
@@ -1398,6 +1403,7 @@ html,body{overflow-x:clip}
     var list = (j.reviews || []).filter(function(r){
       if(u35){ if(!r.under35) return false; } else if(lowOnly && !r.low) return false;
       if(hkSel && !(r.before && r.before.housekeeper === hkSel)) return false;
+      if($("rvNotes").checked && !r.bookingNotes && !(r.after && (r.after.note || r.after.guestsOver || r.after.maint))) return false;
       if(propSel && String(r.listingId) !== propSel) return false;
       if(q && [r.property, r.comment, r.privateNote, r.headline, r.before && r.before.housekeeper].join(" ").toLowerCase().indexOf(q) < 0) return false;
       return true;
@@ -1406,20 +1412,45 @@ html,body{overflow-x:clip}
     list.slice(0, 200).forEach(function(r){
       var li = el("li"); var h = el("div", "rh");
       h.appendChild(el("b", "", roomFirst(r.property)));
-      h.appendChild(el("span", "sub", new Date(r.at).toLocaleDateString("en-AU", { timeZone:TZ, day:"numeric", month:"short" }) + " | " + (r.source || "") + " | #" + r.booking));
+      /* Stay dates first (Ian 8 Nov): the review date is when the guest wrote it, often days after checkout. */
+      var dm = function(d){ return new Date(d + "T12:00:00+10:00").toLocaleDateString("en-AU", { timeZone:TZ, day:"numeric", month:"short" }); };
+      var stayTx = r.stay && r.stay.departure ? "Stayed " + (r.stay.arrival ? dm(r.stay.arrival) + " to " : "checked out ") + dm(r.stay.departure) + " | " : "";
+      h.appendChild(el("span", "sub", stayTx + "Reviewed " + new Date(r.at).toLocaleDateString("en-AU", { timeZone:TZ, day:"numeric", month:"short" }) + " | " + (r.source || "") + " | #" + r.booking));
       h.appendChild(el("span", "sc" + (r.stars < 5 ? " low" : ""), stars(r.stars) + " stars"));
       if(r.under35) h.appendChild(el("span", "chip warn", "Under 3.5"));
       if(r.clean !== null && r.clean !== undefined) h.appendChild(el("span", "sc" + (r.clean < 5 ? " low" : ""), "Cleanliness " + stars(r.clean)));
       if(r.mentionsCleaning) h.appendChild(el("span", "chip warn", "Mentions cleaning"));
+      if(r.bookingNotes) h.appendChild(el("span", "chip info", "Booking notes"));
       li.appendChild(h);
       if(r.headline) li.appendChild(el("p", "tx", r.headline));
       if(r.comment) li.appendChild(el("p", "tx", r.comment));
       if(r.privateNote) li.appendChild(el("p", "pv", "Private to PHH: " + r.privateNote));
+      /* Booking notes (Ian 8 Nov): what HomHero has on the reviewed booking, and what the housekeeper found after the stay,
+         so a reply can be explained and it isn't put on the housekeeper when it wasn't theirs. */
+      var g = r.guests, bnBits = [];
+      if(r.bookingNotes){ [["internal","Internal note"],["guest","Guest note"],["housekeeping","Housekeeping note"],["clean","Clean note"],["checkin","Check-in note"],["arrival","Arrival note"],["departure","Departure note"]].forEach(function(k){ if(r.bookingNotes[k[0]]) bnBits.push([k[1], r.bookingNotes[k[0]]]); }); }
+      if(r.after){
+        if(r.after.guestsOver) bnBits.push(["After the stay", "Housekeeper reported more guests than booked" + (r.after.guestsNote ? ": " + r.after.guestsNote : "") + "."]);
+        if(r.after.note) bnBits.push(["After the stay, " + (r.after.housekeeper || "housekeeper"), r.after.note]);
+        if(r.after.maint) bnBits.push(["After the stay", r.after.maint + " maintenance issue" + (r.after.maint === 1 ? "" : "s") + " logged."]);
+      }
+      if(bnBits.length || (g && (g.adults !== null && g.adults !== undefined))){
+        var bn = el("div", "bn"); bn.appendChild(el("b", "", "Booking #" + r.booking));
+        if(g && g.adults !== null && g.adults !== undefined){
+          var gp = [g.adults + " adult" + (g.adults === 1 ? "" : "s")]; if(g.children) gp.push(g.children + " child" + (g.children === 1 ? "" : "ren")); if(g.infants) gp.push(g.infants + " infant" + (g.infants === 1 ? "" : "s")); if(g.pets) gp.push(g.pets + " pet" + (g.pets === 1 ? "" : "s"));
+          bn.appendChild(el("p", "k", "Booked: " + gp.join(", ") + (g.nights ? ", " + g.nights + " night" + (g.nights === 1 ? "" : "s") : "")));
+        }
+        bnBits.forEach(function(x){ var pp = el("p"); pp.appendChild(el("span", "k", x[0] + ": ")); pp.appendChild(document.createTextNode(x[1])); bn.appendChild(pp); });
+        if(!bnBits.length) bn.appendChild(el("p", "k", "No notes on this booking."));
+        li.appendChild(bn);
+      }
       var bf = el("div", "bf");
       if(!r.before){ bf.textContent = "Clean before the stay: not found (before 23 Sep, or the booking isn't in Clean Check)."; }
       else {
         var b = r.before;
-        bf.appendChild(document.createTextNode("Clean before the stay: " + (b.housekeeper || "No housekeeper in HomHero") + ", " + new Date(b.date + "T12:00:00+10:00").toLocaleDateString("en-AU", { timeZone:TZ, weekday:"short", day:"numeric", month:"short" }) + ". "));
+        /* Described by the previous guest's checkout: HomHero's clean date can sit a day after the next guests arrive. */
+        var wd = function(d){ return new Date(d + "T12:00:00+10:00").toLocaleDateString("en-AU", { timeZone:TZ, weekday:"short", day:"numeric", month:"short" }); };
+        bf.appendChild(document.createTextNode("Clean before the stay: " + (b.housekeeper || "No housekeeper in HomHero") + ", " + (b.checkout ? "after the " + wd(b.checkout) + " checkout" : wd(b.date)) + ". "));
         if(b.submissionId){
           var a = el("a", "", "Photos and checklist"); a.href = "view.html?id=" + encodeURIComponent(b.submissionId) + "&from=office"; bf.appendChild(a);
           var bits = []; if(b.aiScore) bits.push("AI " + b.aiScore + "/5"); if(b.mins !== null && b.mins !== undefined) bits.push(hm(b.mins) + " on site");
@@ -1556,6 +1587,7 @@ html,body{overflow-x:clip}
     box.appendChild(c);
   }
   $("rvU35").addEventListener("change", function(){ if(RV.data) rvRender(); });
+  $("rvNotes").addEventListener("change", function(){ if(RV.data) rvRender(); });
   $("rvHkSel").addEventListener("change", function(){ if(RV.data) rvRender(); });
   $("rvPropSel").addEventListener("change", function(){ if(RV.data) rvRender(); });
   $("rvDays").addEventListener("change", rvLoad);

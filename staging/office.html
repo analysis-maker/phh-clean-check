@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108111315"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108120001"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -100,6 +100,22 @@ td.st{padding:0;width:118px}
 .box2 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
 .box2 label{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
 .box2 select,.box2 input[type=date]{padding:7px 8px;border:1px solid var(--line);border-radius:4px;font:inherit;max-width:100%}
+/* Batch 3 (8 Nov 2026, staging): checklist for one property, messages with the housekeeper. */
+.pc h4{margin:14px 0 6px;font-size:13px;color:var(--teal-ink)}
+.pc ul.pcl{list-style:none;margin:0;padding:0}
+.pc ul.pcl li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.pc ul.pcl li:first-child{border-top:0}
+.pc ul.pcl li .t{flex:1 1 220px;min-width:0}
+.pc ul.pcl img{width:64px;height:48px;object-fit:cover;border-radius:4px;border:1px solid var(--line)}
+.pc input[type=text]{padding:7px 8px;border:1px solid var(--line);border-radius:4px;font:inherit;min-width:0;width:100%}
+.pc .row > div{min-width:0}
+.pc .grow{flex:1 1 260px}
+.pc select{max-width:100%}
+.thd .msgs{display:grid;gap:6px;margin:6px 0}
+.thd .m{padding:6px 10px;border-radius:6px;background:#f3f6f8;white-space:pre-wrap;word-break:break-word}
+.thd .m.hk{background:#eaf5f3}
+.thd .m b{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.thd textarea{width:100%;min-height:56px;padding:7px 8px;border:1px solid var(--line);border-radius:4px;font:inherit;box-sizing:border-box}
 .nc{list-style:none;margin:0;padding:0}
 .nc>li{padding:10px 0;border-top:1px solid var(--line-2)}
 .nc>li:first-child{border-top:0}
@@ -572,6 +588,13 @@ html,body{overflow-x:clip}
       <ul id="hkNotesList"></ul>
       <p class="msg" id="hkNotesMsg"></p>
     </div>
+    <div class="box2 pc" id="pcBox" hidden>
+      <h3>Checklist for one property</h3>
+      <p class="hint">Extra checklist items for one property, example photos ("what good looks like") and items confirmed as not at the property. Housekeepers see changes the next time they open a clean there.</p>
+      <div class="row"><div class="grow"><label for="pcProp">Property</label><select id="pcProp"><option value="">All properties (example photos only)</option></select></div></div>
+      <div id="pcBody"></div>
+      <p class="msg" id="pcMsg"></p>
+    </div>
     <div class="box2" id="newBox" hidden>
       <h3>New housekeepers: first 5 clean checks</h3>
       <p class="hint">Anyone whose first clean check was in the last 14 days, or who has 5 or fewer. Open each one and look at the photos. For the office only.</p>
@@ -629,7 +652,7 @@ html,body{overflow-x:clip}
   }
   function absentFlags(r){
     r.flags = (r.flags || []).filter(function(f){ return !f.absent && !f.extra; });
-    (r.absent || []).forEach(function(a){ if(!a.status) r.flags.push({ tone:"warn", label:"No " + a.name + "? Please confirm", absent:true }); });
+    (r.absent || []).forEach(function(a){ if(!a.status) r.flags.push({ tone:"warn", label: a.kind === "item" ? "Not at this property? Please confirm: " + (a.name.length > 45 ? a.name.slice(0, 44) + "..." : a.name) : "No " + a.name + "? Please confirm", absent:true }); });
     /* Anything else from the housekeeper (Sharon, 30 Oct). Guests and open gas requests need someone to act, so they count for Needs attention. */
     var x = r.extra; if(!x) return;
     if(x.guestsOver) r.flags.push({ tone:"warn", label:"More guests than booked", extra:true });
@@ -646,6 +669,54 @@ html,body{overflow-x:clip}
       state.rows.forEach(function(r){ var x = r.submissionId && by[r.submissionId]; if(x){ r.absent = x.items || []; r.extra = x.extra || null; absentFlags(r); hit = true; } });
       if(hit){ renderStrip(); renderRows(); }
     }).catch(function(){});
+  }
+  /* Batch 3: messages on each clean that day. A reply from the housekeeper shows as a flag until the office has answered. */
+  var TH = { threads:{}, draft:{} }; /* thread cache and unsent drafts, by booking */
+  function loadThreads(date, my){
+    if(!CLEAN_API) return;
+    cpost("thread-day", { date: date }).then(function(j){
+      if(my !== loading) return;
+      var t = j.threads || {}, hit = false;
+      state.rows.forEach(function(r){
+        var x = t[String(r.res)]; r.flags = (r.flags || []).filter(function(f){ return !f.th; });
+        if(x){ r.threadInfo = x; if(x.last === "housekeeper") r.flags.push({ tone:"warn", label:"Housekeeper replied", th:true }); hit = true; }
+      });
+      if(hit){ renderStrip(); renderRows(); }
+    }).catch(function(){});
+  }
+  function threadBlock(r){
+    var wrap = el("div", "thd"); wrap.appendChild(el("h3", "", "Messages with the housekeeper"));
+    var list = el("div", "msgs"); wrap.appendChild(list);
+    var ta = el("textarea"); ta.maxLength = 1000; ta.placeholder = "Write to the housekeeper about this clean"; ta.setAttribute("aria-label", "Message to the housekeeper about this clean");
+    ta.value = TH.draft[r.res] || "";
+    ta.addEventListener("input", function(){ TH.draft[r.res] = ta.value; });
+    ta.addEventListener("click", function(e){ e.stopPropagation(); });
+    var send = el("button", "btn small", "Send"); send.type = "button";
+    var said = el("span", "sub", "Shows in the housekeeper's app for this clean. They can reply. No notification is sent.");
+    var draw = function(j){
+      list.innerHTML = "";
+      ((j && j.comments) || []).forEach(function(c){ var m = el("div", "m" + (c.kind === "housekeeper" ? " hk" : "")); m.appendChild(el("b", "", (c.kind === "office" ? c.name + " (office)" : c.name) + ", " + new Date(c.at).toLocaleString("en-AU", { timeZone:TZ, day:"numeric", month:"short", hour:"numeric", minute:"2-digit" }))); m.appendChild(document.createTextNode(c.text)); list.appendChild(m); });
+      if(!list.children.length) list.appendChild(el("p", "sub", "No messages yet."));
+    };
+    if(TH.threads[r.res]) draw(TH.threads[r.res]);
+    else { list.appendChild(el("p", "sub", "Loading...")); cpost("thread", { res: r.res }).then(function(j){ TH.threads[r.res] = j; draw(j); }).catch(function(e){ list.innerHTML = ""; list.appendChild(el("p", "sub", e.message)); }); }
+    send.addEventListener("click", function(e){
+      e.stopPropagation(); var t = ta.value.trim(); if(!t) return; send.disabled = true;
+      cpost("thread-post", { res: r.res, text: t }).then(function(j){
+        TH.threads[r.res] = j; TH.draft[r.res] = ""; ta.value = ""; send.disabled = false; draw(j);
+        r.flags = (r.flags || []).filter(function(f){ return !f.th; }); renderStrip();
+      }).catch(function(er){ send.disabled = false; said.textContent = er.message; });
+    });
+    wrap.appendChild(ta); var ag = el("div", "agree"); ag.appendChild(send); ag.appendChild(said); wrap.appendChild(ag);
+    return wrap;
+  }
+  /* Batch 3 item 35: where the guest keys photo was taken, office only. */
+  function locText(k){
+    if(!k) return "";
+    if(k.none) return "No location";
+    if(k.distM === null || k.distM === undefined) return "Location saved (no map point for this property yet)";
+    if(k.distM <= Math.max(150, k.acc || 0)) return "At property";
+    return k.distM < 1000 ? k.distM + " m from property" : (Math.round(k.distM / 100) / 10) + " km from property";
   }
   /* Guests told us they've left (Airbnb message or SMS reply in the HomHero inbox), Sharon 2 Nov. Info chip on the clean. */
   function loadGuestLeft(date, my){
@@ -691,18 +762,19 @@ html,body{overflow-x:clip}
     wrap.appendChild(el("h3", "", "Not at this property"));
     (r.absent || []).forEach(function(a){
       var row = el("div", "agree");
-      var txt = el("span", "", "Housekeeper marked: no " + a.name + ". ");
+      var item = a.kind === "item";
+      var txt = el("span", "", item ? "Housekeeper marked not at this property: " + a.name + ". " : "Housekeeper marked: no " + a.name + ". ");
       row.appendChild(txt);
       var said = el("span", "sub");
       var show = function(){
-        said.textContent = a.status === "confirmed" ? "Confirmed" + (a.by ? " by " + a.by : "") + ". No " + a.name + " photo will be asked for at this property."
-          : a.status === "rejected" ? "Office said there is one" + (a.by ? " (" + a.by + ")" : "") + ". The photo is needed at this property."
+        said.textContent = a.status === "confirmed" ? "Confirmed" + (a.by ? " by " + a.by : "") + (item ? ". It drops off the checklist at this property." : ". No " + a.name + " photo will be asked for at this property.")
+          : a.status === "rejected" ? "Office said it is there" + (a.by ? " (" + a.by + ")" : "") + (item ? ". It stays on the checklist at this property." : ". The photo is needed at this property.")
           : "Please confirm.";
       };
       show(); row.appendChild(said);
       if(!a.status){
-        var yes = el("button", "btn small", "Confirm, no " + a.name); yes.type = "button";
-        var no = el("button", "btn ghost small", "There is one"); no.type = "button";
+        var yes = el("button", "btn small", item ? "Confirm, not here" : "Confirm, no " + a.name); yes.type = "button";
+        var no = el("button", "btn ghost small", item ? "It is there" : "There is one"); no.type = "button";
         var go = function(ok){
           yes.disabled = no.disabled = true;
           cpost("absent-decide", { id: r.submissionId, slot: a.slot, ok: ok }).then(function(j){
@@ -982,6 +1054,7 @@ html,body{overflow-x:clip}
         "Not done yet."));
       if(r.flags.length){ var lf = el("ul"); r.flags.forEach(function(f){ lf.appendChild(el("li", f.tone === "warn" ? "sev-medium" : "", f.label)); }); left.appendChild(lf); }
     }
+    left.appendChild(threadBlock(r));
     box.appendChild(left);
 
     var right = el("div");
@@ -993,6 +1066,7 @@ html,body{overflow-x:clip}
     add("Done in HomHero", r.hhCleanedAt ? localTime(r.hhCleanedAt) : "Not yet");
     add("Clean check", r.submitted ? time(r.submittedAt) : "");
     add("Arrived (keys photo)", r.arrivedAt ? time(r.arrivedAt) : "");
+    if(r.submitted) add("Keys photo location", locText(r.keysLoc));
     add("Time on site (keys photo to Complete)", hm(r.checkMins));
     add("Items N/A", r.submitted ? String(r.naCount) : "");
     add("Next guests", nextGuests(r));
@@ -1043,7 +1117,7 @@ html,body{overflow-x:clip}
       state.rows = j.rows || []; fillWho(j.cleaners || []);
       renderStrip(); renderRows();
       if(LINK.open){ var or = $("r-" + LINK.open.replace(/[^A-Za-z0-9-]/g, "")); if(or) or.scrollIntoView({ block:"center" }); LINK.open = ""; }
-      loadAbsent(state.date, my); loadGuestLeft(state.date, my);
+      loadAbsent(state.date, my); loadGuestLeft(state.date, my); loadThreads(state.date, my);
     }).catch(function(e){ if(my !== loading) return; $("dayTableWrap").hidden = true; $("msg").className = "msg err"; $("msg").textContent = e.message; });
   }
 
@@ -1594,6 +1668,109 @@ html,body{overflow-x:clip}
   $("rvQ").addEventListener("input", function(){ if(RV.data) rvRender(); });
   $("rvLow").addEventListener("change", function(){ if(RV.data) rvRender(); });
 
+  /* ---------- Batch 3: checklist for one property (Properties tab). office-api-v2 prop-* and ref-* routes. ---------- */
+  var PC = { list:null, pid:"", data:null };
+  function pcInit(){
+    if(PC.list) return;
+    PC.list = [];
+    post("prop-list", {}).then(function(j){
+      PC.list = j.properties || []; var sel = $("pcProp");
+      PC.list.forEach(function(p){ var o = el("option", "", p.id === "TEST-DEMO" ? p.name + " (practice)" : p.name); o.value = p.id; sel.appendChild(o); });
+      pcLoad();
+    }).catch(function(e){ PC.list = null; $("pcMsg").className = "msg err"; $("pcMsg").textContent = e.message; });
+  }
+  function pcLoad(){
+    PC.pid = $("pcProp").value; $("pcMsg").className = "msg"; $("pcMsg").textContent = "Loading...";
+    post("prop-get", { propertyId: PC.pid }).then(function(j){ if(j.propertyId !== PC.pid) return; PC.data = j; pcRender(); $("pcMsg").textContent = ""; })
+      .catch(function(e){ $("pcMsg").className = "msg err"; $("pcMsg").textContent = e.message; });
+  }
+  function pcSay(t, err){ $("pcMsg").className = "msg" + (err ? " err" : ""); $("pcMsg").textContent = t; }
+  function pcRender(){
+    var j = PC.data, host = $("pcBody"); host.innerHTML = "";
+    var secTitle = {}; j.checklist.sections.forEach(function(s){ secTitle[s.id] = s.title; });
+    if(PC.pid){
+      host.appendChild(el("h4", "", "Extra checklist items at this property"));
+      var ul = el("ul", "pcl");
+      j.items.forEach(function(it){
+        var li = el("li"); li.appendChild(el("span", "t", (secTitle[it.sec] || it.sec) + ": " + it.text));
+        li.appendChild(el("span", "sub", it.created_by ? "Added by " + it.created_by : ""));
+        var rm = el("button", "btn ghost small", "Remove"); rm.type = "button";
+        rm.addEventListener("click", function(){ rm.disabled = true; post("prop-item-remove", { id: it.id }).then(function(){ pcSay("Removed."); pcLoad(); }).catch(function(e){ rm.disabled = false; pcSay(e.message, true); }); });
+        li.appendChild(rm); ul.appendChild(li);
+      });
+      if(!j.items.length) ul.appendChild(el("li", "sub", "None yet."));
+      host.appendChild(ul);
+      var row = el("div", "row"); var d1 = el("div"); d1.appendChild(el("label", "", "Section"));
+      var sec = el("select"); sec.setAttribute("aria-label", "Section"); j.checklist.sections.forEach(function(s){ var o = el("option", "", s.title); o.value = s.id; sec.appendChild(o); }); d1.appendChild(sec);
+      var d2 = el("div", "grow"); d2.appendChild(el("label", "", "Item")); var tx = el("input"); tx.type = "text"; tx.maxLength = 300; tx.placeholder = "For example: Wipe the pool fence glass"; tx.setAttribute("aria-label", "New checklist item"); d2.appendChild(tx);
+      var add = el("button", "btn small", "Add item"); add.type = "button";
+      add.addEventListener("click", function(){ var t = tx.value.trim(); if(t.length < 3){ pcSay("Write the checklist item.", true); return; } add.disabled = true;
+        post("prop-item-add", { propertyId: PC.pid, sec: sec.value, text: t }).then(function(){ pcSay("Added. It shows on the next clean at this property."); pcLoad(); }).catch(function(e){ add.disabled = false; pcSay(e.message, true); }); });
+      row.appendChild(d1); row.appendChild(d2); row.appendChild(add); host.appendChild(row);
+    }
+    host.appendChild(el("h4", "", "Example photos (\"See example\" in the housekeeper app)"));
+    var ur = el("ul", "pcl");
+    j.refs.slice().sort(function(a, b){ return a.name.localeCompare(b.name); }).forEach(function(r){
+      var li = el("li");
+      if(r.url){ var im = el("img"); im.src = r.url; im.alt = "Example: " + r.name; im.loading = "lazy"; li.appendChild(im); }
+      li.appendChild(el("span", "t", r.name + (r.note ? " (" + r.note + ")" : "")));
+      li.appendChild(el("span", "sub", r.all ? "All properties" + (PC.pid ? " (this property uses it unless it has its own)" : "") : "This property only"));
+      if(r.all === !PC.pid){ var rm = el("button", "btn ghost small", "Remove"); rm.type = "button";
+        rm.addEventListener("click", function(){ rm.disabled = true; post("ref-remove", { target: r.target, propertyId: PC.pid }).then(function(){ pcSay("Removed."); pcLoad(); }).catch(function(e){ rm.disabled = false; pcSay(e.message, true); }); });
+        li.appendChild(rm); }
+      ur.appendChild(li);
+    });
+    if(!j.refs.length) ur.appendChild(el("li", "sub", "None yet."));
+    host.appendChild(ur);
+    var r2 = el("div", "row"); var e1 = el("div", "grow"); e1.appendChild(el("label", "", "Checklist item or photo"));
+    var tg = el("select"); tg.setAttribute("aria-label", "Checklist item or photo");
+    j.checklist.sections.forEach(function(s){
+      var og = document.createElement("optgroup"); og.label = s.title;
+      j.checklist.photos.filter(function(p){ return p.sec === s.id; }).forEach(function(p){ var o = el("option", "", "Photo: " + p.label); o.value = p.id; og.appendChild(o); });
+      s.items.forEach(function(i){ var o = el("option", "", i.text); o.value = i.id; og.appendChild(o); });
+      j.items.filter(function(i){ return i.sec === s.id; }).forEach(function(i){ var o = el("option", "", i.text + " (this property)"); o.value = i.id; og.appendChild(o); });
+      tg.appendChild(og);
+    });
+    e1.appendChild(tg);
+    var e2 = el("div"); e2.appendChild(el("label", "", "Photo")); var fi = el("input"); fi.type = "file"; fi.accept = "image/*"; fi.setAttribute("aria-label", "Example photo file"); e2.appendChild(fi);
+    var e3 = el("div", "grow"); e3.appendChild(el("label", "", "Short note (optional)")); var nt = el("input"); nt.type = "text"; nt.maxLength = 200; nt.placeholder = "For example: hotplates wiped, no grease"; e3.appendChild(nt);
+    var up = el("button", "btn small", PC.pid ? "Upload for this property" : "Upload for all properties"); up.type = "button";
+    up.addEventListener("click", function(){
+      var f = fi.files && fi.files[0]; if(!f){ pcSay("Choose a photo first.", true); return; }
+      up.disabled = true; pcSay("Uploading...");
+      pcShrink(f).then(function(blob){
+        return post("ref-upload-url", { target: tg.value, propertyId: PC.pid }).then(function(u){
+          return fetch(u.signedUrl, { method:"PUT", headers:{ "content-type":"image/jpeg" }, body: blob }).then(function(r){ if(!r.ok) throw new Error("The photo did not upload. Try again.");
+            return post("ref-save", { target: tg.value, propertyId: PC.pid, path: u.path, note: nt.value }); });
+        });
+      }).then(function(){ pcSay("Saved. Housekeepers see \"See example\" on their next clean."); pcLoad(); }).catch(function(e){ up.disabled = false; pcSay(e.message, true); });
+    });
+    r2.appendChild(e1); r2.appendChild(e2); r2.appendChild(e3); r2.appendChild(up); host.appendChild(r2);
+    if(PC.pid){
+      host.appendChild(el("h4", "", "Not at this property (office decisions)"));
+      var ua = el("ul", "pcl");
+      j.absent.forEach(function(a){
+        var li = el("li"); li.appendChild(el("span", "t", a.name));
+        li.appendChild(el("span", "sub", (a.status === "confirmed" ? "Confirmed not here" : "Office said it is there") + (a.by ? ", " + a.by : "")));
+        var rm = el("button", "btn ghost small", "Ask again"); rm.type = "button"; rm.title = "Remove the decision so housekeepers are asked about it again";
+        rm.addEventListener("click", function(){ rm.disabled = true; post("prop-absent-clear", { propertyId: PC.pid, slot: a.slot }).then(function(){ pcSay("Done. Housekeepers will be asked about it again."); pcLoad(); }).catch(function(e){ rm.disabled = false; pcSay(e.message, true); }); });
+        li.appendChild(rm); ua.appendChild(li);
+      });
+      if(!j.absent.length) ua.appendChild(el("li", "sub", "None."));
+      host.appendChild(ua);
+    }
+  }
+  function pcShrink(file){
+    return new Promise(function(ok, no){
+      var img = new Image(), url = URL.createObjectURL(file);
+      img.onload = function(){ var m = 1280, k = Math.min(1, m / Math.max(img.width, img.height)); var c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); c.toBlob(function(b){ if(b) ok(b); else no(new Error("That photo could not be read.")); }, "image/jpeg", 0.8); };
+      img.onerror = function(){ URL.revokeObjectURL(url); no(new Error("That photo could not be read.")); };
+      img.src = url;
+    });
+  }
+  $("pcProp").addEventListener("change", pcLoad);
+
   var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables", reviews:"Reviews" };
   function setTab(t){
     state.tab = t;
@@ -1601,6 +1778,7 @@ html,body{overflow-x:clip}
     $("sectionTitle").textContent = TITLES[t];
     var day = t === "cleans" || t === "attention", spring = t === "spring", cons = t === "cons", rv = t === "reviews";
     $("dayView").hidden = !day; $("insView").hidden = day || spring || cons || rv; $("springView").hidden = !spring; $("consView").hidden = !cons; $("rvView").hidden = !rv;
+    $("pcBox").hidden = t !== "props"; if(t === "props") pcInit();
     if(rv){ if(RV.data) rvRender(); else rvLoad(); }
     else if(cons){ $("consMsg").className = "msg"; $("consMsg").textContent = "Loading..."; consLoad(true).catch(function(e){ $("consMsg").className = "msg err"; $("consMsg").textContent = e.message; }); }
     else if(spring) spLoad(); else if(day){ if(state.rows.length) renderRows(); } else loadIns();

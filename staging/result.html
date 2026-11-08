@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261107023957"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108120001"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -11,7 +11,8 @@
 <link rel="icon" type="image/png" sizes="180x180" href="icon-180.png">
 <link rel="preload" href="../raleway-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://rxhpnowszmetjxbwylil.supabase.co" crossorigin>
-<script>window.PHH_PUSH_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/push-api";</script>
+<script>window.PHH_PUSH_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/push-api";
+/* Batch 3 (staging): messages with the office on this clean live on clean-api-v11. */ window.PHH_CLEAN_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/clean-api-v11";</script>
 <title>Professional Holiday Homes - Clean check feedback</title>
 <style>
 @font-face{font-family:"Raleway";font-style:normal;font-weight:100 900;font-display:swap;src:url("../raleway-latin.woff2") format("woff2")}
@@ -96,6 +97,15 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-off
 .tips li{margin:6px 0}
 .sign{margin-top:18px;color:var(--muted)}
 .back{display:inline-block;margin-top:16px;color:var(--teal);font-weight:700;text-decoration:none}
+/* Batch 3: messages between the office and the housekeeper on this clean. */
+.thr{margin-top:22px;padding:14px 16px;border-radius:var(--radius-md);border:1.5px solid var(--teal);background:#fff}
+.thr h2{font-size:1.05rem;font-weight:800}
+.thr .msg{margin:10px 0 0;padding:8px 10px;border-radius:8px;background:var(--surface-2);white-space:pre-wrap;word-break:break-word}
+.thr .msg.me{background:var(--teal-hl)}
+.thr .who{display:block;font-size:.75rem;color:var(--muted);font-weight:700;margin-bottom:2px}
+.thr textarea{width:100%;min-height:70px;margin-top:12px;font:inherit;font-size:16px;padding:10px;border:1.5px solid var(--line);border-radius:var(--radius-md);box-sizing:border-box}
+.thr button{margin-top:8px;width:100%;font:inherit;font-weight:700;padding:12px;border:0;border-radius:var(--radius-md);background:var(--teal);color:#fff;cursor:pointer}
+.thr button:disabled{opacity:.6}
 </style>
 <script>
 /* Self-update (tools/bump_build.py): if this copy is older than the live page, reopen it fresh.
@@ -138,6 +148,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-off
     <div class="tips"><h2 id="tipsh">For next time</h2><ul id="tips"></ul></div>
     <p class="sign">Thank you for your work.<br><b>Professional Holiday Homes</b></p>
   </div>
+  <section class="thr" id="thr" hidden><h2>Messages about this clean</h2><div id="thrlist"></div></section>
   <p class="note" id="msg">Loading...</p>
   <a class="back" href="./">&lsaquo; Back to my cleans</a>
 </div>
@@ -151,6 +162,31 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-off
   var id = new URLSearchParams(location.search).get("id") || "";
   var code = ""; try{ code = localStorage.getItem("phh-cleaner-code") || localStorage.getItem("phh-staff-code") || ""; }catch(e){}
   if(!code){ $("msg").textContent = "Open this from the Clean Check app on your phone, signed in with your code."; return; }
+  /* Batch 3: the message thread for this clean (by submission id, or ?res= from the app's message card). */
+  var RES = new URLSearchParams(location.search).get("res") || "";
+  var CAPI = window.PHH_CLEAN_API;
+  function tpost(route, body){ return fetch(CAPI + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) }).then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || "Could not load. Try again."); return j; }); }); }
+  function drawThr(j){
+    var box = $("thr"), host = $("thrlist"); host.innerHTML = ""; var list = (j && j.comments) || [];
+    if(!list.length){ box.hidden = true; return; }
+    if(j.property && !id){ $("prop").textContent = j.property; }
+    list.forEach(function(c){
+      var m = document.createElement("div"); m.className = "msg" + (c.kind === j.me ? " me" : "");
+      var w = document.createElement("span"); w.className = "who"; w.textContent = (c.kind === "office" ? "PHH office" : c.name) + ", " + new Date(c.at).toLocaleString("en-AU", { timeZone:"Australia/Sydney", day:"numeric", month:"short", hour:"numeric", minute:"2-digit" });
+      m.appendChild(w); m.appendChild(document.createTextNode(c.text)); host.appendChild(m);
+    });
+    if(j.canReply){
+      var ta = document.createElement("textarea"); ta.maxLength = 1000; ta.placeholder = "Reply to the office"; ta.setAttribute("aria-label", "Reply to the office");
+      var b = document.createElement("button"); b.type = "button"; b.textContent = "Send reply";
+      var out = document.createElement("p"); out.className = "note";
+      b.addEventListener("click", function(){ var t = ta.value.trim(); if(!t) return; b.disabled = true; out.textContent = "Sending...";
+        tpost("thread-post", { code: code, res: j.res, text: t }).then(drawThr).catch(function(e){ b.disabled = false; out.textContent = e.message; }); });
+      host.appendChild(ta); host.appendChild(b); host.appendChild(out);
+    }
+    box.hidden = false;
+  }
+  if(CAPI && (id || RES)) tpost("thread", id ? { code: code, id: id } : { code: code, res: RES }).then(function(j){ drawThr(j); if(!id) $("msg").textContent = ""; }).catch(function(e){ if(!id){ $("msg").className = "note err"; $("msg").textContent = e.message; } });
+  if(!id && RES){ $("meta").textContent = "From Professional Holiday Homes"; return; }
   var WORDS = { 5: "Excellent work", 4: "Great clean", 3: "Good clean, a few things to tighten up", 2: "Some areas need attention", 1: "This clean needs a second look" };
   fetch(API + "/my-review", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code, id: id }) })
     .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })

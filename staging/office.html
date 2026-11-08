@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108104120"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108104455"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1425,7 +1425,7 @@ html,body{overflow-x:clip}
       /* Booking notes (Ian 8 Nov): what HomHero has on the reviewed booking, and what the housekeeper found after the stay,
          so a reply can be explained and it isn't put on the housekeeper when it wasn't theirs. */
       var g = r.guests, bnBits = [];
-      if(r.bookingNotes){ [["internal","Internal note"],["guest","Guest note"],["housekeeping","Housekeeping note"],["clean","Clean note"],["arrival","Arrival note"],["departure","Departure note"]].forEach(function(k){ if(r.bookingNotes[k[0]]) bnBits.push([k[1], r.bookingNotes[k[0]]]); }); }
+      if(r.bookingNotes){ [["internal","Internal note"],["guest","Guest note"],["housekeeping","Housekeeping note"],["clean","Clean note"],["checkin","Check-in note"],["arrival","Arrival note"],["departure","Departure note"]].forEach(function(k){ if(r.bookingNotes[k[0]]) bnBits.push([k[1], r.bookingNotes[k[0]]]); }); }
       if(r.after){
         if(r.after.guestsOver) bnBits.push(["After the stay", "Housekeeper reported more guests than booked" + (r.after.guestsNote ? ": " + r.after.guestsNote : "") + "."]);
         if(r.after.note) bnBits.push(["After the stay, " + (r.after.housekeeper || "housekeeper"), r.after.note]);

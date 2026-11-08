@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108130634"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108235828"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -130,6 +130,8 @@ td.st{padding:0;width:118px}
 .rv .sc.low{color:var(--miss)}
 .rv .tx{margin:4px 0;white-space:pre-wrap;font-size:14px}
 .rv .pv{margin:4px 0;white-space:pre-wrap;font-size:14px;background:#fff7e6;border-left:3px solid #e0a100;padding:4px 8px}
+.proplink{font:inherit;font-weight:600;color:var(--primary);background:none;border:0;padding:0;text-align:left;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+#pcQ{margin-bottom:6px}
 .rv .bn{margin:6px 0;padding:6px 10px;background:#f2f6fb;border-left:3px solid #5b7fb1;font-size:14px}
 .rv .bn b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#3d5f8f;margin-bottom:2px}
 .rv .bn p{margin:2px 0;white-space:pre-wrap}
@@ -690,6 +692,18 @@ html,body{overflow-x:clip}
         <option value="90">Last 90 days</option>
       </select>
     </div>
+    <div class="box2 pc" id="pcBox" hidden>
+      <h3>Checklist for one property</h3>
+      <p class="hint">Extra checklist items for one property, example photos ("what good looks like") and items confirmed as not at the property. Housekeepers see changes the next time they open a clean there.</p>
+      <div class="row"><div class="grow"><label for="pcProp">Property</label><input type="search" id="pcQ" placeholder="Type to filter properties" aria-label="Filter properties"><select id="pcProp"><option value="">All properties (example photos only)</option></select></div></div>
+      <div id="pcBody"></div>
+      <p class="msg" id="pcMsg"></p>
+    </div>
+    <div class="box2" id="assetBox" hidden>
+      <h3>Asset register</h3>
+      <p class="hint">Appliances, hot water system and the like for one property: brand, model, install date, warranty and a photo of the label. Angus sees and edits the same list on the maintenance dashboard.</p>
+      <div id="assetHost"></div>
+    </div>
     <div class="issues" id="issues" hidden></div>
     <div class="tablewrap"><table class="hk"><thead id="insHead"></thead><tbody id="insRows"></tbody></table></div>
     <p class="msg" id="insMsg"></p>
@@ -699,18 +713,6 @@ html,body{overflow-x:clip}
       <input type="search" id="hkNotesQ" placeholder="Search property or note" aria-label="Search housekeeper notes">
       <ul id="hkNotesList"></ul>
       <p class="msg" id="hkNotesMsg"></p>
-    </div>
-    <div class="box2 pc" id="pcBox" hidden>
-      <h3>Checklist for one property</h3>
-      <p class="hint">Extra checklist items for one property, example photos ("what good looks like") and items confirmed as not at the property. Housekeepers see changes the next time they open a clean there.</p>
-      <div class="row"><div class="grow"><label for="pcProp">Property</label><select id="pcProp"><option value="">All properties (example photos only)</option></select></div></div>
-      <div id="pcBody"></div>
-      <p class="msg" id="pcMsg"></p>
-    </div>
-    <div class="box2" id="assetBox" hidden>
-      <h3>Asset register</h3>
-      <p class="hint">Appliances, hot water system and the like for one property: brand, model, install date, warranty and a photo of the label. Angus sees and edits the same list on the maintenance dashboard.</p>
-      <div id="assetHost"></div>
     </div>
     <div class="box2" id="newBox" hidden>
       <h3>New housekeepers: first 5 clean checks</h3>
@@ -1274,7 +1276,7 @@ html,body{overflow-x:clip}
     list.forEach(function(x){
       var tr = el("tr");
       var cell = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
-      cell(cols[0], x.name, "name");
+      if(hk) cell(cols[0], x.name, "name"); else { var nc = cell(cols[0], "", "name"); nc.appendChild(propLink(x.propertyId || "", x.name)); }
       if(hk){
         cell("Cleans done", String(x.done));
         cell("Checks", String(x.checked));
@@ -1420,7 +1422,7 @@ html,body{overflow-x:clip}
       var s = spState(r), tr = el("tr", "r");
       var st = el("td", "st"); var sc = el("div", "stc st-sp-" + SPST[s][1], SPST[s][0]); st.appendChild(sc); tr.appendChild(st);
       var cell = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
-      var pc = cell("Property", "", "col-prop"); pc.appendChild(el("span", "prop", r.property)); if(r.test) pc.appendChild(el("span", "sub", " (test, never sent to HomHero)"));
+      var pc = cell("Property", "", "col-prop"); pc.appendChild(propLink(r.propertyId, r.property)); if(r.test) pc.appendChild(el("span", "sub", " (test, never sent to HomHero)"));
       if(r.notes) { pc.appendChild(el("br")); pc.appendChild(el("span", "sub", r.notes)); }
       cell("Dates", r.from === r.to ? spDay(r.from) : spDay(r.from) + " to " + spDay(r.to), "nowrap");
       cell("Housekeeper", r.cleaner || "");
@@ -1572,7 +1574,7 @@ html,body{overflow-x:clip}
       var tr = el("tr", "r"); tr.style.cursor = "default";
       var st = el("td", "st"); st.appendChild(el("div", "stc st-cons-" + s[1], s[0])); tr.appendChild(st);
       var cell = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
-      var pc = cell("Property", "", "col-prop"); pc.appendChild(el("span", "prop", r.property)); if(r.test) pc.appendChild(el("span", "sub", " (test)"));
+      var pc = cell("Property", "", "col-prop"); pc.appendChild(propLink(r.propertyId, r.property)); if(r.test) pc.appendChild(el("span", "sub", " (test)"));
       var items = (r.items || []).map(function(x){ return String(x).replace(/\s*-\s*\$[\d.]+\s*$/, ""); });
       if(items.length){ pc.appendChild(el("br")); pc.appendChild(el("span", "sub", items.length + (items.length === 1 ? " item: " : " items: ") + items.slice(0, 6).join(", ") + (items.length > 6 ? "..." : ""))); }
       var hc = cell("Housekeeper", r.housekeeper || ""); if(!r.matched){ hc.appendChild(el("br")); hc.appendChild(el("span", "sub", "Not matched to a Clean Check housekeeper, no ping")); }
@@ -1788,6 +1790,7 @@ html,body{overflow-x:clip}
     box.appendChild(c);
   }
   $("rvU35").addEventListener("change", function(){ if(RV.data) rvRender(); });
+  $("pcQ").addEventListener("input", pcFilter);
   $("rvNotes").addEventListener("change", function(){ if(RV.data) rvRender(); });
   $("rvHkSel").addEventListener("change", function(){ if(RV.data) rvRender(); });
   $("rvPropSel").addEventListener("change", function(){ if(RV.data) rvRender(); });
@@ -1803,8 +1806,40 @@ html,body{overflow-x:clip}
     post("prop-list", {}).then(function(j){
       PC.list = j.properties || []; var sel = $("pcProp");
       PC.list.forEach(function(p){ var o = el("option", "", p.id === "TEST-DEMO" ? p.name + " (practice)" : p.name); o.value = p.id; sel.appendChild(o); });
-      pcLoad();
+      if(PC.want) pcApplyWant(); else pcLoad();
     }).catch(function(e){ PC.list = null; $("pcMsg").className = "msg err"; $("pcMsg").textContent = e.message; });
+  }
+  /* Ian 9 Nov: click a property name anywhere (Properties table, Schedule, Inspections, Spring cleans) to open its checklist and assets. */
+  function propLink(pid, name){
+    var b = el("button", "proplink", name); b.type = "button"; b.title = "Open this property's checklist and assets";
+    b.addEventListener("click", function(ev){ ev.stopPropagation(); openProp(pid, name); });
+    return b;
+  }
+  function pcFind(pid, name){
+    var sel = $("pcProp"), opts = [].slice.call(sel.options), n = String(name || "").toLowerCase();
+    var o = opts.filter(function(x){ return pid && x.value === String(pid); })[0] || opts.filter(function(x){ return n && x.textContent.toLowerCase() === n; })[0] || opts.filter(function(x){ return n && x.value && x.textContent.toLowerCase().indexOf(n) === 0; })[0];
+    if(!o && n.indexOf(" - ") > 0){ /* motel rooms: "Bay & Beach Motel - Queen Room - 3A" vs "Studio - 3A" */
+      var tail = " - " + n.split(" - ").pop(), hit = opts.filter(function(x){ return x.value && x.textContent.toLowerCase().slice(-tail.length) === tail; });
+      if(hit.length === 1) o = hit[0];
+    }
+    if(!o){ var first = n.split(" - ")[0]; var hit2 = opts.filter(function(x){ return first && x.value && x.textContent.toLowerCase().split(" - ")[0] === first; }); if(hit2.length === 1) o = hit2[0]; }
+    return o ? o.value : null;
+  }
+  function openProp(pid, name){
+    PC.want = { pid: pid, name: name };
+    if(state.tab !== "props") setTab("props"); else pcApplyWant();
+    setTimeout(function(){ $("pcBox").scrollIntoView({ behavior:"smooth", block:"start" }); }, 50);
+  }
+  function pcApplyWant(){
+    if(!PC.want || !PC.list || !PC.list.length) return;
+    var w = PC.want, v = pcFind(w.pid, w.name); PC.want = null;
+    if(v === null){ pcSay("Couldn't find " + w.name + " in the list. Pick it below.", true); return; }
+    $("pcQ").value = ""; pcFilter(); $("pcProp").value = v; pcLoad();
+    if(window.phhAssetPick) window.phhAssetPick(v);
+  }
+  function pcFilter(){
+    var f = $("pcQ").value.trim().toLowerCase();
+    [].slice.call($("pcProp").options).forEach(function(o){ o.hidden = !!(f && o.value && o.textContent.toLowerCase().indexOf(f) < 0); });
   }
   function pcLoad(){
     PC.pid = $("pcProp").value; $("pcMsg").className = "msg"; $("pcMsg").textContent = "Loading...";
@@ -1937,7 +1972,7 @@ html,body{overflow-x:clip}
     function load(){ return post("b4-share-list", { kind: kind, ref: ref }).then(function(j){ show(j.links || []); }).catch(function(e){ m.textContent = e.message; }); }
     mk.addEventListener("click", function(){
       mk.disabled = true; m.className = "msg"; m.textContent = "Making the link...";
-      post("b4-share-create", { kind: kind, ref: ref, includeTest: TEST }).then(function(){ m.textContent = ""; return load(); })
+      post("b4-share-create", { kind: kind, ref: ref, includeTest: TEST || kind === "inspection" }).then(function(){ m.textContent = ""; return load(); })
         .catch(function(e){ m.className = "msg err"; m.textContent = e.message; }).then(function(){ mk.disabled = false; });
     });
     load();
@@ -1965,7 +2000,7 @@ html,body{overflow-x:clip}
   /* Items 11 and 13: inspections. Results are office only (housekeepers never see them). */
   function inspLoad(){
     $("inMsg").className = "msg"; $("inMsg").textContent = "Loading...";
-    return post("b4-insp-list", { days: +B4.inspDays, includeTest: TEST }).then(function(j){ B4.insp = j.rows || []; inspRender(); })
+    return post("b4-insp-list", { days: +B4.inspDays, includeTest: true }).then(function(j){ B4.insp = j.rows || []; inspRender(); })
       .catch(function(e){ $("inMsg").className = "msg err"; $("inMsg").textContent = e.message; });
   }
   function inspRender(){
@@ -1976,7 +2011,7 @@ html,body{overflow-x:clip}
       var st = el("td", "st"); st.appendChild(el("div", "stc " + (r.status === "submitted" ? (r.issues ? "st-waiting" : "st-checked") : "st-prog"), r.status === "submitted" ? (r.issues ? "Needs attention" : "All OK") : "In progress")); tr.appendChild(st);
       var c = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
       c("Date", b4Day(r.submittedAt || r.startedAt), "nowrap");
-      var pc = c("Property", "", "col-prop"); pc.appendChild(el("span", "prop", r.property)); if(r.test) pc.appendChild(el("span", "sub", " (test)"));
+      var pc = c("Property", "", "col-prop"); pc.appendChild(propLink(r.propertyId, r.property)); if(r.test) pc.appendChild(el("span", "sub", " (test)"));
       c("Inspection", r.kind === "premium" ? "Premium" : "Standard");
       c("By", r.by);
       c("Needs attention", r.status === "submitted" ? String(r.issues) : "");
@@ -2056,7 +2091,7 @@ html,body{overflow-x:clip}
       var key = "v" + r.propertyId, tr = el("tr", "r");
       var st = el("td", "st"); st.appendChild(el("div", "stc " + (r.checkedSinceEmpty ? "st-checked" : "st-waiting"), r.checkedSinceEmpty ? "Checked" : "Check due")); tr.appendChild(st);
       var c = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
-      var pc = c("Property", "", "col-prop"); pc.appendChild(el("span", "prop", r.property));
+      var pc = c("Property", "", "col-prop"); pc.appendChild(propLink(r.propertyId, r.property));
       c("Last checkout", b4Day(r.lastDeparture), "nowrap");
       c("Days empty", String(r.daysEmpty));
       c("Next guests", r.nextArrival ? "Arrive " + b4Day(r.nextArrival) : (r.nextDeparture ? "Arrival not stored. Next checkout " + b4Day(r.nextDeparture) + ", so a guest may be staying now" : "No bookings ahead"));
@@ -2083,7 +2118,7 @@ html,body{overflow-x:clip}
       var due = !r.check && r.midpoint <= shift(today, 3);
       var st = el("td", "st"); st.appendChild(el("div", "stc " + (r.check ? "st-checked" : (due ? "st-waiting" : "st-cleaned")), r.check ? "Checked" : (due ? "Check due" : (r.state === "current" ? "Staying" : "Coming up")))); tr.appendChild(st);
       var c = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
-      var pc = c("Property", "", "col-prop"); pc.appendChild(el("span", "prop", r.property)); if(r.guest) pc.appendChild(el("div", "sub", r.guest));
+      var pc = c("Property", "", "col-prop"); pc.appendChild(propLink(r.propertyId, r.property)); if(r.guest) pc.appendChild(el("div", "sub", r.guest));
       c("Stay", b4Day(r.arrival) + " to " + b4Day(r.departure) + " (" + r.nights + " nights)");
       var mp = c("Halfway", b4Day(r.midpoint), "nowrap"); var dd = b4Days(today, r.midpoint); if(!r.check) mp.appendChild(el("span", "sub", dd === 0 ? " (today)" : dd > 0 ? " (in " + dd + " day" + (dd === 1 ? "" : "s") + ")" : " (" + (-dd) + " day" + (dd === -1 ? "" : "s") + " ago)"));
       c("Last check", lastCheckText(r.check));
@@ -2120,7 +2155,7 @@ html,body{overflow-x:clip}
     $("scSum").textContent = S.rows.length + " properties. " + nOver + " job" + (nOver === 1 ? "" : "s") + " overdue.";
     rows.slice(0, 400).forEach(function(r){
       var tr = el("tr", "r");
-      var pc = el("td", "col-prop name"); pc.appendChild(el("span", "prop", r.property)); tr.appendChild(pc);
+      var pc = el("td", "col-prop name"); pc.appendChild(propLink(r.propertyId, r.property)); tr.appendChild(pc);
       jobs.forEach(function(j){
         var v = r.jobs[j.id], td = el("td", "jc" + (v.state === "overdue" ? " over" : "")); td.setAttribute("data-l", j.name);
         td.appendChild(el("span", JSTATE[v.state][1], JSTATE[v.state][0]));
@@ -2176,7 +2211,7 @@ html,body{overflow-x:clip}
   $("scDue").addEventListener("change", function(){ B4.schedDue = this.checked; schedRender(); });
   function schedTab(){ vacLoad(); midLoad(); schedLoad(); if(!B4.insp) post("b4-insp-list", { days: 60, includeTest: TEST }).then(function(j){ B4.insp = j.rows || []; }).catch(function(){}); }
   var assetsOn = false;
-  function assetsInit(){ if(assetsOn || !window.phhAssets) return; assetsOn = true; window.phhAssets($("assetHost"), post, { includeTest: TEST }); }
+  function assetsInit(){ if(assetsOn || !window.phhAssets) return; assetsOn = true; window.phhAssets($("assetHost"), post, { includeTest: true }); }
 
   var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables", reviews:"Reviews", insp:"Inspections", sched:"Schedule" };
   function setTab(t){
@@ -2723,7 +2758,8 @@ window.phhAssets = function(host, post, opts){
   }
   q.addEventListener("input", options);
   sel.addEventListener("change", function(){ S.edit = null; load(); });
-  post("b4-props", opts.includeTest ? { includeTest:true } : {}).then(function(j){ S.props = j.properties || []; options(); }).catch(function(e){ say(e.message, true); });
+  window.phhAssetPick = function(pid){ S.want = pid; if(S.props.length){ q.value = ""; options(); sel.value = pid; S.want = null; if(sel.value === String(pid)){ S.edit = null; load(); } } };
+  post("b4-props", opts.includeTest ? { includeTest:true } : {}).then(function(j){ S.props = (j.properties || []).map(function(p){ return p.id === "TEST-DEMO" ? Object.assign({}, p, { name: p.name + " (practice)" }) : p; }); options(); if(S.want) window.phhAssetPick(S.want); }).catch(function(e){ say(e.message, true); });
 };
 </script>
 </body></html>

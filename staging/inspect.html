@@ -173,7 +173,7 @@ ul.items li:last-child{border-bottom:0}
   function showStart(){
     $("startView").hidden = false;
     var test = params.get("test") === "1";
-    Promise.all([post("b4-props", test ? { includeTest:true } : {}), post("b4-insp-config", {}), post("b4-insp-open", {})]).then(function(r){
+    Promise.all([post("b4-props", { includeTest:true }), post("b4-insp-config", {}), post("b4-insp-open", {})]).then(function(r){
       PROPS = r[0].properties || []; propOptions();
       if(params.get("property")){ $("prop").value = params.get("property"); }
       var k = $("kind"); k.innerHTML = "";

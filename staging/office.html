@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108020657"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108022514"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -106,6 +106,25 @@ td.st{padding:0;width:118px}
 .nc .pn{margin:0 0 4px;font-weight:600}
 .nc ol{margin:0;padding-left:20px;font-size:14px}
 .nc a{color:var(--teal-ink)}
+.rv{list-style:none;margin:0;padding:0}
+.rv>li{background:#fff;border:1px solid var(--line);border-radius:4px;padding:12px 14px;margin-bottom:10px}
+.rv .rh{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;margin-bottom:4px}
+.rv .rh b{font-weight:600}
+.rv .sc{font-weight:700}
+.rv .sc.low{color:var(--miss)}
+.rv .tx{margin:4px 0;white-space:pre-wrap;font-size:14px}
+.rv .pv{margin:4px 0;white-space:pre-wrap;font-size:14px;background:#fff7e6;border-left:3px solid #e0a100;padding:4px 8px}
+.rv .bf{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted)}
+.rv .bf a{color:var(--teal-ink);font-weight:600}
+.trend td.m{text-align:center;white-space:nowrap}
+.trend td.m small{display:block;color:var(--faint);font-size:11px}
+.trend td.down{color:var(--miss);font-weight:600}
+.trend td.up{color:var(--ok-ink);font-weight:600}
+.rvbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.rvbar select,.rvbar input[type=search]{padding:7px 8px;border:1px solid var(--line);border-radius:4px;font:inherit}
+.rvbar label{font-size:14px}
+#rvView .hint{margin:6px 0 10px;color:var(--muted);font-size:13px}
+.rvh{margin:18px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-ink)}
 .prop{font-weight:500}
 td.col-prop{min-width:170px}
 .sub{color:var(--faint);font-size:12px}
@@ -366,6 +385,7 @@ html,body{overflow-x:clip}
   <button class="tab" role="tab" data-tab="props" aria-selected="false">Properties</button>
   <button class="tab" role="tab" data-tab="spring" aria-selected="false">Spring cleans<span class="n" id="springN" hidden></span></button>
   <button class="tab" role="tab" data-tab="cons" aria-selected="false">Consumables<span class="n" id="consN" hidden></span></button>
+  <button class="tab" role="tab" data-tab="reviews" aria-selected="false">Reviews<span class="n" id="rvN" hidden></span></button>
 </nav>
 
 <main>
@@ -489,6 +509,25 @@ html,body{overflow-x:clip}
     </div>
     <p class="msg" id="consMsg"></p>
     <p class="hint">From the Process Street consumables order form. When CST ticks Labeling Bags, the housekeeper gets a phone notification (if they have them on) and a card in the app until they tap Got them.</p>
+  </section>
+
+  <!-- Reviews (8 Nov 2026, Batch 2): guest reviews linked to the clean before the stay. Office only. -->
+  <section id="rvView" hidden>
+    <div class="rvbar">
+      <select id="rvDays" aria-label="Period"><option value="14">Last 14 days</option><option value="30" selected>Last 30 days</option><option value="60">Last 60 days</option><option value="90">Last 90 days</option></select>
+      <input type="search" id="rvQ" placeholder="Search property, housekeeper or words" aria-label="Search reviews" autocomplete="off">
+      <label><input type="checkbox" id="rvLow" checked> Only under 5 stars or cleanliness under 5</label>
+    </div>
+    <p class="hint">Each guest review is matched to the clean before their stay, with that clean's check and photos. Office only: housekeepers and owners never see this page.</p>
+    <h3 class="rvh">Reviews</h3>
+    <ul class="rv" id="rvList"></ul>
+    <p class="msg" id="rvMsg">Loading...</p>
+    <h3 class="rvh">Housekeeper review scores (last 90 days)</h3>
+    <div class="tablewrap"><table class="hk"><thead><tr><th>Housekeeper</th><th>Reviews</th><th>Average stars</th><th>Average cleanliness</th><th>5-star cleanliness</th><th>Cleanliness under 5</th><th>Clean had a check</th></tr></thead><tbody id="rvHk"></tbody></table></div>
+    <p class="hint">Scored on the housekeeper who did the clean before each stay. Guests score many things they can't control, so read the reviews before acting on a number.</p>
+    <h3 class="rvh">Star rating by property, last 6 months</h3>
+    <div class="tablewrap"><table class="hk trend"><thead id="rvTrendHead"></thead><tbody id="rvTrend"></tbody></table></div>
+    <p class="hint">Average guest stars per month (number of reviews underneath). Red: down 0.3 or more on the month before. Lowest first.</p>
   </section>
 
   <!-- Housekeepers / Properties -->
@@ -734,7 +773,7 @@ html,body{overflow-x:clip}
   if(!/^\d{4}-\d{2}-\d{2}$/.test(state.date)) state.date = sydToday();
   /* Deep links (Ask PHH): ?tab=cleans|attention|hk|props &status= &who= &q= &open=<booking> */
   var LINK = { tab: params.get("tab") || "", open: params.get("open") || "" };
-  if(["cleans","attention","hk","props","spring","cons"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
+  if(["cleans","attention","hk","props","spring","cons","reviews"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
   if(["checked","missing","cleaned","waiting","inprog","notstarted"].indexOf(params.get("status") || "") >= 0) state.status = params.get("status");
   state.who = (params.get("who") || "").slice(0, 120); state.q = (params.get("q") || "").slice(0, 120);
   if(/^[A-Za-z0-9-]{3,40}$/.test(LINK.open)) state.open[LINK.open] = true; else LINK.open = "";
@@ -1323,14 +1362,100 @@ html,body{overflow-x:clip}
     $("consMsg").className = "msg"; $("consMsg").textContent = rows.length ? "" : "No consumables orders in the last 30 days.";
   }
 
-  var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables" };
+  /* ---------- Reviews (8 Nov 2026, Batch 2: items 25, 26, 29). reviews-api, office only. ---------- */
+  var REVIEWS_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/reviews-api";
+  var RV = { cache:{}, data:null };
+  function rvLoad(){
+    var days = $("rvDays").value;
+    $("rvMsg").className = "msg"; $("rvMsg").textContent = "Loading...";
+    var go = RV.cache[days] ? Promise.resolve(RV.cache[days]) : fetch(REVIEWS_API + "/reviews", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: CODE, days: +days }) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); RV.cache[days] = j; return j; }); });
+    go.then(function(j){ RV.data = j; rvRender(); }).catch(function(e){ $("rvMsg").className = "msg err"; $("rvMsg").textContent = e.message; });
+  }
+  function stars(n){ return n === null || n === undefined ? "-" : (Math.round(n * 10) / 10).toFixed(1); }
+  function rvRender(){
+    var j = RV.data; if(!j) return;
+    var q = ($("rvQ").value || "").trim().toLowerCase(), lowOnly = $("rvLow").checked;
+    var list = (j.reviews || []).filter(function(r){
+      if(lowOnly && !r.low) return false;
+      if(q && [r.property, r.comment, r.privateNote, r.headline, r.before && r.before.housekeeper].join(" ").toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    });
+    var ul = $("rvList"); ul.innerHTML = "";
+    list.slice(0, 200).forEach(function(r){
+      var li = el("li"); var h = el("div", "rh");
+      h.appendChild(el("b", "", roomFirst(r.property)));
+      h.appendChild(el("span", "sub", new Date(r.at).toLocaleDateString("en-AU", { timeZone:TZ, day:"numeric", month:"short" }) + " | " + (r.source || "") + " | #" + r.booking));
+      h.appendChild(el("span", "sc" + (r.stars < 5 ? " low" : ""), stars(r.stars) + " stars"));
+      if(r.clean !== null && r.clean !== undefined) h.appendChild(el("span", "sc" + (r.clean < 5 ? " low" : ""), "Cleanliness " + stars(r.clean)));
+      if(r.mentionsCleaning) h.appendChild(el("span", "chip warn", "Mentions cleaning"));
+      li.appendChild(h);
+      if(r.headline) li.appendChild(el("p", "tx", r.headline));
+      if(r.comment) li.appendChild(el("p", "tx", r.comment));
+      if(r.privateNote) li.appendChild(el("p", "pv", "Private to PHH: " + r.privateNote));
+      var bf = el("div", "bf");
+      if(!r.before){ bf.textContent = "Clean before the stay: not found (before 23 Sep, or the booking isn't in Clean Check)."; }
+      else {
+        var b = r.before;
+        bf.appendChild(document.createTextNode("Clean before the stay: " + (b.housekeeper || "No housekeeper in HomHero") + ", " + new Date(b.date + "T12:00:00+10:00").toLocaleDateString("en-AU", { timeZone:TZ, weekday:"short", day:"numeric", month:"short" }) + ". "));
+        if(b.submissionId){
+          var a = el("a", "", "Photos and checklist"); a.href = "view.html?id=" + encodeURIComponent(b.submissionId) + "&from=office"; bf.appendChild(a);
+          var bits = []; if(b.aiScore) bits.push("AI " + b.aiScore + "/5"); if(b.mins !== null && b.mins !== undefined) bits.push(hm(b.mins) + " on site");
+          if(bits.length) bf.appendChild(document.createTextNode(" (" + bits.join(", ") + ")"));
+        } else bf.appendChild(el("span", "chip", "No clean check"));
+      }
+      li.appendChild(bf); ul.appendChild(li);
+    });
+    $("rvMsg").className = "msg";
+    $("rvMsg").textContent = list.length ? (list.length > 200 ? "Showing 200 of " + list.length + "." : list.length + " review" + (list.length === 1 ? "" : "s") + ".") : (lowOnly ? "No reviews under 5 stars in this period." : "No reviews in this period.");
+    var lowN = (j.reviews || []).filter(function(r){ return r.low && Date.parse(r.at) > Date.now() - 7 * 86400000; }).length;
+    $("rvN").textContent = lowN; $("rvN").hidden = !lowN;
+
+    var hb = $("rvHk"); hb.innerHTML = "";
+    (j.housekeepers || []).forEach(function(x){
+      var tr = el("tr");
+      var cell = function(l, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", l); tr.appendChild(td); return td; };
+      cell("Housekeeper", x.name, "name"); cell("Reviews", String(x.reviews)); cell("Average stars", stars(x.avgStars));
+      var c = cell("Average cleanliness", x.avgClean === null ? "-" : stars(x.avgClean) + " (" + x.cleanReviews + ")"); if(x.avgClean !== null && x.avgClean < 4.8) c.style.color = "var(--miss)";
+      cell("5-star cleanliness", x.fiveStarClean === null ? "-" : x.fiveStarClean + "%");
+      var lc = cell("Cleanliness under 5", String(x.lowClean)); if(x.lowClean) lc.style.color = "var(--miss)";
+      cell("Clean had a check", x.withCheck + " of " + x.reviews);
+      tr.style.cursor = "pointer"; tr.addEventListener("click", function(){ $("rvQ").value = x.name; $("rvLow").checked = false; rvRender(); $("rvList").scrollIntoView({ block:"start" }); });
+      hb.appendChild(tr);
+    });
+    if(!(j.housekeepers || []).length) hb.innerHTML = '<tr><td colspan="7" class="sub">No matched reviews yet.</td></tr>';
+
+    var months = (j.trend && j.trend.months) || [], MN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    var th = el("tr"); th.appendChild(el("th", "", "Property")); months.forEach(function(m){ th.appendChild(el("th", "", MN[+m.slice(5, 7) - 1] + " " + m.slice(2, 4))); }); th.appendChild(el("th", "", "6 months"));
+    $("rvTrendHead").innerHTML = ""; $("rvTrendHead").appendChild(th);
+    var tb = $("rvTrend"); tb.innerHTML = "";
+    ((j.trend && j.trend.properties) || []).filter(function(p){ return !q || String(p.name).toLowerCase().indexOf(q) >= 0; }).forEach(function(p){
+      var tr = el("tr"); var n = el("td", "name", roomFirst(p.name)); n.setAttribute("data-l", "Property"); tr.appendChild(n);
+      var prev = null;
+      p.cells.forEach(function(c, i){
+        var td = el("td", "m"); td.setAttribute("data-l", months[i]);
+        if(c){ td.appendChild(document.createTextNode(stars(c.avg))); td.appendChild(el("small", "", c.n + (c.n === 1 ? " review" : " reviews")));
+          if(prev !== null && c.avg - prev <= -0.3) td.className += " down"; else if(prev !== null && c.avg - prev >= 0.3) td.className += " up"; prev = c.avg; }
+        else td.textContent = "";
+        tr.appendChild(td);
+      });
+      var all = el("td", "m", stars(p.avg)); all.appendChild(el("small", "", p.reviews + " reviews")); all.setAttribute("data-l", "6 months"); tr.appendChild(all);
+      tb.appendChild(tr);
+    });
+  }
+  $("rvDays").addEventListener("change", rvLoad);
+  $("rvQ").addEventListener("input", function(){ if(RV.data) rvRender(); });
+  $("rvLow").addEventListener("change", function(){ if(RV.data) rvRender(); });
+
+  var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables", reviews:"Reviews" };
   function setTab(t){
     state.tab = t;
     document.querySelectorAll(".tab").forEach(function(b){ b.setAttribute("aria-selected", String(b.getAttribute("data-tab") === t)); });
     $("sectionTitle").textContent = TITLES[t];
-    var day = t === "cleans" || t === "attention", spring = t === "spring", cons = t === "cons";
-    $("dayView").hidden = !day; $("insView").hidden = day || spring || cons; $("springView").hidden = !spring; $("consView").hidden = !cons;
-    if(cons){ $("consMsg").className = "msg"; $("consMsg").textContent = "Loading..."; consLoad(true).catch(function(e){ $("consMsg").className = "msg err"; $("consMsg").textContent = e.message; }); }
+    var day = t === "cleans" || t === "attention", spring = t === "spring", cons = t === "cons", rv = t === "reviews";
+    $("dayView").hidden = !day; $("insView").hidden = day || spring || cons || rv; $("springView").hidden = !spring; $("consView").hidden = !cons; $("rvView").hidden = !rv;
+    if(rv){ if(RV.data) rvRender(); else rvLoad(); }
+    else if(cons){ $("consMsg").className = "msg"; $("consMsg").textContent = "Loading..."; consLoad(true).catch(function(e){ $("consMsg").className = "msg err"; $("consMsg").textContent = e.message; }); }
     else if(spring) spLoad(); else if(day){ if(state.rows.length) renderRows(); } else loadIns();
   }
   document.querySelectorAll(".tab").forEach(function(b){ b.addEventListener("click", function(){ setTab(b.getAttribute("data-tab")); }); });

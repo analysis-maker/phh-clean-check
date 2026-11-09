@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261109000915"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261109041342"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -1771,7 +1771,7 @@ window.PHH_CHECKLIST = {
         .then(function(r){ return r.ok ? r.json() : null; })
         .then(function(j){
           if(!signedIn || !j || !Array.isArray(j.cleans) || !j.cleans.length){ sec.hidden = true; return; }
-          var byDay = {}; j.cleans.forEach(function(c){ (byDay[c.date] = byDay[c.date] || []).push(c); }); /* c = {date, property, res, guest} */
+          var byDay = {}; j.cleans.forEach(function(c){ (byDay[c.date] = byDay[c.date] || []).push(c); }); /* c = {date, property, res, guest, adults, children, infants, pets} */
           var start = todayYmd(1), end = todayYmd(365);
           var firstMonth = todayYmd(0).slice(0, 7), lastMonth = end.slice(0, 7);
           var dow = function(ymd){ return (new Date(ymd + "T12:00:00Z").getUTCDay() + 6) % 7; }; /* Monday = 0 */
@@ -1785,6 +1785,9 @@ window.PHH_CHECKLIST = {
             (byDay[ymd] || []).slice().sort(function(x, y){ return String(x.property).localeCompare(String(y.property)); }).forEach(function(c){
               var li = document.createElement("li"); var t = document.createElement("span"); t.className = "cp"; t.textContent = roomFirst(c.property); li.appendChild(t);
               var bits = []; if(c.res) bits.push("Booking " + c.res); if(c.guest) bits.push(c.guest);
+              /* Booked guests (Bec, 9 Nov): "4 guests, plus 1 infant, with a pet", as booked now. */
+              var gn = (Number(c.adults) || 0) + (Number(c.children) || 0), gi = Number(c.infants) || 0;
+              if(gn || gi) bits.push((gn ? gn + " guest" + (gn === 1 ? "" : "s") : "") + (gi ? (gn ? ", plus " : "") + gi + " infant" + (gi === 1 ? "" : "s") : "") + (Number(c.pets) ? ", with a pet" : ""));
               if(bits.length){ var m = document.createElement("span"); m.className = "cg"; m.textContent = bits.join(", "); li.appendChild(m); }
               list.appendChild(li); });
           }

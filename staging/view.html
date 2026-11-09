@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108120001"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261109005327"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -194,7 +194,7 @@ li.absent .txt{color:var(--muted)}
     <p class="note">Tap a photo to open it, then swipe left or right. Photo links last one hour. Reload this page for fresh links.</p>
   </section>
   <div id="sections"></div>
-  <section class="thr" id="thr" hidden><h2>Messages with the housekeeper</h2><p class="note" style="margin-top:4px">Shows in the housekeeper's app for this clean. They can reply. No notification is sent.</p><div id="thrlist"></div>
+  <section class="thr" id="thr" hidden><h2>Messages with the housekeeper</h2><p class="note" style="margin-top:4px">Shows in the housekeeper's app for this clean. They can reply. Their phone gets a ping if notifications are on (trial: testers only for now).</p><div id="thrlist"></div>
     <textarea id="thrtext" maxlength="1000" placeholder="Write to the housekeeper about this clean" aria-label="Message to the housekeeper"></textarea><button type="button" id="thrsend">Send</button><p class="note" id="thrmsg"></p></section>
 </div>
 <script>
@@ -225,6 +225,9 @@ window.PHH_API = window.PHH_API || "";
     return k.distM < 1000 ? k.distM + " m from property" : (Math.round(k.distM / 100) / 10) + " km from property";
   }
   function thr(route, body){ body.code = SCODE; return fetch(window.PHH_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) }).then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); }); }
+  /* 9 Nov 2026 (staging): phone ping to the housekeeper after the office writes (msg-push decides; testers only for now). */
+  function msgPing(res){ fetch("https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/msg-push/office-msg", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: SCODE, res: res }) })
+    .then(function(r){ return r.json(); }).then(function(j){ if(j && j.sent) $("thrmsg").textContent = "Sent. Their phone got a ping."; }).catch(function(){}); }
   function drawThr(j){
     var host = $("thrlist"); host.innerHTML = "";
     (j.comments || []).forEach(function(c){ var m = document.createElement("div"); m.className = "m" + (c.kind === "housekeeper" ? " hk" : ""); var b = document.createElement("b"); b.textContent = (c.kind === "office" ? c.name + " (office)" : c.name) + ", " + fmt(c.at); m.appendChild(b); m.appendChild(document.createTextNode(c.text)); host.appendChild(m); });
@@ -234,7 +237,7 @@ window.PHH_API = window.PHH_API || "";
   if(OFFICE && SCODE){
     thr("thread", { id: id }).then(function(j){ if(j.me === "office") drawThr(j); }).catch(function(){});
     $("thrsend").addEventListener("click", function(){ var t = $("thrtext").value.trim(); if(!t) return; $("thrsend").disabled = true;
-      thr("thread-post", { id: id, text: t }).then(function(j){ $("thrtext").value = ""; $("thrsend").disabled = false; $("thrmsg").textContent = ""; drawThr(j); }).catch(function(e){ $("thrsend").disabled = false; $("thrmsg").textContent = e.message; }); });
+      thr("thread-post", { id: id, text: t }).then(function(j){ $("thrtext").value = ""; $("thrsend").disabled = false; $("thrmsg").textContent = ""; drawThr(j); if(j.res) msgPing(j.res); }).catch(function(e){ $("thrsend").disabled = false; $("thrmsg").textContent = e.message; }); });
   }
   fetch(window.PHH_API + "/view", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(SCODE ? { id:id, code:SCODE } : { id:id }) })
     .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })

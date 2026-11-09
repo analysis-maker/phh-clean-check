@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261108121447"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261109000915"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -130,6 +130,8 @@ td.st{padding:0;width:118px}
 .rv .sc.low{color:var(--miss)}
 .rv .tx{margin:4px 0;white-space:pre-wrap;font-size:14px}
 .rv .pv{margin:4px 0;white-space:pre-wrap;font-size:14px;background:#fff7e6;border-left:3px solid #e0a100;padding:4px 8px}
+.proplink{font:inherit;font-weight:600;color:var(--primary);background:none;border:0;padding:0;text-align:left;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+#pcQ{margin-bottom:6px}
 .rv .bn{margin:6px 0;padding:6px 10px;background:#f2f6fb;border-left:3px solid #5b7fb1;font-size:14px}
 .rv .bn b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#3d5f8f;margin-bottom:2px}
 .rv .bn p{margin:2px 0;white-space:pre-wrap}
@@ -243,6 +245,63 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
 .sprev h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-ink)}
 .sprev ul{margin:0;padding-left:18px;font-size:13px}
 .sprev .na{color:var(--muted)}
+/* Batch 4 (8 Nov 2026, staging): inspections, schedule, owner report links, asset register. */
+.share{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.share h3{margin:0 0 4px;font-size:13px;font-weight:700;color:var(--teal-ink);text-transform:uppercase;letter-spacing:.04em}
+.share .hint{margin:0 0 8px;color:var(--muted);font-size:13px}
+.shrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 2px}
+.shrow input{flex:1 1 260px;min-width:0;padding:7px 8px;border:1px solid var(--line);border-radius:4px;background:#fafbfb;font-size:13px}
+textarea.draft{display:block;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:4px;font:inherit;margin-bottom:6px;resize:vertical}
+.b4note{background:var(--info-soft);color:var(--info);border:1px solid #c9e1ee;padding:8px 12px;border-radius:4px;font-size:13px;margin:0 0 12px}
+#b4SchedView .box2:first-of-type{margin-top:0}
+#b4InspView .hint{color:var(--muted);font-size:13px}
+.box2 .grow{flex:1 1 200px;min-width:0}
+.box2 input[type=search],.box2 input[type=text],.box2 input[type=number]{padding:7px 8px;border:1px solid var(--line);border-radius:4px;font:inherit;max-width:100%;width:100%}
+.box2 .tablewrap{margin-top:8px}
+label.ck{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);padding-bottom:6px}
+.ckform{padding:8px 4px}
+.ckform .row{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:8px}
+.ckform label{display:block;font-size:12px;color:var(--muted)}
+.ckform input,.ckform select{display:block;padding:7px 8px;border:1px solid var(--line);border-radius:4px;font:inherit;max-width:100%}
+.ckform .grow{flex:1 1 220px}
+.ckform .grow input{width:100%}
+.jf{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 0 0}
+.jf input[type=text]{flex:1 1 120px;min-width:0;width:auto}
+.sct td{vertical-align:top}
+.sct td.jc .chip{display:inline-block;margin-bottom:2px}
+.sct td.jc .btn{margin-top:4px}
+.sct td.over{background:#fff7f4}
+.sccfg{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:6px 0;font-size:13px}
+.sccfg .inl2{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--ink);margin:0}
+.sccfg .inl2 input{width:60px}
+.chip.ok{background:#eaf5df;color:var(--ok-ink)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.info{background:var(--info-soft);color:var(--info)}
+.insec{margin:10px 0 4px;font-size:13px}
+ul.inl{list-style:none;margin:0;padding:0}
+ul.inl li{padding:4px 0;border-bottom:1px solid var(--line-2);font-size:13px}
+ul.inl li.iss{background:#fff7f4}
+#b4InspView .pics{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;margin-bottom:10px}
+#b4InspView .pics a{text-decoration:none}
+#b4InspView .pics img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:4px;background:var(--line-2);display:block}
+#b4InspView .toprow .row{display:flex;gap:8px;align-items:center}
+#b4InspView .toprow select{padding:7px 8px;border:1px solid var(--line);border-radius:4px;background:#fff}
+.as .asgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 12px}
+.as .asgrid .wide{grid-column:1 / -1}
+.as .asgrid input,.as .asgrid textarea,.as select,.as input[type=search]{display:block;width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:4px;font:inherit}
+.as .asgrid input[type=file]{border:0;padding:4px 0}
+.as select{margin-top:6px}
+.as .asform{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.as .asform h4{margin:0 0 8px;font-size:13px;color:var(--teal-ink)}
+.as .asform .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.as .row{display:flex;flex-wrap:wrap;gap:8px}
+.as label{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+.as .asimg{width:64px;height:48px;object-fit:cover;border-radius:4px;border:1px solid var(--line);display:block}
+.as .msg.err,.share .msg.err,.ckform .msg.err{color:var(--warn)}
+tr.r td.acts{white-space:nowrap}
+/* Phones: the spring clean Review and Cancel buttons were hidden with the empty-cell rule (td.e). Show them when there is a button. */
+@media (max-width:760px){ #spRows tr.r td.e:not(:empty){display:block} }
+@media (max-width:760px){ .sct td.jc{display:block;padding:6px 0} .sct td.jc::before{display:block;margin-bottom:2px} .sct td.jc .btn{margin-left:6px} }
 
 /* Phones: rows become stacked cards with the status as a left stripe. */
 @media (max-width:760px){
@@ -407,7 +466,7 @@ html,body{overflow-x:clip}
 <header class="bar">
   <div class="brand"><img src="icon-180.png" alt="" width="24" height="24">Clean Check</div>
   <div class="section" id="sectionTitle">Cleaning</div>
-  <div class="me" id="me"><span id="mename"></span><a href="maintenance.html?v=1108b" style="color:var(--teal-ink);font-weight:500;text-decoration:none">Maintenance</a><a href="admin.html?v=1105t" id="toAdmin" hidden style="color:var(--teal-ink);font-weight:500;text-decoration:none">Admin<span class="adn" id="adminN" hidden></span></a><button type="button" id="signout">Sign out</button></div>
+  <div class="me" id="me"><span id="mename"></span><a href="maintenance.html?v=1109u" style="color:var(--teal-ink);font-weight:500;text-decoration:none">Maintenance</a><a href="admin.html?v=1105t" id="toAdmin" hidden style="color:var(--teal-ink);font-weight:500;text-decoration:none">Admin<span class="adn" id="adminN" hidden></span></a><button type="button" id="signout">Sign out</button></div>
 </header>
 <nav class="tabs" role="tablist" aria-label="Views">
   <button class="tab" role="tab" data-tab="cleans" aria-selected="true">Cleans</button>
@@ -417,6 +476,8 @@ html,body{overflow-x:clip}
   <button class="tab" role="tab" data-tab="spring" aria-selected="false">Spring cleans<span class="n" id="springN" hidden></span></button>
   <button class="tab" role="tab" data-tab="cons" aria-selected="false">Consumables<span class="n" id="consN" hidden></span></button>
   <button class="tab" role="tab" data-tab="reviews" aria-selected="false">Reviews<span class="n" id="rvN" hidden></span></button>
+  <button class="tab" role="tab" data-tab="insp" aria-selected="false">Inspections</button>
+  <button class="tab" role="tab" data-tab="sched" aria-selected="false">Schedule</button>
 </nav>
 
 <main>
@@ -568,6 +629,59 @@ html,body{overflow-x:clip}
     <p class="hint">Average guest stars per month (number of reviews underneath). Red: down 0.3 or more on the month before. Lowest first.</p>
   </section>
 
+  <!-- Batch 4 (8 Nov 2026, staging): inspections (items 11 and 13). Office only: housekeepers never see inspection results. -->
+  <section id="b4InspView" hidden>
+    <div class="toprow">
+      <h2>Inspections</h2>
+      <div class="row">
+        <select id="inDays" aria-label="Period"><option value="30">Last 30 days</option><option value="60" selected>Last 60 days</option><option value="180">Last 180 days</option><option value="365">Last year</option></select>
+        <a class="btn" href="inspect.html" id="inStart">Start an inspection</a>
+      </div>
+    </div>
+    <p class="hint">Standard and premium monthly inspections done in Clean Check (checklist, live photos, notes). Office only: housekeepers never see these. Open one to make an owner report link.</p>
+    <div class="tablewrap" id="inWrap" hidden>
+      <table>
+        <thead><tr><th>Status</th><th>Date</th><th>Property</th><th>Inspection</th><th>By</th><th>Needs attention</th><th>Photos</th></tr></thead>
+        <tbody id="inRows"></tbody>
+      </table>
+    </div>
+    <p class="msg" id="inMsg"></p>
+  </section>
+
+  <!-- Batch 4 (8 Nov 2026, staging): vacancy check (item 7), mid-stay check (item 6), recurring jobs (item 8). Office records only. -->
+  <section id="b4SchedView" hidden>
+    <p class="hint b4note">Office lists only. Nothing here books a visit, creates anything in HomHero or tells anyone. Who does these visits and how they are paid is Craig's call. Blocks are still booked by CST in HomHero by hand.</p>
+    <div class="box2">
+      <h3>Vacancy check: empty properties</h3>
+      <p class="hint" id="vacHint"></p>
+      <div class="tablewrap" id="vacWrap" hidden><table>
+        <thead><tr><th>Status</th><th>Property</th><th>Last checkout</th><th>Days empty</th><th>Next guests</th><th>Last check</th><th></th></tr></thead>
+        <tbody id="vacRows"></tbody></table></div>
+      <p class="msg" id="vacMsg"></p>
+    </div>
+    <div class="box2">
+      <h3>Mid-stay check: long stays</h3>
+      <p class="hint" id="midHint"></p>
+      <div class="tablewrap" id="midWrap" hidden><table>
+        <thead><tr><th>Status</th><th>Property</th><th>Stay</th><th>Halfway</th><th>Last check</th><th></th></tr></thead>
+        <tbody id="midRows"></tbody></table></div>
+      <p class="msg" id="midMsg"></p>
+    </div>
+    <div class="box2">
+      <h3>Recurring jobs</h3>
+      <p class="hint">Gas bottles, smoke alarms and the 6-monthly owner inspection for every property. Mark a job done when it is done; the next due date follows from the interval.</p>
+      <div class="row scbar">
+        <div><label for="scJob">Job</label><select id="scJob"><option value="">All jobs</option></select></div>
+        <div class="grow"><label for="scQ">Property</label><input type="search" id="scQ" placeholder="Search property" autocomplete="off"></div>
+        <label class="ck"><input type="checkbox" id="scDue"> Only overdue, due soon or no record</label>
+      </div>
+      <p class="sub" id="scSum"></p>
+      <div class="sccfg" id="scCfg" hidden></div>
+      <div class="tablewrap" id="scWrap" hidden><table class="hk sct"><thead id="scHead"></thead><tbody id="scRows"></tbody></table></div>
+      <p class="msg" id="scMsg"></p>
+    </div>
+  </section>
+
   <!-- Housekeepers / Properties -->
   <section id="insView" hidden>
     <div class="toprow">
@@ -578,6 +692,18 @@ html,body{overflow-x:clip}
         <option value="90">Last 90 days</option>
       </select>
     </div>
+    <div class="box2 pc" id="pcBox" hidden>
+      <h3>Checklist for one property</h3>
+      <p class="hint">Extra checklist items for one property, example photos ("what good looks like") and items confirmed as not at the property. Housekeepers see changes the next time they open a clean there.</p>
+      <div class="row"><div class="grow"><label for="pcProp">Property</label><input type="search" id="pcQ" placeholder="Type to filter properties" aria-label="Filter properties"><select id="pcProp"><option value="">All properties (example photos only)</option></select></div></div>
+      <div id="pcBody"></div>
+      <p class="msg" id="pcMsg"></p>
+    </div>
+    <div class="box2" id="assetBox" hidden>
+      <h3>Asset register</h3>
+      <p class="hint">Appliances, hot water system and the like for one property: brand, model, install date, warranty and a photo of the label. Angus sees and edits the same list on the maintenance dashboard.</p>
+      <div id="assetHost"></div>
+    </div>
     <div class="issues" id="issues" hidden></div>
     <div class="tablewrap"><table class="hk"><thead id="insHead"></thead><tbody id="insRows"></tbody></table></div>
     <p class="msg" id="insMsg"></p>
@@ -587,13 +713,6 @@ html,body{overflow-x:clip}
       <input type="search" id="hkNotesQ" placeholder="Search property or note" aria-label="Search housekeeper notes">
       <ul id="hkNotesList"></ul>
       <p class="msg" id="hkNotesMsg"></p>
-    </div>
-    <div class="box2 pc" id="pcBox" hidden>
-      <h3>Checklist for one property</h3>
-      <p class="hint">Extra checklist items for one property, example photos ("what good looks like") and items confirmed as not at the property. Housekeepers see changes the next time they open a clean there.</p>
-      <div class="row"><div class="grow"><label for="pcProp">Property</label><select id="pcProp"><option value="">All properties (example photos only)</option></select></div></div>
-      <div id="pcBody"></div>
-      <p class="msg" id="pcMsg"></p>
     </div>
     <div class="box2" id="newBox" hidden>
       <h3>New housekeepers: first 5 clean checks</h3>
@@ -867,7 +986,7 @@ html,body{overflow-x:clip}
   if(!/^\d{4}-\d{2}-\d{2}$/.test(state.date)) state.date = sydToday();
   /* Deep links (Ask PHH): ?tab=cleans|attention|hk|props &status= &who= &q= &open=<booking> */
   var LINK = { tab: params.get("tab") || "", open: params.get("open") || "" };
-  if(["cleans","attention","hk","props","spring","cons","reviews"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
+  if(["cleans","attention","hk","props","spring","cons","reviews","insp","sched"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
   if(["checked","missing","cleaned","waiting","inprog","notstarted"].indexOf(params.get("status") || "") >= 0) state.status = params.get("status");
   state.who = (params.get("who") || "").slice(0, 120); state.q = (params.get("q") || "").slice(0, 120);
   if(/^[A-Za-z0-9-]{3,40}$/.test(LINK.open)) state.open[LINK.open] = true; else LINK.open = "";
@@ -1082,6 +1201,14 @@ html,body{overflow-x:clip}
     if(r.submissionId){ var a = el("a", "btn", "Photos and checklist"); a.href = "view.html?id=" + encodeURIComponent(r.submissionId) + "&from=office&date=" + state.date; acts.appendChild(a); }
     if(r.portalUrl){ var b = el("a", "btn ghost", "Open in HomHero Cleaner"); b.href = r.portalUrl; b.target = "_blank"; b.rel = "noopener"; acts.appendChild(b); }
     right.appendChild(acts);
+    /* Batch 4 item 12: owner report link (made here, never sent from here). */
+    if(r.submissionId){
+      var shHost = el("div");
+      var shb = el("button", "btn ghost", "Owner report link"); shb.type = "button";
+      shb.addEventListener("click", function(e){ e.stopPropagation(); if(shHost.firstChild){ shHost.innerHTML = ""; return; } shareBlock("clean", r.submissionId, shHost); });
+      shHost.addEventListener("click", function(e){ e.stopPropagation(); });
+      acts.appendChild(shb); right.appendChild(shHost);
+    }
     box.appendChild(right);
     return box;
   }
@@ -1149,7 +1276,7 @@ html,body{overflow-x:clip}
     list.forEach(function(x){
       var tr = el("tr");
       var cell = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
-      cell(cols[0], x.name, "name");
+      if(hk) cell(cols[0], x.name, "name"); else { var nc = cell(cols[0], "", "name"); nc.appendChild(propLink(x.propertyId || "", x.name)); }
       if(hk){
         cell("Cleans done", String(x.done));
         cell("Checks", String(x.checked));
@@ -1295,7 +1422,7 @@ html,body{overflow-x:clip}
       var s = spState(r), tr = el("tr", "r");
       var st = el("td", "st"); var sc = el("div", "stc st-sp-" + SPST[s][1], SPST[s][0]); st.appendChild(sc); tr.appendChild(st);
       var cell = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
-      var pc = cell("Property", "", "col-prop"); pc.appendChild(el("span", "prop", r.property)); if(r.test) pc.appendChild(el("span", "sub", " (test, never sent to HomHero)"));
+      var pc = cell("Property", "", "col-prop"); pc.appendChild(propLink(r.propertyId, r.property)); if(r.test) pc.appendChild(el("span", "sub", " (test, never sent to HomHero)"));
       if(r.notes) { pc.appendChild(el("br")); pc.appendChild(el("span", "sub", r.notes)); }
       cell("Dates", r.from === r.to ? spDay(r.from) : spDay(r.from) + " to " + spDay(r.to), "nowrap");
       cell("Housekeeper", r.cleaner || "");
@@ -1400,6 +1527,8 @@ html,body{overflow-x:clip}
         dec.appendChild(note); dec.appendChild(ok); dec.appendChild(no); dec.appendChild(m);
       } else dec.appendChild(el("p", "", (x.status === "approved" ? "Approved" : "Declined") + " by " + (x.decidedBy || "the office") + (x.officeNote ? ": " + x.officeNote : ".")));
       wrap.appendChild(dec); host.appendChild(wrap);
+      /* Batch 4 item 9: owner message when a spring clean is done. Draft only. */
+      if(x.status === "approved"){ var dr = el("div"); dr.addEventListener("click", function(ev){ ev.stopPropagation(); }); host.appendChild(dr); springDraft(r, dr); }
     }).catch(function(e){ host.innerHTML = ""; host.appendChild(el("p", "msg err", e.message)); });
   }
   $("spPropQ").addEventListener("input", function(){ spPropOptions(); spPropChanged(); });
@@ -1445,7 +1574,7 @@ html,body{overflow-x:clip}
       var tr = el("tr", "r"); tr.style.cursor = "default";
       var st = el("td", "st"); st.appendChild(el("div", "stc st-cons-" + s[1], s[0])); tr.appendChild(st);
       var cell = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
-      var pc = cell("Property", "", "col-prop"); pc.appendChild(el("span", "prop", r.property)); if(r.test) pc.appendChild(el("span", "sub", " (test)"));
+      var pc = cell("Property", "", "col-prop"); pc.appendChild(propLink(r.propertyId, r.property)); if(r.test) pc.appendChild(el("span", "sub", " (test)"));
       var items = (r.items || []).map(function(x){ return String(x).replace(/\s*-\s*\$[\d.]+\s*$/, ""); });
       if(items.length){ pc.appendChild(el("br")); pc.appendChild(el("span", "sub", items.length + (items.length === 1 ? " item: " : " items: ") + items.slice(0, 6).join(", ") + (items.length > 6 ? "..." : ""))); }
       var hc = cell("Housekeeper", r.housekeeper || ""); if(!r.matched){ hc.appendChild(el("br")); hc.appendChild(el("span", "sub", "Not matched to a Clean Check housekeeper, no ping")); }
@@ -1661,6 +1790,7 @@ html,body{overflow-x:clip}
     box.appendChild(c);
   }
   $("rvU35").addEventListener("change", function(){ if(RV.data) rvRender(); });
+  $("pcQ").addEventListener("input", pcFilter);
   $("rvNotes").addEventListener("change", function(){ if(RV.data) rvRender(); });
   $("rvHkSel").addEventListener("change", function(){ if(RV.data) rvRender(); });
   $("rvPropSel").addEventListener("change", function(){ if(RV.data) rvRender(); });
@@ -1676,8 +1806,40 @@ html,body{overflow-x:clip}
     post("prop-list", {}).then(function(j){
       PC.list = j.properties || []; var sel = $("pcProp");
       PC.list.forEach(function(p){ var o = el("option", "", p.id === "TEST-DEMO" ? p.name + " (practice)" : p.name); o.value = p.id; sel.appendChild(o); });
-      pcLoad();
+      if(PC.want) pcApplyWant(); else pcLoad();
     }).catch(function(e){ PC.list = null; $("pcMsg").className = "msg err"; $("pcMsg").textContent = e.message; });
+  }
+  /* Ian 9 Nov: click a property name anywhere (Properties table, Schedule, Inspections, Spring cleans) to open its checklist and assets. */
+  function propLink(pid, name){
+    var b = el("button", "proplink", name); b.type = "button"; b.title = "Open this property's checklist and assets";
+    b.addEventListener("click", function(ev){ ev.stopPropagation(); openProp(pid, name); });
+    return b;
+  }
+  function pcFind(pid, name){
+    var sel = $("pcProp"), opts = [].slice.call(sel.options), n = String(name || "").toLowerCase();
+    var o = opts.filter(function(x){ return pid && x.value === String(pid); })[0] || opts.filter(function(x){ return n && x.textContent.toLowerCase() === n; })[0] || opts.filter(function(x){ return n && x.value && x.textContent.toLowerCase().indexOf(n) === 0; })[0];
+    if(!o && n.indexOf(" - ") > 0){ /* motel rooms: "Bay & Beach Motel - Queen Room - 3A" vs "Studio - 3A" */
+      var tail = " - " + n.split(" - ").pop(), hit = opts.filter(function(x){ return x.value && x.textContent.toLowerCase().slice(-tail.length) === tail; });
+      if(hit.length === 1) o = hit[0];
+    }
+    if(!o){ var first = n.split(" - ")[0]; var hit2 = opts.filter(function(x){ return first && x.value && x.textContent.toLowerCase().split(" - ")[0] === first; }); if(hit2.length === 1) o = hit2[0]; }
+    return o ? o.value : null;
+  }
+  function openProp(pid, name){
+    PC.want = { pid: pid, name: name };
+    if(state.tab !== "props") setTab("props"); else pcApplyWant();
+    setTimeout(function(){ $("pcBox").scrollIntoView({ behavior:"smooth", block:"start" }); }, 50);
+  }
+  function pcApplyWant(){
+    if(!PC.want || !PC.list || !PC.list.length) return;
+    var w = PC.want, v = pcFind(w.pid, w.name); PC.want = null;
+    if(v === null){ pcSay("Couldn't find " + w.name + " in the list. Pick it below.", true); return; }
+    $("pcQ").value = ""; pcFilter(); $("pcProp").value = v; pcLoad();
+    if(window.phhAssetPick) window.phhAssetPick(v);
+  }
+  function pcFilter(){
+    var f = $("pcQ").value.trim().toLowerCase();
+    [].slice.call($("pcProp").options).forEach(function(o){ o.hidden = !!(f && o.value && o.textContent.toLowerCase().indexOf(f) < 0); });
   }
   function pcLoad(){
     PC.pid = $("pcProp").value; $("pcMsg").className = "msg"; $("pcMsg").textContent = "Loading...";
@@ -1771,15 +1933,298 @@ html,body{overflow-x:clip}
   }
   $("pcProp").addEventListener("change", pcLoad);
 
-  var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables", reviews:"Reviews" };
+  /* ---------- Batch 4 (8 Nov 2026): office tools. office-api b4-* routes. Nothing here contacts HomHero or anyone.
+     Extra visits are records for the office: who does them and how they are paid is Craig's call. ---------- */
+  var B4 = { insp: null, inspOpen: {}, inspDays: "60", vac: null, mid: null, sched: null, schedJob: "", schedQ: "", schedDue: false, form: {} };
+  function b4Day(d){ return d ? new Date(String(d).slice(0, 10) + "T12:00:00Z").toLocaleDateString("en-AU", { timeZone:"UTC", weekday:"short", day:"numeric", month:"short" }) : ""; }
+  function b4Days(a, b){ return Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 86400000); }
+  function b4Copy(text, btn){
+    var done = function(){ var t = btn.textContent; btn.textContent = "Copied"; setTimeout(function(){ btn.textContent = t; }, 1500); };
+    try{ navigator.clipboard.writeText(text).then(done, function(){ prompt("Copy this:", text); }); }catch(e){ prompt("Copy this:", text); }
+  }
+  function b4Url(page, token){ return new URL(page + "?t=" + encodeURIComponent(token), location.href).href; }
+
+  /* Item 12: owner report link for one clean, inspection or spring clean. Made here only, never sent from here. */
+  function shareBlock(kind, ref, host, onLink){
+    host.innerHTML = "";
+    var box = el("div", "share");
+    box.appendChild(el("h3", "", "Owner report link"));
+    box.appendChild(el("p", "hint", "A read-only page with the photos and checklist, for the owner. No AI review, scores, names, times, location or internal notes. Nothing is sent from here: copy the link into your own message. It stops working after 30 days."));
+    var list = el("div"); box.appendChild(list);
+    var mk = el("button", "btn small", "Make a link"); mk.type = "button";
+    var m = el("span", "msg"); m.style.margin = "0 0 0 8px";
+    box.appendChild(mk); box.appendChild(m); host.appendChild(box);
+    function show(links){
+      list.innerHTML = "";
+      links.forEach(function(l){
+        var url = b4Url("report.html", l.token), row = el("div", "shrow");
+        var inp = el("input"); inp.type = "text"; inp.readOnly = true; inp.value = url; inp.setAttribute("aria-label", "Report link");
+        var cp = el("button", "btn ghost small", "Copy"); cp.type = "button"; cp.addEventListener("click", function(){ b4Copy(url, cp); });
+        var op = el("a", "btn ghost small", "Open"); op.href = url; op.target = "_blank"; op.rel = "noopener";
+        var st = el("button", "btn ghost small", "Stop link"); st.type = "button";
+        st.addEventListener("click", function(){ if(!confirm("Stop this link? Anyone who has it will see that it has expired.")) return; st.disabled = true; post("b4-share-revoke", { token: l.token }).then(load).catch(function(e){ st.disabled = false; alert(e.message); }); });
+        row.appendChild(inp); row.appendChild(cp); row.appendChild(op); row.appendChild(st);
+        list.appendChild(row);
+        list.appendChild(el("div", "sub", "Made by " + l.by + " " + b4Day(l.at) + ". Works until " + b4Day(l.expiresAt) + ". Opened " + l.views + " time" + (l.views === 1 ? "" : "s") + "."));
+      });
+      if(onLink && links[0]) onLink(b4Url("report.html", links[0].token));
+    }
+    function load(){ return post("b4-share-list", { kind: kind, ref: ref }).then(function(j){ show(j.links || []); }).catch(function(e){ m.textContent = e.message; }); }
+    mk.addEventListener("click", function(){
+      mk.disabled = true; m.className = "msg"; m.textContent = "Making the link...";
+      post("b4-share-create", { kind: kind, ref: ref, includeTest: TEST || kind === "inspection" }).then(function(){ m.textContent = ""; return load(); })
+        .catch(function(e){ m.className = "msg err"; m.textContent = e.message; }).then(function(){ mk.disabled = false; });
+    });
+    load();
+  }
+
+  /* Item 9: owner told when a spring clean is done. DRAFT ONLY: text to copy, no send button. */
+  function springDraft(r, host){
+    var first = String(r.approvedBy || "").trim().split(/\s+/)[0] || "there";
+    var dates = r.from === r.to ? b4Day(r.from) : b4Day(r.from) + " to " + b4Day(r.to);
+    var box = el("div", "share");
+    box.appendChild(el("h3", "", "Message to the owner (draft)"));
+    box.appendChild(el("p", "hint", "Draft only. Nothing is sent from here. Make the report link, check the wording, then copy it into your own email to the owner."));
+    var ta = el("textarea", "draft"); ta.rows = 9; ta.setAttribute("aria-label", "Message to the owner");
+    function text(link){
+      return "Hi " + first + ",\n\nThe spring clean at " + r.property + " is finished (" + dates + "). You can see the before and after photos and the checklist here:\n" +
+        (link || "[make the report link below]") + "\n\nThe link works for 30 days.\n\nKind regards,\nProfessional Holiday Homes";
+    }
+    ta.value = text("");
+    var cp = el("button", "btn ghost small", "Copy message"); cp.type = "button"; cp.addEventListener("click", function(){ b4Copy(ta.value, cp); });
+    box.appendChild(ta); box.appendChild(cp);
+    var sh = el("div"); box.appendChild(sh); host.appendChild(box);
+    shareBlock("spring", r.id, sh, function(link){ if(ta.value.indexOf("[make the report link below]") >= 0 || ta.value === text("")) ta.value = text(link); else if(ta.value.indexOf(link) < 0) ta.value = text(link); });
+  }
+
+  /* Items 11 and 13: inspections. Results are office only (housekeepers never see them). */
+  function inspLoad(){
+    $("inMsg").className = "msg"; $("inMsg").textContent = "Loading...";
+    return post("b4-insp-list", { days: +B4.inspDays, includeTest: true }).then(function(j){ B4.insp = j.rows || []; inspRender(); })
+      .catch(function(e){ $("inMsg").className = "msg err"; $("inMsg").textContent = e.message; });
+  }
+  function inspRender(){
+    var tb = $("inRows"); tb.innerHTML = "";
+    var rows = B4.insp || [];
+    rows.forEach(function(r){
+      var tr = el("tr", "r"); tr.tabIndex = 0; tr.setAttribute("aria-expanded", String(!!B4.inspOpen[r.id]));
+      var st = el("td", "st"); st.appendChild(el("div", "stc " + (r.status === "submitted" ? (r.issues ? "st-waiting" : "st-checked") : "st-prog"), r.status === "submitted" ? (r.issues ? "Needs attention" : "All OK") : "In progress")); tr.appendChild(st);
+      var c = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
+      c("Date", b4Day(r.submittedAt || r.startedAt), "nowrap");
+      var pc = c("Property", "", "col-prop"); pc.appendChild(propLink(r.propertyId, r.property)); if(r.test) pc.appendChild(el("span", "sub", " (test)"));
+      c("Inspection", r.kind === "premium" ? "Premium" : "Standard");
+      c("By", r.by);
+      c("Needs attention", r.status === "submitted" ? String(r.issues) : "");
+      c("Photos", String(r.photos));
+      var go = function(){ B4.inspOpen[r.id] = !B4.inspOpen[r.id]; inspRender(); };
+      tr.addEventListener("click", go); tr.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); go(); } });
+      tb.appendChild(tr);
+      if(B4.inspOpen[r.id]){ var d = el("tr", "d"), td = el("td"); td.colSpan = 7; d.appendChild(td); tb.appendChild(d); inspDetail(r, td); }
+    });
+    $("inWrap").hidden = !rows.length;
+    $("inMsg").className = "msg"; $("inMsg").textContent = rows.length ? "" : "No inspections in this period yet.";
+  }
+  function inspDetail(r, host){
+    host.appendChild(el("p", "msg", "Loading..."));
+    post("b4-insp-get", { id: r.id }).then(function(j){
+      var x = j.inspection; host.innerHTML = "";
+      var wrap = el("div", "detail"), left = el("div"), right = el("div");
+      left.appendChild(el("h3", "", x.checklist && x.checklist.name || "Inspection"));
+      (x.checklist && x.checklist.sections || []).forEach(function(sec){
+        left.appendChild(el("h4", "insec", sec.title));
+        var ul = el("ul", "inl");
+        sec.items.forEach(function(it){
+          var v = x.items[it.id] || {}, li = el("li", v.s === "issue" ? "iss" : "");
+          var tag = { ok:["OK","chip ok"], issue:["Needs attention","chip warn"], na:["N/A","chip"] }[v.s] || ["Not marked","chip"];
+          li.appendChild(el("span", tag[1], tag[0])); li.appendChild(document.createTextNode(" " + it.text));
+          if(v.note) li.appendChild(el("div", "sub", v.note));
+          ul.appendChild(li);
+        });
+        left.appendChild(ul);
+      });
+      if((x.photos || []).length){
+        var pics = el("div", "pics");
+        x.photos.forEach(function(p){ if(!p.url) return; var a = el("a"); a.href = p.url; a.target = "_blank"; a.rel = "noopener"; var im = el("img"); im.src = p.url; im.alt = p.label || ("Photo " + p.n); im.loading = "lazy"; a.appendChild(im); if(p.label) a.appendChild(el("span", "sub", p.label)); pics.appendChild(a); });
+        right.appendChild(el("h3", "", "Photos")); right.appendChild(pics);
+      }
+      var kv = el("dl", "kv");
+      var add = function(k, v){ if(!v) return; kv.appendChild(el("dt", "", k)); kv.appendChild(el("dd", "", v)); };
+      add("Started", x.by + ", " + b4Day(x.startedAt)); add("Sent", x.submittedAt ? b4Day(x.submittedAt) : "Not sent yet");
+      add("Office notes", x.notes); add("Note for the owner", x.ownerNote);
+      right.appendChild(kv);
+      if(x.status === "open"){ var a2 = el("a", "btn ghost small", "Open the inspection"); a2.href = "inspect.html?id=" + encodeURIComponent(x.id); right.appendChild(el("div", "actions")).appendChild(a2); }
+      else { var sh = el("div"); right.appendChild(sh); shareBlock("inspection", x.id, sh); }
+      wrap.appendChild(left); wrap.appendChild(right); host.appendChild(wrap);
+    }).catch(function(e){ host.innerHTML = ""; host.appendChild(el("p", "msg err", e.message)); });
+  }
+  $("inDays").addEventListener("change", function(){ B4.inspDays = this.value; inspLoad(); });
+
+  /* Item 7 vacancy check and item 6 mid-stay check: lists from bookings we already hold, plus a "Check done" record. */
+  function checkForm(kind, row, host, onSaved){
+    host.innerHTML = "";
+    var f = el("form", "ckform"); f.setAttribute("autocomplete", "off");
+    var g = el("div", "row");
+    var w1 = el("div"); var l1 = el("label", "", "Date done"); var d = el("input"); d.type = "date"; d.value = sydToday(); d.max = sydToday(); l1.appendChild(d); w1.appendChild(l1); g.appendChild(w1);
+    var w2 = el("div", "grow"); var l2 = el("label", "", "Note (optional)"); var n = el("input"); n.type = "text"; n.maxLength = 500; n.placeholder = "For example: aired out, all fine"; l2.appendChild(n); w2.appendChild(l2); g.appendChild(w2);
+    var w3 = el("div"); var l3 = el("label", "", "Inspection (optional)"); var s = el("select"); var o0 = el("option", "", "None"); o0.value = ""; s.appendChild(o0);
+    (B4.insp || []).filter(function(i){ return i.propertyId === row.propertyId && i.status === "submitted"; }).forEach(function(i){ var o = el("option", "", b4Day(i.submittedAt) + ", " + (i.kind === "premium" ? "premium" : "standard")); o.value = i.id; s.appendChild(o); });
+    l3.appendChild(s); w3.appendChild(l3); g.appendChild(w3);
+    f.appendChild(g);
+    var acts = el("div", "row");
+    var sv = el("button", "btn small", "Save check"); sv.type = "submit";
+    var st = el("a", "btn ghost small", "Start an inspection"); st.href = "inspect.html?property=" + encodeURIComponent(row.propertyId) + (TEST ? "&test=1" : ""); st.target = "_blank"; st.rel = "noopener";
+    var m = el("span", "msg"); m.style.margin = "0";
+    acts.appendChild(sv); acts.appendChild(st); acts.appendChild(m); f.appendChild(acts);
+    f.addEventListener("submit", function(e){
+      e.preventDefault(); sv.disabled = true; m.className = "msg"; m.textContent = "Saving...";
+      var b = { kind: kind, propertyId: row.propertyId, doneOn: d.value, note: n.value };
+      if(kind === "midstay") b.res = row.res; if(s.value) b.inspectionId = s.value;
+      post("b4-check-save", b).then(function(){ onSaved(); }).catch(function(err){ sv.disabled = false; m.className = "msg err"; m.textContent = err.message; });
+    });
+    host.appendChild(f);
+  }
+  function lastCheckText(c){ return c ? b4Day(c.on) + ", " + c.by + (c.note ? ": " + c.note : "") + (c.inspectionId ? " (inspection)" : "") : "None"; }
+  function vacRender(){
+    var tb = $("vacRows"); tb.innerHTML = "";
+    var rows = B4.vac.rows || [];
+    rows.forEach(function(r){
+      var key = "v" + r.propertyId, tr = el("tr", "r");
+      var st = el("td", "st"); st.appendChild(el("div", "stc " + (r.checkedSinceEmpty ? "st-checked" : "st-waiting"), r.checkedSinceEmpty ? "Checked" : "Check due")); tr.appendChild(st);
+      var c = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
+      var pc = c("Property", "", "col-prop"); pc.appendChild(propLink(r.propertyId, r.property));
+      c("Last checkout", b4Day(r.lastDeparture), "nowrap");
+      c("Days empty", String(r.daysEmpty));
+      c("Next guests", r.nextArrival ? "Arrive " + b4Day(r.nextArrival) : (r.nextDeparture ? "Arrival not stored. Next checkout " + b4Day(r.nextDeparture) + ", so a guest may be staying now" : "No bookings ahead"));
+      c("Last check", lastCheckText(r.check));
+      var ac = c("", "", "acts"); ac.removeAttribute("data-l");
+      var b = el("button", "btn ghost small", "Check done"); b.type = "button";
+      b.addEventListener("click", function(ev){ ev.stopPropagation(); B4.form[key] = !B4.form[key]; vacRender(); });
+      ac.appendChild(b); tb.appendChild(tr);
+      if(B4.form[key]){ var d = el("tr", "d"), td = el("td"); td.colSpan = 7; d.appendChild(td); tb.appendChild(d); checkForm("vacancy", r, td, function(){ B4.form[key] = false; vacLoad(); }); }
+    });
+    $("vacWrap").hidden = !rows.length;
+    $("vacMsg").textContent = rows.length ? "" : "No property has been empty for " + B4.vac.days + " days or more.";
+    $("vacHint").textContent = "Properties with no guest checkout for " + B4.vac.days + "+ days (and no guest arrived since), from the bookings Clean Check already holds. Someone checks the property is clean, aired and safe, then records it here. Who goes and how it is paid is Craig's call.";
+  }
+  function vacLoad(){
+    $("vacMsg").className = "msg"; $("vacMsg").textContent = "Loading...";
+    return post("b4-vacancy", { includeTest: TEST }).then(function(j){ B4.vac = j; vacRender(); }).catch(function(e){ $("vacMsg").className = "msg err"; $("vacMsg").textContent = e.message; });
+  }
+  function midRender(){
+    var tb = $("midRows"); tb.innerHTML = "";
+    var rows = B4.mid.rows || [], today = sydToday();
+    rows.forEach(function(r){
+      var key = "m" + r.res, tr = el("tr", "r");
+      var due = !r.check && r.midpoint <= shift(today, 3);
+      var st = el("td", "st"); st.appendChild(el("div", "stc " + (r.check ? "st-checked" : (due ? "st-waiting" : "st-cleaned")), r.check ? "Checked" : (due ? "Check due" : (r.state === "current" ? "Staying" : "Coming up")))); tr.appendChild(st);
+      var c = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
+      var pc = c("Property", "", "col-prop"); pc.appendChild(propLink(r.propertyId, r.property)); if(r.guest) pc.appendChild(el("div", "sub", r.guest));
+      c("Stay", b4Day(r.arrival) + " to " + b4Day(r.departure) + " (" + r.nights + " nights)");
+      var mp = c("Halfway", b4Day(r.midpoint), "nowrap"); var dd = b4Days(today, r.midpoint); if(!r.check) mp.appendChild(el("span", "sub", dd === 0 ? " (today)" : dd > 0 ? " (in " + dd + " day" + (dd === 1 ? "" : "s") + ")" : " (" + (-dd) + " day" + (dd === -1 ? "" : "s") + " ago)"));
+      c("Last check", lastCheckText(r.check));
+      var ac = c("", "", "acts"); ac.removeAttribute("data-l");
+      var b = el("button", "btn ghost small", "Check done"); b.type = "button";
+      b.addEventListener("click", function(ev){ ev.stopPropagation(); B4.form[key] = !B4.form[key]; midRender(); });
+      ac.appendChild(b); tb.appendChild(tr);
+      if(B4.form[key]){ var d = el("tr", "d"), td = el("td"); td.colSpan = 6; d.appendChild(td); tb.appendChild(d); checkForm("midstay", r, td, function(){ B4.form[key] = false; midLoad(); }); }
+    });
+    $("midWrap").hidden = !rows.length;
+    $("midMsg").textContent = rows.length ? "" : "No stays of " + B4.mid.minNights + " nights or more now or in the next " + B4.mid.aheadDays + " days.";
+    $("midHint").textContent = "Stays of " + B4.mid.minNights + "+ nights, now or arriving in the next " + B4.mid.aheadDays + " days, with the halfway date. Arrival dates are only known for the stay after a clean we hold" +
+      (B4.mid.noArrival ? ", so " + B4.mid.noArrival + " booking" + (B4.mid.noArrival === 1 ? "" : "s") + " in that window could not be checked (look in HomHero)." : ".") + " Blocks are still booked by CST in HomHero by hand.";
+  }
+  function midLoad(){
+    $("midMsg").className = "msg"; $("midMsg").textContent = "Loading...";
+    return post("b4-midstay", { includeTest: TEST }).then(function(j){ B4.mid = j; midRender(); }).catch(function(e){ $("midMsg").className = "msg err"; $("midMsg").textContent = e.message; });
+  }
+
+  /* Item 8: recurring jobs per property (gas bottles, smoke alarms, owner inspection). Intervals in qa_app_config. */
+  var JSTATE = { overdue:["Overdue","chip warn"], soon:["Due soon","chip info"], ok:["OK","chip ok"], none:["No record","chip"], na:["Not needed","chip"] };
+  function schedRender(){
+    var S = B4.sched, jobs = S.jobs.filter(function(j){ return !B4.schedJob || j.id === B4.schedJob; });
+    var q = B4.schedQ.toLowerCase();
+    $("scHead").innerHTML = "";
+    var hr = el("tr"); hr.appendChild(el("th", "", "Property")); jobs.forEach(function(j){ hr.appendChild(el("th", "", j.name + " (every " + j.months + " month" + (j.months === 1 ? "" : "s") + ")")); }); $("scHead").appendChild(hr);
+    var tb = $("scRows"); tb.innerHTML = "";
+    var rows = S.rows.filter(function(r){
+      if(q && r.property.toLowerCase().indexOf(q) < 0) return false;
+      if(B4.schedDue && !jobs.some(function(j){ var s = r.jobs[j.id].state; return s === "overdue" || s === "none" || s === "soon"; })) return false;
+      return true;
+    });
+    var nOver = 0; S.rows.forEach(function(r){ S.jobs.forEach(function(j){ if(r.jobs[j.id].state === "overdue") nOver++; }); });
+    $("scSum").textContent = S.rows.length + " properties. " + nOver + " job" + (nOver === 1 ? "" : "s") + " overdue.";
+    rows.slice(0, 400).forEach(function(r){
+      var tr = el("tr", "r");
+      var pc = el("td", "col-prop name"); pc.appendChild(propLink(r.propertyId, r.property)); tr.appendChild(pc);
+      jobs.forEach(function(j){
+        var v = r.jobs[j.id], td = el("td", "jc" + (v.state === "overdue" ? " over" : "")); td.setAttribute("data-l", j.name);
+        td.appendChild(el("span", JSTATE[v.state][1], JSTATE[v.state][0]));
+        if(v.state !== "na" && v.state !== "none") td.appendChild(el("div", "sub", "Done " + b4Day(v.last) + (v.by ? " by " + v.by : "") + ". Next " + b4Day(v.next)));
+        if(v.note) td.appendChild(el("div", "sub", v.note));
+        var key = "s" + r.propertyId + j.id;
+        var b = el("button", "btn ghost small", "Mark done"); b.type = "button";
+        b.addEventListener("click", function(){ B4.form[key] = !B4.form[key]; schedRender(); });
+        td.appendChild(b);
+        if(B4.form[key]){
+          var f = el("form", "ckform jf");
+          var d = el("input"); d.type = "date"; d.value = sydToday(); d.max = sydToday(); d.setAttribute("aria-label", "Date done");
+          var n = el("input"); n.type = "text"; n.maxLength = 300; n.placeholder = "Note (optional)"; n.setAttribute("aria-label", "Note");
+          var sv = el("button", "btn small", "Save"); sv.type = "submit";
+          var na = el("button", "btn ghost small", v.state === "na" ? "Needed here" : "Not needed here"); na.type = "button";
+          var m = el("span", "msg"); m.style.margin = "0";
+          f.appendChild(d); f.appendChild(n); f.appendChild(sv); f.appendChild(na); f.appendChild(m);
+          f.addEventListener("submit", function(e){ e.preventDefault(); sv.disabled = true; m.textContent = "Saving...";
+            post("b4-sched-done", { propertyId: r.propertyId, job: j.id, doneOn: d.value, note: n.value }).then(function(){ B4.form[key] = false; return schedLoad(); })
+              .catch(function(err){ sv.disabled = false; m.className = "msg err"; m.textContent = err.message; }); });
+          na.addEventListener("click", function(){ na.disabled = true;
+            post("b4-sched-na", { propertyId: r.propertyId, job: j.id, notNeeded: v.state !== "na" }).then(function(){ B4.form[key] = false; return schedLoad(); })
+              .catch(function(err){ na.disabled = false; m.className = "msg err"; m.textContent = err.message; }); });
+          td.appendChild(f);
+        }
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    $("scWrap").hidden = !rows.length;
+    $("scMsg").textContent = rows.length ? (rows.length > 400 ? "Showing the first 400. Search to narrow it down." : "") : "Nothing matches.";
+    var cf = $("scCfg"); cf.hidden = !S.admin; cf.innerHTML = "";
+    if(S.admin){
+      cf.appendChild(el("span", "sub", "Intervals (admins): "));
+      var ins = {};
+      S.jobs.forEach(function(j){ var l = el("label", "inl2", j.name + " every "); var i = el("input"); i.type = "number"; i.min = 1; i.max = 60; i.value = j.months; i.style.width = "60px"; ins[j.id] = i; l.appendChild(i); l.appendChild(document.createTextNode(" months")); cf.appendChild(l); });
+      var sv = el("button", "btn ghost small", "Save intervals"); sv.type = "button"; var m = el("span", "msg"); m.style.margin = "0 0 0 8px";
+      sv.addEventListener("click", function(){ sv.disabled = true; post("b4-sched-config", { jobs: S.jobs.map(function(j){ return { id: j.id, months: +ins[j.id].value }; }) }).then(schedLoad).catch(function(e){ sv.disabled = false; m.textContent = e.message; }); });
+      cf.appendChild(sv); cf.appendChild(m);
+    }
+  }
+  function schedLoad(){
+    $("scMsg").className = "msg"; if(!B4.sched) $("scMsg").textContent = "Loading...";
+    return post("b4-sched", { includeTest: TEST }).then(function(j){
+      B4.sched = j;
+      var sel = $("scJob"), cur = sel.value; sel.innerHTML = ""; var o0 = el("option", "", "All jobs"); o0.value = ""; sel.appendChild(o0);
+      j.jobs.forEach(function(x){ var o = el("option", "", x.name); o.value = x.id; sel.appendChild(o); }); sel.value = cur;
+      schedRender();
+    }).catch(function(e){ $("scMsg").className = "msg err"; $("scMsg").textContent = e.message; });
+  }
+  $("scJob").addEventListener("change", function(){ B4.schedJob = this.value; schedRender(); });
+  $("scQ").addEventListener("input", function(){ B4.schedQ = this.value.trim(); schedRender(); });
+  $("scDue").addEventListener("change", function(){ B4.schedDue = this.checked; schedRender(); });
+  function schedTab(){ vacLoad(); midLoad(); schedLoad(); if(!B4.insp) post("b4-insp-list", { days: 60, includeTest: TEST }).then(function(j){ B4.insp = j.rows || []; }).catch(function(){}); }
+  var assetsOn = false;
+  function assetsInit(){ if(assetsOn || !window.phhAssets) return; assetsOn = true; window.phhAssets($("assetHost"), post, { includeTest: true }); }
+
+  var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables", reviews:"Reviews", insp:"Inspections", sched:"Schedule" };
   function setTab(t){
     state.tab = t;
     document.querySelectorAll(".tab").forEach(function(b){ b.setAttribute("aria-selected", String(b.getAttribute("data-tab") === t)); });
     $("sectionTitle").textContent = TITLES[t];
-    var day = t === "cleans" || t === "attention", spring = t === "spring", cons = t === "cons", rv = t === "reviews";
-    $("dayView").hidden = !day; $("insView").hidden = day || spring || cons || rv; $("springView").hidden = !spring; $("consView").hidden = !cons; $("rvView").hidden = !rv;
-    $("pcBox").hidden = t !== "props"; if(t === "props") pcInit();
-    if(rv){ if(RV.data) rvRender(); else rvLoad(); }
+    var day = t === "cleans" || t === "attention", spring = t === "spring", cons = t === "cons", rv = t === "reviews", insp = t === "insp", sched = t === "sched";
+    $("dayView").hidden = !day; $("insView").hidden = day || spring || cons || rv || insp || sched; $("springView").hidden = !spring; $("consView").hidden = !cons; $("rvView").hidden = !rv;
+    $("b4InspView").hidden = !insp; $("b4SchedView").hidden = !sched;
+    $("pcBox").hidden = t !== "props"; $("assetBox").hidden = t !== "props"; if(t === "props"){ pcInit(); assetsInit(); }
+    if(insp){ inspLoad(); }
+    else if(sched){ schedTab(); }
+    else if(rv){ if(RV.data) rvRender(); else rvLoad(); }
     else if(cons){ $("consMsg").className = "msg"; $("consMsg").textContent = "Loading..."; consLoad(true).catch(function(e){ $("consMsg").className = "msg err"; $("consMsg").textContent = e.message; }); }
     else if(spring) spLoad(); else if(day){ if(state.rows.length) renderRows(); } else loadIns();
   }
@@ -2194,4 +2639,127 @@ html.aphh-open body{margin-right:var(--aphh-w,400px)}
 })();
 </script>
 <!-- ASK-PHH END -->
+<script>
+/* Asset register (Batch 4 item 21, staging 8 Nov 2026): appliances, hot water system and so on, per property.
+   Office view and maintenance dashboard can view and edit. office-api b4-asset-* routes. Same block in office.html and maintenance.html. */
+window.phhAssets = function(host, post, opts){
+  "use strict";
+  opts = opts || {};
+  var TYPES = ["Hot water system", "Air conditioner", "Oven", "Cooktop", "Rangehood", "Dishwasher", "Fridge", "Microwave", "Washing machine", "Dryer", "Smoke alarm", "Pool pump", "Spa", "TV", "BBQ", "Ceiling fan", "Gas heater", "Water filter"];
+  function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined && text !== null) e.textContent = text; return e; }
+  function day(d){ return d ? new Date(d + "T12:00:00Z").toLocaleDateString("en-AU", { timeZone:"UTC", day:"numeric", month:"short", year:"numeric" }) : ""; }
+  var S = { props: [], pid: "", assets: [], edit: null, photoPath: null, removePhoto: false };
+  host.innerHTML = "";
+  host.classList.add("as");
+  var top = el("div", "row");
+  var w1 = el("div", "grow"); var l1 = el("label", "", "Property"); l1.htmlFor = "asProp";
+  var q = el("input"); q.type = "search"; q.placeholder = "Type to filter properties"; q.setAttribute("aria-label", "Filter properties");
+  var sel = el("select"); sel.id = "asProp";
+  w1.appendChild(l1); w1.appendChild(q); w1.appendChild(sel); top.appendChild(w1); host.appendChild(top);
+  var list = el("div"); host.appendChild(list);
+  var msg = el("p", "msg"); host.appendChild(msg);
+  function say(t, err){ msg.className = "msg" + (err ? " err" : ""); msg.textContent = t || ""; }
+  function options(){
+    var f = q.value.trim().toLowerCase(), cur = sel.value; sel.innerHTML = "";
+    var o0 = el("option", "", "Pick the property"); o0.value = ""; sel.appendChild(o0);
+    S.props.filter(function(p){ return !f || p.name.toLowerCase().indexOf(f) >= 0; }).forEach(function(p){ var o = el("option", "", p.name); o.value = p.id; sel.appendChild(o); });
+    sel.value = cur;
+  }
+  function load(){
+    S.pid = sel.value; list.innerHTML = ""; say("");
+    if(!S.pid) return;
+    say("Loading...");
+    post("b4-asset-list", { propertyId: S.pid }).then(function(j){ S.assets = j.assets || []; say(""); render(); }).catch(function(e){ say(e.message, true); });
+  }
+  function render(){
+    list.innerHTML = "";
+    if(S.assets.length){
+      var tw = el("div", "tablewrap"), t = el("table", "hk"); tw.appendChild(t);
+      t.innerHTML = "<thead><tr><th>What</th><th>Brand and model</th><th>Installed</th><th>Warranty until</th><th>Notes</th><th>Photo</th><th></th></tr></thead>";
+      var tb = el("tbody"); t.appendChild(tb);
+      S.assets.forEach(function(a){
+        var tr = el("tr");
+        var c = function(label, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", label); tr.appendChild(td); return td; };
+        c("What", a.type, "name"); c("Brand and model", [a.brand, a.model].filter(Boolean).join(" ")); c("Installed", day(a.installDate));
+        var wt = c("Warranty until", day(a.warrantyUntil)); if(a.warrantyUntil && a.warrantyUntil < new Date().toISOString().slice(0, 10)) wt.appendChild(el("span", "sub", " (ended)"));
+        c("Notes", a.notes);
+        var pc = c("Photo", "");
+        if(a.photo){ var lk = el("a"); lk.href = a.photo; lk.target = "_blank"; lk.rel = "noopener"; var im = el("img"); im.src = a.photo; im.alt = a.type; im.className = "asimg"; lk.appendChild(im); pc.appendChild(lk); }
+        var ac = c("", ""); ac.removeAttribute("data-l");
+        var eb = el("button", "btn ghost small", "Edit"); eb.type = "button"; eb.addEventListener("click", function(){ S.edit = a; form(); });
+        var rb = el("button", "btn ghost small", "Remove"); rb.type = "button";
+        rb.addEventListener("click", function(){ if(!confirm("Remove " + a.type + " from this property?")) return; rb.disabled = true; post("b4-asset-remove", { id: a.id }).then(load).catch(function(e){ rb.disabled = false; say(e.message, true); }); });
+        ac.appendChild(eb); ac.appendChild(document.createTextNode(" ")); ac.appendChild(rb);
+        tb.appendChild(tr);
+      });
+      list.appendChild(tw);
+    } else list.appendChild(el("p", "sub", "Nothing recorded for this property yet."));
+    var add = el("button", "btn small", "Add an item"); add.type = "button"; add.style.marginTop = "10px";
+    add.addEventListener("click", function(){ S.edit = {}; form(); });
+    list.appendChild(add);
+    if(S.edit) form();
+  }
+  function form(){
+    var old = host.querySelector(".asform"); if(old) old.remove();
+    var a = S.edit || {}; S.photoPath = null; S.removePhoto = false;
+    var f = el("form", "asform"); f.setAttribute("autocomplete", "off");
+    f.appendChild(el("h4", "", a.id ? "Edit " + a.type : "Add an item"));
+    var g = el("div", "asgrid"); f.appendChild(g);
+    function field(label, type, val, id, max){
+      var w = el("div"); var l = el("label", "", label); l.htmlFor = id; var i = el("input"); i.type = type; i.id = id; if(max) i.maxLength = max; i.value = val || ""; w.appendChild(l); w.appendChild(i); g.appendChild(w); return i;
+    }
+    var tp = field("What it is", "text", a.type, "asType", 60); tp.setAttribute("list", "asTypes");
+    var dl = el("datalist"); dl.id = "asTypes"; TYPES.forEach(function(x){ var o = el("option"); o.value = x; dl.appendChild(o); }); f.appendChild(dl);
+    var br = field("Brand", "text", a.brand, "asBrand", 80), md = field("Model", "text", a.model, "asModel", 80);
+    var ins = field("Installed", "date", a.installDate, "asIns"), wr = field("Warranty until", "date", a.warrantyUntil, "asWar");
+    var nw = el("div", "wide"); var nl = el("label", "", "Notes (serial number, where it is, who services it)"); nl.htmlFor = "asNotes"; var nt = el("textarea"); nt.id = "asNotes"; nt.maxLength = 1000; nt.value = a.notes || ""; nw.appendChild(nl); nw.appendChild(nt); g.appendChild(nw);
+    var pw = el("div", "wide"); var pl = el("label", "", "Photo (optional, for example the label with the model number)"); pl.htmlFor = "asPhoto";
+    var pf = el("input"); pf.type = "file"; pf.accept = "image/*"; pf.id = "asPhoto"; pw.appendChild(pl); pw.appendChild(pf);
+    var ps = el("span", "sub"); pw.appendChild(ps);
+    if(a.hasPhoto){ var rp = el("label", "sub"); var rc = el("input"); rc.type = "checkbox"; rc.addEventListener("change", function(){ S.removePhoto = rc.checked; }); rp.appendChild(rc); rp.appendChild(document.createTextNode(" Remove the photo")); pw.appendChild(rp); }
+    g.appendChild(pw);
+    var busy = false;
+    pf.addEventListener("change", function(){
+      var file = pf.files && pf.files[0]; if(!file) return;
+      busy = true; ps.textContent = " Sending photo...";
+      shrink(file).then(function(blob){
+        return post("b4-asset-upload-url", { propertyId: S.pid }).then(function(j){
+          return fetch(j.signedUrl, { method:"PUT", headers:{ "content-type":"image/jpeg" }, body: blob }).then(function(r){ if(!r.ok) throw new Error("The photo did not upload. Try again."); S.photoPath = j.path; ps.textContent = " Photo ready."; });
+        });
+      }).catch(function(e){ ps.textContent = " " + (e.message || "The photo did not upload."); }).then(function(){ busy = false; });
+    });
+    var row = el("div", "row"); var sv = el("button", "btn small", "Save"); sv.type = "submit";
+    var cn = el("button", "btn ghost small", "Cancel"); cn.type = "button"; cn.addEventListener("click", function(){ S.edit = null; f.remove(); });
+    var fm = el("span", "msg"); fm.style.margin = "0";
+    row.appendChild(sv); row.appendChild(cn); row.appendChild(fm); f.appendChild(row);
+    f.addEventListener("submit", function(e){
+      e.preventDefault();
+      if(busy){ fm.textContent = "Wait for the photo to finish sending."; return; }
+      var b = { propertyId: S.pid, type: tp.value.trim(), brand: br.value.trim(), model: md.value.trim(), installDate: ins.value || null, warrantyUntil: wr.value || null, notes: nt.value.trim() };
+      if(a.id) b.id = a.id; if(S.photoPath) b.photoPath = S.photoPath; else if(S.removePhoto) b.removePhoto = true;
+      sv.disabled = true; fm.textContent = "Saving...";
+      post("b4-asset-save", b).then(function(){ S.edit = null; load(); }).catch(function(err){ sv.disabled = false; fm.className = "msg err"; fm.textContent = err.message; });
+    });
+    host.appendChild(f);
+    tp.focus();
+  }
+  function shrink(file){
+    return new Promise(function(ok, bad){
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function(){
+        var sc = Math.min(1, 1280 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement("canvas");
+        c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        c.toBlob(function(b){ b ? ok(b) : bad(new Error("That photo could not be read.")); }, "image/jpeg", 0.8);
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); bad(new Error("That photo could not be read.")); };
+      img.src = url;
+    });
+  }
+  q.addEventListener("input", options);
+  sel.addEventListener("change", function(){ S.edit = null; load(); });
+  window.phhAssetPick = function(pid){ S.want = pid; if(S.props.length){ q.value = ""; options(); sel.value = pid; S.want = null; if(sel.value === String(pid)){ S.edit = null; load(); } } };
+  post("b4-props", opts.includeTest ? { includeTest:true } : {}).then(function(j){ S.props = (j.properties || []).map(function(p){ return p.id === "TEST-DEMO" ? Object.assign({}, p, { name: p.name + " (practice)" }) : p; }); options(); if(S.want) window.phhAssetPick(S.want); }).catch(function(e){ say(e.message, true); });
+};
+</script>
 </body></html>

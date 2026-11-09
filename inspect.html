@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#5bbfb5">
+<link rel="icon" type="image/png" sizes="180x180" href="icon-180.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<script>window.PHH_OFFICE_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/office-api";</script>
+<title>Clean Check Inspection</title>
+<style>
+/* Property inspections (Batch 4, items 11 and 13, 8 Nov 2026). Staff codes only. Replaces the Process Street
+   inspection form and Drive folder: checklist, live photos and notes go to Clean Check, office view only. */
+:root{
+  color-scheme:light;
+  --teal:#5bbfb5; --teal-ink:#23807a; --teal-soft:#e6f5f3;
+  --bg:#f4f5f5; --panel:#ffffff; --ink:#26323a; --muted:#5d6b73; --faint:#8b979e; --line:#e1e5e7; --line-2:#eef1f2;
+  --ok:#9ccf63; --ok-ink:#2f5d12; --warn:#b2461d; --warn-soft:#fdece5; --info:#1f6f9a; --info-soft:#e5f1f8; --miss:#e4574d;
+  --font:"Roboto", "Helvetica Neue", Arial, sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0;overflow-x:clip}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.45 var(--font)}
+a{color:var(--teal-ink)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid #1f6f9a;outline-offset:2px}
+.bar{display:flex;align-items:stretch;flex-wrap:wrap;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;padding-top:env(safe-area-inset-top,0px)}
+.brand{background:var(--teal);color:#fff;display:flex;align-items:center;gap:10px;padding:0 18px;min-height:52px;font-weight:500;font-size:18px;white-space:nowrap}
+.brand img{height:24px;width:24px;border-radius:5px;background:#fff;padding:2px}
+.section{display:flex;align-items:center;padding:0 18px;color:var(--teal-ink);font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:.04em}
+.me{margin-left:auto;display:flex;align-items:center;gap:14px;padding:0 18px;color:var(--muted);white-space:nowrap}
+.me a{font-weight:500;text-decoration:none}
+main{padding:14px 16px 90px;max-width:860px;margin:0 auto}
+.box{background:#fff;border:1px solid var(--line);border-radius:4px;padding:14px 16px;margin-bottom:14px}
+h1{font-size:19px;font-weight:500;margin:0 0 2px}
+h2{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-ink)}
+.hint{color:var(--muted);font-size:13px;margin:4px 0 10px}
+.sub{color:var(--faint);font-size:13px}
+label.l{display:block;font-size:12px;color:var(--muted);margin:10px 0 3px}
+select,input[type=text],input[type=search],textarea{width:100%;padding:9px 10px;border:1px solid #c8cfd3;border-radius:4px;background:#fff;min-height:42px}
+textarea{min-height:80px;resize:vertical}
+.btn{border:0;border-radius:4px;background:var(--teal);color:#fff;font-weight:500;padding:11px 16px;cursor:pointer;text-transform:uppercase;font-size:13px;letter-spacing:.04em;min-height:44px}
+.btn.ghost{background:#fff;color:var(--teal-ink);border:1px solid var(--teal)}
+.btn:disabled{opacity:.55;cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.msg{color:var(--muted);margin:10px 0}
+.msg.err{color:var(--warn);font-weight:500}
+ul.open{list-style:none;margin:0;padding:0}
+ul.open li{padding:8px 0;border-bottom:1px solid var(--line-2)}
+ul.items{list-style:none;margin:0;padding:0}
+ul.items li{padding:10px 0;border-bottom:1px solid var(--line-2)}
+ul.items li:last-child{border-bottom:0}
+.itxt{margin-bottom:6px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid #c8cfd3;background:#fff;border-radius:18px;padding:7px 12px;min-height:38px;cursor:pointer;font-size:14px}
+.seg button[aria-pressed="true"].s-ok{background:var(--ok);border-color:var(--ok);color:var(--ok-ink);font-weight:700}
+.seg button[aria-pressed="true"].s-issue{background:var(--warn-soft);border-color:var(--warn);color:var(--warn);font-weight:700}
+.seg button[aria-pressed="true"].s-na{background:var(--line);border-color:#b9c2c7;font-weight:700}
+.inote{margin-top:6px}
+.count{float:right;font-size:12px;color:var(--muted);font-weight:500;text-transform:none;letter-spacing:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.ph{position:relative;display:block;border:1px dashed #b9c2c7;border-radius:6px;background:#fafbfb;cursor:pointer;overflow:hidden;min-height:120px}
+.ph.has{border-style:solid}
+.ph img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+.ph .shot{display:flex;align-items:center;justify-content:center;aspect-ratio:4/3;color:var(--teal-ink);font-weight:500;text-align:center;padding:8px}
+.ph .cap{font-size:12px;padding:4px 6px;color:var(--muted)}
+.ph .cap .flag{display:block;color:var(--warn);font-weight:500}
+.ph input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.done{background:#eaf5df;color:var(--ok-ink);border-color:#cfe6b8}
+.test{background:var(--warn-soft);color:var(--warn);border:1px solid #f1c9b8;padding:8px 12px;border-radius:4px;margin-bottom:12px;font-size:13px}
+.sticky{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px max(10px,env(safe-area-inset-bottom));display:flex;gap:10px;justify-content:center;z-index:6}
+.sticky .btn{flex:0 1 220px}
+@media (max-width:760px){
+  .section{display:none}
+  .brand{flex:1 1 100%;min-height:46px;font-size:17px}
+  .me{flex:1 1 100%;margin-left:0;justify-content:space-between;min-height:42px;padding:0 12px}
+}
+</style>
+</head><body>
+<header class="bar">
+  <div class="brand"><img src="icon-180.png" alt="" width="24" height="24">Clean Check</div>
+  <div class="section">Inspection</div>
+  <div class="me"><span id="mename"></span><a href="office.html?tab=insp" id="toOffice">Office</a><a href="maintenance.html" id="toMaint" hidden>Maintenance</a></div>
+</header>
+<main>
+  <div id="startView" hidden>
+    <div class="box">
+      <h1>Start an inspection</h1>
+      <p class="hint">Standard or premium monthly inspection. Tick each item, take live photos and add notes. Results go to the office view only. Housekeepers never see them.</p>
+      <label class="l" for="propQ">Property</label>
+      <input type="search" id="propQ" placeholder="Type to filter properties" autocomplete="off">
+      <select id="prop" aria-label="Property" style="margin-top:6px"><option value="">Loading properties...</option></select>
+      <label class="l" for="kind">Inspection</label>
+      <select id="kind"></select>
+      <div class="row"><button class="btn" type="button" id="start">Start inspection</button></div>
+      <p class="msg" id="startMsg"></p>
+    </div>
+    <div class="box" id="openBox" hidden>
+      <h2>Carry on</h2>
+      <ul class="open" id="openList"></ul>
+    </div>
+  </div>
+
+  <div id="inspView" hidden>
+    <div class="test" id="testNote" hidden>Practice property: this inspection is marked as a test.</div>
+    <div class="box">
+      <h1 id="iTitle"></h1>
+      <div class="sub" id="iSub"></div>
+    </div>
+    <div id="secs"></div>
+    <div class="box">
+      <h2>Photos<span class="count" id="phCount"></span></h2>
+      <p class="hint">Live photos only, taken now with the camera. At least one. Type what the next photo shows first if it helps (optional).</p>
+      <input type="text" id="phLabel" maxlength="80" placeholder="What is the next photo of? (optional)" aria-label="What is the next photo of">
+      <div class="grid" id="phGrid" style="margin-top:10px"></div>
+    </div>
+    <div class="box">
+      <h2>Notes</h2>
+      <label class="l" for="notes">Office notes (office only, never shown to the owner)</label>
+      <textarea id="notes" maxlength="2000"></textarea>
+      <label class="l" for="ownerNote">Note for the owner (shown on the owner report, only if the office shares it)</label>
+      <textarea id="ownerNote" maxlength="1000"></textarea>
+    </div>
+    <p class="msg" id="iMsg"></p>
+  </div>
+
+  <div id="doneView" hidden>
+    <div class="box done">
+      <h1>Inspection sent</h1>
+      <p id="doneTxt">Thank you. The office can see it on the Inspections tab.</p>
+      <div class="row"><a class="btn ghost" href="inspect.html">Start another</a></div>
+    </div>
+  </div>
+</main>
+<div class="sticky" id="bar" hidden>
+  <button class="btn ghost" type="button" id="saveBtn">Save for later</button>
+  <button class="btn" type="button" id="sendBtn">Send inspection</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var API = window.PHH_OFFICE_API || "";
+  var $ = function(id){ return document.getElementById(id); };
+  var CODE = "", VIEW = ""; try{ CODE = localStorage.getItem("phh-staff-code") || ""; VIEW = localStorage.getItem("phh-staff-view") || ""; }catch(e){}
+  if(!CODE){ location.replace("./"); return; }
+  if(VIEW === "maintenance"){ $("toOffice").hidden = true; $("toMaint").hidden = false; }
+  var params = new URLSearchParams(location.search);
+  var MAX_PHOTO_AGE_MIN = 15; /* live photos only, same rule as the housekeeper app */
+  var MAX_PHOTOS = 30;
+  var IS_ANDROID = /Android/i.test(navigator.userAgent || "");
+  function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined && text !== null) e.textContent = text; return e; }
+  function post(route, body){
+    body = body || {}; body.code = CODE;
+    return fetch(API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
+      .then(function(r){ return r.json().then(function(j){ if(r.status === 403){ throw new Error(j.error || "That code is not right."); } if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+  function fmt(d){ return d.toLocaleString("en-AU",{ timeZone:"Australia/Sydney", day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" }); }
+  function day(ts){ return ts ? new Date(ts).toLocaleDateString("en-AU",{ timeZone:"Australia/Sydney", weekday:"short", day:"numeric", month:"short" }) : ""; }
+  function say(id, t, err){ var m = $(id); m.className = "msg" + (err ? " err" : ""); m.textContent = t || ""; }
+
+  /* ---------- start ---------- */
+  var PROPS = [];
+  function propOptions(){
+    var q = $("propQ").value.trim().toLowerCase(), sel = $("prop"), cur = sel.value; sel.innerHTML = "";
+    var first = el("option", "", "Pick the property"); first.value = ""; sel.appendChild(first);
+    PROPS.filter(function(p){ return !q || p.name.toLowerCase().indexOf(q) >= 0; }).forEach(function(p){ var o = el("option", "", p.name); o.value = p.id; sel.appendChild(o); });
+    sel.value = cur;
+  }
+  function showStart(){
+    $("startView").hidden = false;
+    var test = params.get("test") === "1";
+    Promise.all([post("b4-props", { includeTest:true }), post("b4-insp-config", {}), post("b4-insp-open", {})]).then(function(r){
+      PROPS = r[0].properties || []; propOptions();
+      if(params.get("property")){ $("prop").value = params.get("property"); }
+      var k = $("kind"); k.innerHTML = "";
+      (r[1].kinds || []).forEach(function(x){ var o = el("option", "", x.name); o.value = x.id; k.appendChild(o); });
+      var open = r[2].rows || [];
+      $("openBox").hidden = !open.length;
+      var ul = $("openList"); ul.innerHTML = "";
+      open.forEach(function(o){
+        var li = el("li"); var a = el("a", "", o.property); a.href = "inspect.html?id=" + encodeURIComponent(o.id);
+        li.appendChild(a); li.appendChild(el("span", "sub", " " + (o.kind === "premium" ? "Premium" : "Standard") + ", started by " + o.by + " " + day(o.at) + ", " + o.photos + " photo" + (o.photos === 1 ? "" : "s")));
+        ul.appendChild(li);
+      });
+    }).catch(function(e){ say("startMsg", e.message, true); });
+  }
+  $("propQ").addEventListener("input", propOptions);
+  $("start").addEventListener("click", function(){
+    if(!$("prop").value) return say("startMsg", "Pick the property.", true);
+    $("start").disabled = true; say("startMsg", "Starting...");
+    var b = { propertyId: $("prop").value, kind: $("kind").value };
+    if(/^[0-9a-f-]{36}$/.test(params.get("check") || "")) b.checkId = params.get("check");
+    post("b4-insp-start", b).then(function(j){ location.replace("inspect.html?id=" + encodeURIComponent(j.id)); })
+      .catch(function(e){ $("start").disabled = false; say("startMsg", e.message, true); });
+  });
+
+  /* ---------- inspection ---------- */
+  var INS = null, items = {}, photos = [], busy = 0, dirty = false, saveT = null;
+  function load(id){
+    post("b4-insp-get", { id: id }).then(function(j){
+      INS = j.inspection;
+      if(!INS.canEdit){ $("doneView").hidden = false; $("doneTxt").textContent = "This inspection was sent " + day(INS.submittedAt) + ". The office can see it on the Inspections tab."; return; }
+      items = INS.items || {};
+      photos = []; (INS.photos || []).forEach(function(p){ photos[p.n - 1] = { url: p.url, saved: true, label: p.label, stampedAt: p.stampedAt }; });
+      $("inspView").hidden = false; $("bar").hidden = false;
+      $("testNote").hidden = !INS.test;
+      $("iTitle").textContent = INS.property;
+      $("iSub").textContent = (INS.checklist && INS.checklist.name || "Inspection") + ". Started by " + INS.by + ", " + day(INS.startedAt) + ". Saved as you go.";
+      $("notes").value = INS.notes || ""; $("ownerNote").value = INS.ownerNote || "";
+      renderSecs(); tiles();
+    }).catch(function(e){ $("inspView").hidden = false; say("iMsg", e.message, true); });
+  }
+  function renderSecs(){
+    var host = $("secs"); host.innerHTML = "";
+    (INS.checklist.sections || []).forEach(function(sec){
+      var box = el("section", "box"); box.dataset.sec = sec.id;
+      var h = el("h2", "", sec.title); var c = el("span", "count"); h.appendChild(c); box.appendChild(h);
+      var ul = el("ul", "items");
+      sec.items.forEach(function(it){
+        var li = el("li"); li.dataset.id = it.id;
+        li.appendChild(el("div", "itxt", it.text));
+        var seg = el("div", "seg"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", it.text);
+        [["ok", "OK"], ["issue", "Needs attention"], ["na", "N/A"]].forEach(function(o){
+          var b = el("button", "s-" + o[0], o[1]); b.type = "button"; b.dataset.s = o[0];
+          b.addEventListener("click", function(){
+            var v = items[it.id] || {}; items[it.id] = { s: o[0], note: v.note || null }; mark(); refresh(li, it);
+          });
+          seg.appendChild(b);
+        });
+        li.appendChild(seg);
+        var note = el("input", "inote"); note.type = "text"; note.maxLength = 300; note.placeholder = "What needs attention?"; note.setAttribute("aria-label", "Note: " + it.text);
+        note.addEventListener("input", function(){ var v = items[it.id] || { s:"issue" }; v.note = note.value; items[it.id] = v; mark(); });
+        li.appendChild(note);
+        ul.appendChild(li); refresh(li, it);
+      });
+      box.appendChild(ul); host.appendChild(box);
+    });
+    counts();
+  }
+  function refresh(li, it){
+    var v = items[it.id] || {};
+    Array.prototype.forEach.call(li.querySelectorAll(".seg button"), function(b){ b.setAttribute("aria-pressed", String(b.dataset.s === v.s)); });
+    var n = li.querySelector(".inote"); n.hidden = v.s !== "issue"; if(document.activeElement !== n) n.value = v.note || "";
+    counts();
+  }
+  function counts(){
+    (INS.checklist.sections || []).forEach(function(sec){
+      var c = document.querySelector('section[data-sec="' + sec.id + '"] .count'); if(!c) return;
+      var n = sec.items.filter(function(it){ return items[it.id] && items[it.id].s; }).length;
+      c.textContent = n + " / " + sec.items.length;
+    });
+  }
+  function mark(){ dirty = true; clearTimeout(saveT); saveT = setTimeout(function(){ save(false); }, 1500); }
+  function body(submit){ return { id: INS.id, items: items, notes: $("notes").value, ownerNote: $("ownerNote").value, submit: !!submit }; }
+  function save(submit){
+    clearTimeout(saveT);
+    return post("b4-insp-save", body(submit)).then(function(j){ dirty = false; return j; });
+  }
+  $("notes").addEventListener("input", mark); $("ownerNote").addEventListener("input", mark);
+  $("saveBtn").addEventListener("click", function(){
+    say("iMsg", "Saving...");
+    save(false).then(function(){ say("iMsg", "Saved. Open this inspection again from Start an inspection, Carry on."); }).catch(function(e){ say("iMsg", e.message, true); });
+  });
+  $("sendBtn").addEventListener("click", function(){
+    if(busy) return say("iMsg", "Wait for the photos to finish sending.", true);
+    var all = [], left = 0, noNote = 0;
+    (INS.checklist.sections || []).forEach(function(sec){ sec.items.forEach(function(it){ var v = items[it.id]; if(!v || !v.s) left++; else if(v.s === "issue" && !(v.note || "").trim()) noNote++; all.push(it); }); });
+    if(left) return say("iMsg", left + " item" + (left > 1 ? "s" : "") + " still to mark.", true);
+    if(noNote) return say("iMsg", "Add a short note to each item that needs attention.", true);
+    if(!photos.filter(function(p){ return p && p.saved; }).length) return say("iMsg", "Take at least one photo.", true);
+    $("sendBtn").disabled = true; say("iMsg", "Sending...");
+    save(true).then(function(){ $("inspView").hidden = true; $("bar").hidden = true; $("doneView").hidden = false; window.scrollTo(0, 0); })
+      .catch(function(e){ $("sendBtn").disabled = false; say("iMsg", e.message, true); });
+  });
+  window.addEventListener("beforeunload", function(e){ if(dirty || busy){ try{ navigator.sendBeacon && save(false); }catch(x){} } });
+
+  /* Photos: same live rule, resize and stamp as the housekeeper app. */
+  function tiles(){
+    var g = $("phGrid"); g.innerHTML = "";
+    var saved = 0;
+    photos.forEach(function(x, i){ if(x){ g.appendChild(tile(i + 1, x)); if(x.saved) saved++; } });
+    var next = 0; for(var i = 0; i < MAX_PHOTOS; i++){ if(!photos[i]){ next = i + 1; break; } }
+    if(next) g.appendChild(tile(next, null));
+    $("phCount").textContent = saved ? saved + " sent" : "";
+  }
+  function tile(n, x){
+    var d = el("label", "ph" + (x ? " has" : ""));
+    var inp = el("input"); inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("capture", "environment"); inp.setAttribute("aria-label", x ? "Retake photo " + n : "Take photo " + n);
+    if(x && x.url){ var im = el("img"); im.src = x.url; im.alt = "Photo " + n; d.appendChild(im); }
+    else d.appendChild(el("div", "shot", x ? "Sending..." : "+ Take a photo"));
+    var cap = el("div", "cap", "Photo " + n + (x && x.label ? ": " + x.label : ""));
+    if(x && x.error) cap.appendChild(el("span", "flag", x.error));
+    d.appendChild(cap); d.appendChild(inp);
+    inp.addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; e.target.value = ""; if(f) take(n, f); });
+    return d;
+  }
+  function take(n, file){
+    var takenAt = null, label = $("phLabel").value.trim();
+    file.slice(0, 131072).arrayBuffer().then(function(buf){ takenAt = exifDate(buf); }).catch(function(){}).then(function(){
+      var when = takenAt || (file.lastModified > 1577836800000 ? new Date(file.lastModified) : null);
+      if(when && (new Date() - when) > MAX_PHOTO_AGE_MIN * 60000){ photos[n - 1] = { error: "This photo was taken more than " + MAX_PHOTO_AGE_MIN + " minutes ago. Take a new one now." }; tiles(); return; }
+      return decodePhoto(file).then(function(pic){
+        var sc = Math.min(1, 1280 / Math.max(pic.w, pic.h)), w = Math.round(pic.w * sc), h = Math.round(pic.h * sc);
+        var c = document.createElement("canvas"); c.width = w; c.height = h; var g = c.getContext("2d"); g.drawImage(pic.src, 0, 0, w, h); pic.done();
+        var now = new Date(), band = Math.max(36, Math.round(h * 0.07));
+        g.fillStyle = "rgba(0,0,0,.62)"; g.fillRect(0, h - band, w, band); g.fillStyle = "#fff"; g.font = "bold " + Math.round(band * 0.38) + "px sans-serif"; g.textBaseline = "middle";
+        g.fillText("Inspection " + n + "  |  " + INS.property + "  |  " + fmt(now), Math.round(band * 0.3), h - band / 2);
+        c.toBlob(function(blob){
+          c.width = c.height = 0;
+          var x = { url: URL.createObjectURL(blob), stampedAt: now.toISOString(), label: label, saved: false };
+          photos[n - 1] = x; $("phLabel").value = ""; tiles(); send(n, x, blob, takenAt);
+        }, "image/jpeg", 0.72);
+      });
+    }).catch(function(){ photos[n - 1] = { error: "That photo could not be read. Tap to take it again." }; tiles(); });
+  }
+  function send(n, x, blob, takenAt){
+    busy++;
+    post("b4-insp-upload-url", { id: INS.id, n: n }).then(function(j){
+      return fetch(j.signedUrl, { method:"PUT", headers:{ "content-type":"image/jpeg" }, body: blob }).then(function(r){
+        if(!r.ok) throw new Error("upload");
+        return post("b4-insp-photo", { id: INS.id, n: n, path: j.path, label: x.label, stampedAt: x.stampedAt, takenAt: takenAt ? takenAt.toISOString() : null });
+      });
+    }).then(function(){ x.saved = true; x.error = null; })
+      .catch(function(){ x.error = "Not sent yet. Check your signal and tap to take it again."; })
+      .then(function(){ busy--; if(photos[n - 1] === x) tiles(); });
+  }
+  function exifDate(buf){
+    try{
+      var v = new DataView(buf); if(v.getUint16(0) !== 0xFFD8) return null;
+      var off = 2;
+      while(off < v.byteLength){
+        var m = v.getUint16(off); off += 2;
+        if(m === 0xFFE1){
+          var start = off + 2; if(v.getUint32(start) !== 0x45786966) return null;
+          var t = start + 6, le = v.getUint16(t) === 0x4949;
+          var g16 = function(o){ return v.getUint16(o, le); }, g32 = function(o){ return v.getUint32(o, le); };
+          var ifd = t + g32(t+4), exifPtr = 0, n = g16(ifd);
+          for(var i=0;i<n;i++){ var e = ifd+2+i*12; if(g16(e) === 0x8769) exifPtr = t + g32(e+8); }
+          if(!exifPtr) return null;
+          n = g16(exifPtr);
+          for(var j=0;j<n;j++){
+            var e2 = exifPtr+2+j*12;
+            if(g16(e2) === 0x9003){ var so = t + g32(e2+8), s = "";
+              for(var k=0;k<19;k++) s += String.fromCharCode(v.getUint8(so+k));
+              var p = s.split(/[: ]/).map(Number); return new Date(p[0], p[1]-1, p[2], p[3], p[4], p[5]); }
+          }
+          return null;
+        }
+        off += v.getUint16(off);
+      }
+    }catch(e){}
+    return null;
+  }
+  function decodePhoto(file){
+    function viaImg(){
+      return new Promise(function(ok, bad){
+        var url = URL.createObjectURL(file), img = new Image();
+        img.onload = function(){ ok({ src:img, w:img.naturalWidth || img.width, h:img.naturalHeight || img.height, done:function(){ URL.revokeObjectURL(url); img.src = ""; } }); };
+        img.onerror = function(){ URL.revokeObjectURL(url); bad(new Error("decode")); };
+        img.src = url;
+      });
+    }
+    if(IS_ANDROID && window.createImageBitmap){
+      return createImageBitmap(file, { imageOrientation:"from-image" })
+        .then(function(b){ return { src:b, w:b.width, h:b.height, done:function(){ try{ b.close(); }catch(e){} } }; })
+        .catch(viaImg);
+    }
+    return viaImg();
+  }
+
+  var id = params.get("id") || "";
+  if(/^[0-9a-f-]{36}$/.test(id)) load(id); else showStart();
+})();
+</script>
+</body></html>

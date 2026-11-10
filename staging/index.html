@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261109040525"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261110023529"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -1907,23 +1907,62 @@ window.PHH_CHECKLIST = {
        Process Street consumables order, n8n records it and this card shows until the housekeeper taps Got them.
        Database lookups qa_consumables_mine / qa_consumables_got (same wrong-code lockout as Coming up). */
     function showConsumables(code){
+      /* 10 Nov 2026 (Bec): the ready card lists what's in the bag; after pickup a slim "Anything missing?" card stays for 3 days
+         so the housekeeper can tick what wasn't there once at the property. Missing items go to the office Consumables tab (and CST). */
       var box = $("phhcons"); if(!box || !window.fetch) return;
       var RPC = "https://rxhpnowszmetjxbwylil" + ".supabase.co/rest/v1/rpc/";
       var post = function(fn, body){ return fetch(RPC + fn, { method:"POST", headers:{ "content-type":"application/json", "apikey":"sb_publishable_JaFEZTFufkk0hrminCZdXQ_fQFJ0kLb" }, body: JSON.stringify(body) }); };
-      post("qa_consumables_mine", { p_code: code }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+      var el = function(tag, css, text){ var e = document.createElement(tag); if(css) e.style.cssText = css; if(text != null) e.textContent = text; return e; };
+      var BTN = "margin:10px 8px 0 0;border:0;border-radius:8px;background:#5bbfb5;color:#fff;font-weight:600;padding:10px 16px";
+      var BTN2 = "margin:10px 8px 0 0;border:1px solid #5bbfb5;border-radius:8px;background:#fff;color:#23807a;font-weight:600;padding:9px 14px";
+      var CARD = "background:#fff;border:1px solid #cfe9e5;border-left:4px solid #5bbfb5;border-radius:10px;padding:12px 14px;margin:0 0 10px";
+      var listOf = function(items){ var u = el("ul", "margin:8px 0 0;padding-left:20px;font-size:14px;line-height:1.5"); (items || []).forEach(function(t){ u.appendChild(el("li", "", t)); }); return u; };
+      var done = function(d){ d.remove(); if(!box.children.length) box.hidden = true; };
+      post("qa_consumables_mine_staging", { p_code: code }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
         var ready = (signedIn && j && Array.isArray(j.ready)) ? j.ready : [];
-        box.innerHTML = ""; box.hidden = !ready.length;
+        var recent = (signedIn && j && Array.isArray(j.recent)) ? j.recent : [];
+        box.innerHTML = ""; box.hidden = !(ready.length || recent.length);
         ready.forEach(function(c){
-          var d = document.createElement("div"); d.className = "conscard";
-          d.style.cssText = "background:#fff;border:1px solid #cfe9e5;border-left:4px solid #5bbfb5;border-radius:10px;padding:12px 14px;margin:0 0 10px";
-          var f = document.createElement("div"); f.style.cssText = "font-size:13px;color:#5d6b73"; f.textContent = "Consumables ready";
-          var h = document.createElement("div"); h.style.cssText = "font-weight:700;margin:2px 0 4px"; h.textContent = roomFirst(c.property) + " consumables are ready";
-          var b = document.createElement("div"); b.textContent = "Bagged and labelled at the Callala office" + (c.items ? " (" + c.items + (c.items === 1 ? " item" : " items") + ")" : "") + ". Grab them when you're passing and tap Got them.";
-          var k = document.createElement("button"); k.type = "button"; k.textContent = "Got them"; k.style.cssText = "margin-top:10px;border:0;border-radius:8px;background:#5bbfb5;color:#fff;font-weight:600;padding:10px 16px";
+          var d = el("div", CARD); d.className = "conscard";
+          d.appendChild(el("div", "font-size:13px;color:#5d6b73", "Consumables ready"));
+          d.appendChild(el("div", "font-weight:700;margin:2px 0 4px", roomFirst(c.property) + " consumables are ready"));
+          d.appendChild(el("div", "", "Bagged and labelled at the Callala office" + (c.items ? " (" + c.items + (c.items === 1 ? " item" : " items") + ")" : "") + ". Grab them when you're passing and tap Got them."));
+          var lst = listOf(c.list); lst.hidden = true; lst.className = "conslist";
+          var see = el("button", "display:block;margin-top:8px;border:0;background:none;padding:0;color:#23807a;font-weight:600;text-decoration:underline", "See what's in the bag"); see.type = "button"; see.className = "conssee";
+          see.addEventListener("click", function(){ lst.hidden = !lst.hidden; see.textContent = lst.hidden ? "See what's in the bag" : "Hide the list"; });
+          var k = el("button", BTN, "Got them"); k.type = "button"; k.className = "consgot";
           k.addEventListener("click", function(){ k.disabled = true; k.textContent = "Saving...";
             post("qa_consumables_got", { p_code: code, p_id: c.id }).then(function(r){ return r.ok ? r.json() : false; }).catch(function(){ return false; })
-              .then(function(ok){ if(ok === true){ d.remove(); if(!box.children.length) box.hidden = true; } else { k.disabled = false; k.textContent = "Got them"; msg("That didn't save. Check your signal and try again.", true); } }); });
-          d.appendChild(f); d.appendChild(h); d.appendChild(b); d.appendChild(k); box.appendChild(d);
+              .then(function(ok){ if(ok === true){ showConsumables(code); } else { k.disabled = false; k.textContent = "Got them"; msg("That didn't save. Check your signal and try again.", true); } }); });
+          if(c.list && c.list.length){ d.appendChild(see); d.appendChild(lst); }
+          d.appendChild(k); box.appendChild(d);
+        });
+        recent.forEach(function(c){
+          var d = el("div", CARD); d.className = "conscard consrecent";
+          d.appendChild(el("div", "font-weight:700;margin:0 0 4px", roomFirst(c.property) + " consumables: all there?"));
+          d.appendChild(el("div", "font-size:14px", "Once you've unpacked them at the property, let us know if anything was missing and we'll sort it."));
+          var ok = el("button", BTN, "All there"); ok.type = "button"; ok.className = "consok";
+          var miss = el("button", BTN2, "Something missing"); miss.type = "button"; miss.className = "consmiss";
+          var form = el("div", "margin-top:10px"); form.hidden = true;
+          form.appendChild(el("div", "font-size:14px;font-weight:600", "Tick what wasn't in the bag:"));
+          var boxes = [];
+          (c.list || []).forEach(function(t){ var lab = el("label", "display:flex;align-items:center;gap:8px;padding:6px 0;font-size:15px"); var cb = document.createElement("input"); cb.type = "checkbox"; cb.value = t; cb.style.cssText = "width:20px;height:20px"; lab.appendChild(cb); lab.appendChild(document.createTextNode(t)); form.appendChild(lab); boxes.push(cb); });
+          var note = document.createElement("textarea"); note.rows = 2; note.maxLength = 500; note.placeholder = "Anything else? (optional)"; note.style.cssText = "width:100%;box-sizing:border-box;margin-top:6px;border:1px solid #cfd8dc;border-radius:8px;padding:8px;font:inherit"; note.className = "consnote";
+          form.appendChild(note);
+          var send = el("button", BTN, "Send to the office"); send.type = "button"; send.className = "conssend"; form.appendChild(send);
+          var save = function(missing, txt, b, label){
+            b.disabled = true; b.textContent = "Saving...";
+            post("qa_consumables_check_staging", { p_code: code, p_id: c.id, p_missing: missing, p_note: txt || null }).then(function(r){ return r.ok ? r.json() : false; }).catch(function(){ return false; })
+              .then(function(res){ if(res === true){ if(missing.length || txt) msg("Thanks, the office has the list and will sort it."); done(d); } else { b.disabled = false; b.textContent = label; msg("That didn't save. Check your signal and try again.", true); } });
+          };
+          ok.addEventListener("click", function(){ save([], "", ok, "All there"); });
+          miss.addEventListener("click", function(){ form.hidden = !form.hidden; });
+          send.addEventListener("click", function(){
+            var m = boxes.filter(function(b){ return b.checked; }).map(function(b){ return b.value; }), t = note.value.trim();
+            if(!m.length && !t){ msg("Tick what was missing, or add a note.", true); return; }
+            save(m, t, send, "Send to the office");
+          });
+          d.appendChild(ok); d.appendChild(miss); d.appendChild(form); box.appendChild(d);
         });
       }).catch(function(){});
     }

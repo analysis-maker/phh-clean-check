@@ -1,5 +1,13 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8">
+<script>
+/* 10 Nov 2026: staging only runs on github.io. On the PHH address the WordPress plugin can't reach the staging functions
+   (office-api-v2 and others), which showed "Not found." / "Failed to fetch". Open the same page on github.io instead. */
+(function(){ try{ var h = location.hostname; if(/(^|\.)professionalholidayhomes\.com\.au$/.test(h) && location.pathname.indexOf("/checkcleaning-staging") === 0){
+  var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
+  location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#5bbfb5">

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261110025131"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261110085543"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -135,6 +135,7 @@ td.st{padding:0;width:118px}
 .rv .bn{margin:6px 0;padding:6px 10px;background:#f2f6fb;border-left:3px solid #5b7fb1;font-size:14px}
 .rv .bn b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#3d5f8f;margin-bottom:2px}
 .rv .bn p{margin:2px 0;white-space:pre-wrap}
+.linkbtn{background:none;border:0;padding:0;color:var(--teal-ink);font:inherit;font-size:13px;cursor:pointer;text-decoration:underline}
 .rv .bn .k{color:var(--muted)}
 .rv .bf{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted)}
 .rv .bf a{color:var(--teal-ink);font-weight:600}
@@ -158,6 +159,7 @@ td.st{padding:0;width:118px}
 .rvon{display:inline-flex;align-items:center;gap:6px;background:var(--teal-soft);border-radius:999px;padding:3px 6px 3px 12px;font-size:13px;margin:0 6px 8px 0}
 .rvon button{border:0;background:none;font:inherit;cursor:pointer;color:var(--muted)}
 .rvh{margin:18px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-ink)}
+.scbtns{display:flex;gap:8px;flex-wrap:wrap}
 .prop{font-weight:500}
 td.col-prop{min-width:170px}
 .sub{color:var(--faint);font-size:12px}
@@ -476,6 +478,7 @@ html,body{overflow-x:clip}
   <button class="tab" role="tab" data-tab="spring" aria-selected="false">Spring cleans<span class="n" id="springN" hidden></span></button>
   <button class="tab" role="tab" data-tab="cons" aria-selected="false">Consumables<span class="n" id="consN" hidden></span></button>
   <button class="tab" role="tab" data-tab="reviews" aria-selected="false">Reviews<span class="n" id="rvN" hidden></span></button>
+  <button class="tab" role="tab" data-tab="scores" aria-selected="false">Scores</button>
   <button class="tab" role="tab" data-tab="insp" aria-selected="false">Inspections</button>
   <button class="tab" role="tab" data-tab="sched" aria-selected="false">Schedule</button>
 </nav>
@@ -601,6 +604,15 @@ html,body{overflow-x:clip}
     </div>
     <p class="msg" id="consMsg"></p>
     <p class="hint">From the Process Street consumables order form. When CST ticks Labeling Bags, the housekeeper gets a phone notification (if they have them on) and a card in the app until they tap Got them.</p>
+  </section>
+
+  <!-- Scores (10 Nov 2026, Alisa's ask, redesigned): team leaderboard and housekeeper scorecards from guest reviews. Office only. -->
+  <section id="scView" hidden>
+    <div class="sc-sum" id="scSum"></div>
+    <p class="msg" id="scMsg"></p>
+    <div id="scCard" hidden></div>
+    <div id="scBoard"></div>
+    <p class="hint">From guest reviews, matched to the housekeeper who did the clean before each stay. Office only: housekeepers and owners never see this page.</p>
   </section>
 
   <!-- Reviews (8 Nov 2026, Batch 2): guest reviews linked to the clean before the stay. Office only. -->
@@ -1592,6 +1604,16 @@ html,body{overflow-x:clip}
     $("consMsg").className = "msg"; $("consMsg").textContent = rows.length ? "" : "No consumables orders in the last 30 days.";
   }
 
+  /* HomHero keeps some booking notes (check-in instructions) as editor HTML. Show them as plain text, never as markup (Ian 10 Nov). */
+  function plainNote(v){
+    if(v === null || v === undefined) return "";
+    var t = String(v);
+    if(/<[a-z][\s\S]*>/i.test(t)){
+      t = t.replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|li|h\d)>/gi, "\n");
+      try{ t = new DOMParser().parseFromString(t, "text/html").body.textContent || ""; }catch(e){ t = t.replace(/<[^>]+>/g, " "); }
+    } else if(/&[a-z#0-9]+;/i.test(t)){ try{ t = new DOMParser().parseFromString(t, "text/html").body.textContent || t; }catch(e){} }
+    return t.replace(/\u00a0/g, " ").replace(/[ \t]+/g, " ").replace(/ *\n */g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  }
   /* ---------- Reviews (8 Nov 2026, Batch 2: items 25, 26, 29). reviews-api, office only. ---------- */
   var REVIEWS_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/reviews-api";
   var RV = { cache:{}, data:null };
@@ -1636,7 +1658,7 @@ html,body{overflow-x:clip}
       /* Booking notes (Ian 8 Nov): what HomHero has on the reviewed booking, and what the housekeeper found after the stay,
          so a reply can be explained and it isn't put on the housekeeper when it wasn't theirs. */
       var g = r.guests, bnBits = [];
-      if(r.bookingNotes){ [["internal","Internal note"],["guest","Guest note"],["housekeeping","Housekeeping note"],["clean","Clean note"],["checkin","Check-in note"],["arrival","Arrival note"],["departure","Departure note"]].forEach(function(k){ if(r.bookingNotes[k[0]]) bnBits.push([k[1], r.bookingNotes[k[0]]]); }); }
+      if(r.bookingNotes){ [["internal","Internal note"],["guest","Guest note"],["housekeeping","Housekeeping note"],["clean","Clean note"],["checkin","Check-in note"],["arrival","Arrival note"],["departure","Departure note"]].forEach(function(k){ var tx = plainNote(r.bookingNotes[k[0]]); if(tx) bnBits.push([k[1], tx]); }); }
       if(r.after){
         if(r.after.guestsOver) bnBits.push(["After the stay", "Housekeeper reported more guests than booked" + (r.after.guestsNote ? ": " + r.after.guestsNote : "") + "."]);
         if(r.after.note) bnBits.push(["After the stay, " + (r.after.housekeeper || "housekeeper"), r.after.note]);
@@ -1648,12 +1670,17 @@ html,body{overflow-x:clip}
           var gp = [g.adults + " adult" + (g.adults === 1 ? "" : "s")]; if(g.children) gp.push(g.children + " child" + (g.children === 1 ? "" : "ren")); if(g.infants) gp.push(g.infants + " infant" + (g.infants === 1 ? "" : "s")); if(g.pets) gp.push(g.pets + " pet" + (g.pets === 1 ? "" : "s"));
           bn.appendChild(el("p", "k", "Booked: " + gp.join(", ") + (g.nights ? ", " + g.nights + " night" + (g.nights === 1 ? "" : "s") : "")));
         }
-        bnBits.forEach(function(x){ var pp = el("p"); pp.appendChild(el("span", "k", x[0] + ": ")); pp.appendChild(document.createTextNode(x[1])); bn.appendChild(pp); });
+        bnBits.forEach(function(x){ var pp = el("p"); pp.appendChild(el("span", "k", x[0] + ": "));
+          /* Long notes (check-in instructions) start folded so the review stays readable. */
+          if(x[1].length > 280){ var tn = document.createTextNode(x[1].slice(0, 260).replace(/\s+\S*$/, "") + "... "), mo = el("button", "linkbtn", "Show all"); mo.type = "button";
+            mo.addEventListener("click", function(){ tn.textContent = x[1]; mo.remove(); }); pp.appendChild(tn); pp.appendChild(mo); }
+          else pp.appendChild(document.createTextNode(x[1]));
+          bn.appendChild(pp); });
         if(!bnBits.length) bn.appendChild(el("p", "k", "No notes on this booking."));
         li.appendChild(bn);
       }
       var bf = el("div", "bf");
-      if(!r.before){ bf.textContent = "Clean before the stay: not found (before 23 Sep, or the booking isn't in Clean Check)."; }
+      if(!r.before){ bf.textContent = "Clean before the stay: no Clean Check record (that clean was before 23 Sep, or it was an owner or non-departure clean)."; }
       else {
         var b = r.before;
         /* Described by the previous guest's checkout: HomHero's clean date can sit a day after the next guests arrive. */
@@ -1774,6 +1801,7 @@ html,body{overflow-x:clip}
       c.appendChild(smallTable(["Property", "Reviews", "Stars", "Cleanliness", "Under 3.5"], x.properties.map(function(p){ return [roomFirst(p.name), p.reviews, stars(p.avgStars), p.avgClean === null ? "-" : stars(p.avgClean), p.under35]; })));
     }
     c.appendChild(el("p", "sub2", "Their reviews are in the list above (period and filters apply)."));
+    var sco = el("button", "btn ghost small", "Open 6-month scorecard"); sco.type = "button"; sco.addEventListener("click", function(){ scOpen(x.name); }); c.appendChild(sco);
     box.appendChild(c);
   }
   function rvPropCard(p, j){
@@ -1793,6 +1821,325 @@ html,body{overflow-x:clip}
     if(p.noClean) c.appendChild(el("p", "sub2", p.noClean + " review" + (p.noClean === 1 ? "" : "s") + " could not be matched to a clean (stays before 23 Sep)."));
     c.appendChild(el("p", "sub2", "Its reviews are in the list above (period and filters apply)."));
     box.appendChild(c);
+  }
+  /* ---------- Scores tab (10 Nov 2026, Alisa's ask, redesigned for Ian). scores-api, office only. ----------
+     Team leaderboard of guest cleanliness (6 full months), then a scorecard per housekeeper: score vs portfolio and rank,
+     trend line, property x month heatmap, highlights, and what guests actually said. CSV and a print-ready scorecard. */
+  var SCORES_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/scores-api";
+  var SC = { data:null, busy:false, hk:"", reviews:{}, q:"" };
+  var SC_CSS = [
+    ".sc-sum{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}",
+    ".sc-chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--muted)}.sc-chip b{color:var(--ink);font-weight:600}",
+    ".sc-panel{background:#fff;border:1px solid var(--line);border-radius:6px;padding:16px;margin:0 0 14px}",
+    ".sc-panel h3{margin:0 0 2px;font-size:16px;color:var(--ink)}.sc-panel .sc-sub{color:var(--muted);font-size:13px;margin:0 0 12px}",
+    ".sc-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}.sc-tools input{flex:1 1 200px;padding:8px 10px;border:1px solid var(--line);border-radius:4px;font:inherit}",
+    ".sc-row{display:grid;grid-template-columns:40px minmax(150px,1.3fr) minmax(180px,2fr) 70px 90px 96px;align-items:center;gap:10px;padding:9px 6px;border-top:1px solid var(--line-2);cursor:pointer;border-radius:4px}",
+    ".sc-row:hover,.sc-row:focus{background:var(--teal-soft);outline:0}",
+    ".sc-row.head{cursor:default;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--faint);border-top:0;padding-bottom:4px}.sc-row.head:hover{background:none}",
+    ".sc-rank{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;background:var(--idle);color:var(--idle-ink)}",
+    ".sc-rank.top{background:var(--teal);color:#fff}",
+    ".sc-name{font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sc-name small{display:block;font-weight:400;color:var(--faint);font-size:12px}",
+    ".sc-track{position:relative;height:22px}.sc-track .ln{position:absolute;left:0;right:0;top:10px;height:2px;background:var(--line)}",
+    ".sc-track .pf{position:absolute;top:2px;width:2px;height:18px;background:var(--faint)}",
+    ".sc-track .bar{position:absolute;top:8px;height:6px;border-radius:3px;opacity:.35}",
+    ".sc-track .dot{position:absolute;top:4px;width:14px;height:14px;margin-left:-7px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12)}",
+    ".sc-up{background:var(--teal)}.sc-mid{background:var(--pend)}.sc-dn{background:var(--miss)}",
+    ".sc-val{font-size:18px;font-weight:600;color:var(--ink);text-align:right}",
+    ".sc-meta{font-size:12px;color:var(--muted);text-align:right}",
+    ".sc-spark{display:flex;align-items:center;gap:4px;justify-content:flex-end;font-size:12px;font-weight:600}.sc-spark svg{display:block}",
+    ".sc-t-up{color:var(--ok-ink)}.sc-t-dn{color:var(--miss)}.sc-t-fl{color:var(--faint)}",
+    ".sc-more{margin-top:10px}.sc-more summary{cursor:pointer;color:var(--teal-ink);font-size:13px;padding:6px}",
+    ".sc-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between;margin:0 0 12px}",
+    ".sc-head h2{margin:0;font-size:22px;color:var(--ink)}.sc-head .sc-sub{margin:2px 0 0}",
+    ".sc-back{background:none;border:0;color:var(--teal-ink);font:inherit;font-size:13px;cursor:pointer;padding:0 0 6px}",
+    ".sc-hero{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}",
+    ".sc-ring{position:relative;width:132px;height:132px}.sc-ring svg{display:block}",
+    ".sc-ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}",
+    ".sc-ring .c b{font-size:32px;font-weight:700;color:var(--ink);line-height:1}.sc-ring .c span{font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.05em}",
+    ".sc-badges{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}",
+    ".sc-badge{border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;background:var(--line-2);color:var(--ink)}",
+    ".sc-badge.good{background:var(--teal-soft);color:var(--teal-ink)}.sc-badge.warn{background:#fdecc8;color:var(--pend-ink)}.sc-badge.bad{background:#f9d3cf;color:#8a1f17}",
+    ".sc-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}",
+    ".sc-tile{border:1px solid var(--line-2);border-radius:6px;padding:10px 12px}.sc-tile b{display:block;font-size:20px;font-weight:600;color:var(--ink)}.sc-tile span{font-size:12px;color:var(--muted)}",
+    ".sc-cmp{height:5px;background:var(--line-2);border-radius:3px;position:relative;margin-top:6px}.sc-cmp i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--teal)}.sc-cmp em{position:absolute;top:-3px;width:2px;height:11px;background:var(--ink)}",
+    ".sc-chart svg{width:100%;height:auto;max-height:300px;display:block}",
+    ".sc-legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);margin-top:6px}.sc-legend i{display:inline-block;width:14px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}",
+    ".sc-heat{width:100%;border-collapse:separate;border-spacing:3px;font-size:13px}",
+    ".sc-panel .tablewrap{overflow-x:auto;border:0;border-radius:0}",
+    ".sc-heat th{font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.03em;padding:2px 4px;text-align:center}",
+    ".sc-heat th:first-child{text-align:left}.sc-heat td{border-radius:4px;text-align:center;padding:7px 4px;color:#26323a;min-width:52px}",
+    ".sc-heat td.p{text-align:left;background:none;font-weight:600;color:var(--ink);padding-left:0;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}",
+    ".sc-heat td small{display:block;font-size:10px;color:#5d6b73}.sc-heat tr.all td.p{color:var(--teal-ink)}.sc-heat tr.pf td{font-style:italic}",
+    ".sc-heat td.tot{font-weight:700;border:1px solid var(--line)}",
+    ".b5{background:#a9e0d8}.b4{background:#d6f0ec}.b3{background:#eef1f2}.b2{background:#fde3b0}.b1{background:#f6c3bd}.b0{background:#fafbfb;color:#b7c0c5!important}",
+    ".sc-heat td.as{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.65) 0 4px,transparent 4px 8px)}",
+    ".sc-hl{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}",
+    ".sc-hl div{border:1px solid var(--line-2);background:#fbfcfc;border-radius:6px;padding:10px 12px}",
+    ".sc-hl span:before{content:\"\";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--teal);margin-right:6px;vertical-align:0}.sc-hl div.w span:before{background:var(--pend)}",
+    ".sc-hl span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}.sc-hl b{display:block;font-size:15px;color:var(--ink);margin:2px 0}.sc-hl small{color:var(--muted)}",
+    ".sc-said{display:grid;grid-template-columns:1fr 1fr;gap:14px}",
+    ".sc-said h4{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}",
+    ".sc-q{border:1px solid var(--line-2);border-radius:6px;padding:10px 12px;margin:0 0 8px}",
+    ".sc-q .top{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}",
+    ".sc-pill{border-radius:999px;padding:2px 8px;font-weight:700;font-size:12px}",
+    ".sc-q p{margin:0;font-size:13px;color:var(--ink);line-height:1.45}",
+    ".sc-tag{border:1px dashed var(--faint);border-radius:999px;padding:1px 7px;font-size:11px}",
+    ".sc-note{font-size:12px;color:var(--muted);margin:10px 0 0}",
+    ".sc-err{background:#fdecea;border:1px solid #f6c3bd;color:#8a1f17;border-radius:6px;padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 12px}",
+    "@media (max-width:760px){.sc-row{grid-template-columns:34px 1fr 60px;row-gap:4px}.sc-row .sc-track{grid-column:2/4}.sc-row .sc-meta,.sc-row .sc-spark{display:none}.sc-row.head{display:none}",
+    ".sc-hero{grid-template-columns:1fr;justify-items:center;text-align:center}.sc-badges{justify-content:center}.sc-said{grid-template-columns:1fr}",
+    ".sc-heat{display:table;width:auto;font-size:12px}.sc-heat thead{display:table-header-group}.sc-heat tbody{display:table-row-group}.sc-heat tr{display:table-row;width:auto}.sc-heat th,.sc-heat td{display:table-cell;width:auto;min-width:44px}",
+    ".sc-heat td.p{position:sticky;left:0;z-index:1;background:#fff;max-width:110px;min-width:96px;padding-right:6px}.sc-heat th:first-child{position:sticky;left:0;background:#fff;z-index:1}}"
+  ].join("\n");
+  (function(){ var st = document.createElement("style"); st.textContent = SC_CSS; document.head.appendChild(st); })();
+
+  function s2(n){ return n === null || n === undefined ? "-" : Number(n).toFixed(2); }
+  function scOrd(n){ var s = ["th","st","nd","rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+  function scMon(j, m){ return monLabel(m) + (m === j.current ? " so far" : ""); }
+  function scName(p){ var n = String(p.name || "Property " + p.listingId), r = roomFirst(n); return r !== n ? r : n.split(" - ")[0].split(" @ ")[0].trim(); }
+  function scBand(v){ return v === null || v === undefined ? "b0" : v >= 4.9 ? "b5" : v >= 4.7 ? "b4" : v >= 4.5 ? "b3" : v >= 4.0 ? "b2" : "b1"; }
+  function scVs(v, ref){ return v === null || ref === null || ref === undefined ? "sc-mid" : v >= ref ? "sc-up" : v >= ref - 0.2 ? "sc-mid" : "sc-dn"; }
+  function scTrend(h){ /* last 3 full months vs the 3 before, weighted by cleanliness reviews */
+    var w = function(cs){ var s = 0, n = 0; cs.forEach(function(c){ if(c && c.clean !== null){ s += c.clean * c.cleanReviews; n += c.cleanReviews; } }); return n ? s / n : null; };
+    var a = w(h.cells.slice(0, 3)), b = w(h.cells.slice(3, 6)); return a === null || b === null ? null : b - a;
+  }
+  function svg(tag, attrs){ var e = document.createElementNS("http://www.w3.org/2000/svg", tag); for(var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+  function scSpark(cells){
+    var vals = cells.slice(0, 6).map(function(c){ return c && c.clean !== null ? c.clean : null; }), W = 64, H = 20, s = svg("svg", { width:W, height:H, viewBox:"0 0 " + W + " " + H, "aria-hidden":"true" });
+    var pts = []; vals.forEach(function(v, i){ if(v !== null) pts.push([4 + i * (W - 8) / 5, H - 3 - (Math.max(4, Math.min(5, v)) - 4) * (H - 6)]); });
+    if(pts.length > 1) s.appendChild(svg("polyline", { points: pts.map(function(p){ return p.join(","); }).join(" "), fill:"none", stroke:"#5bbfb5", "stroke-width":"1.8", "stroke-linejoin":"round" }));
+    if(pts.length){ var l = pts[pts.length - 1]; s.appendChild(svg("circle", { cx:l[0], cy:l[1], r:"2.4", fill:"#23807a" })); }
+    return s;
+  }
+
+  function scFetch(route, body, tries){
+    body.code = CODE;
+    return fetch(SCORES_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || "Clean Check could not load the scores (" + r.status + ")."); return j; }); },
+        function(){ if((tries || 0) < 1) return new Promise(function(res){ setTimeout(res, 1500); }).then(function(){ return scFetch(route, body, 1); });
+          throw new Error("Couldn't reach Clean Check just now. Check the connection and try again."); });
+  }
+  function scError(box, msg, again){
+    box.innerHTML = ""; var d = el("div", "sc-err"); d.appendChild(el("span", "", msg));
+    var b = el("button", "btn ghost small", "Try again"); b.type = "button"; b.addEventListener("click", again); d.appendChild(b); box.appendChild(d);
+  }
+  function scLoad(){
+    if(SC.data){ scRender(); return; } if(SC.busy) return; SC.busy = true;
+    $("scBoard").innerHTML = ""; $("scMsg").className = "msg"; $("scMsg").textContent = "Loading six months of guest reviews...";
+    scFetch("scores", {}).then(function(j){ SC.busy = false; SC.data = j; $("scMsg").textContent = ""; scRender(); })
+      .catch(function(e){ SC.busy = false; $("scMsg").textContent = ""; scError($("scBoard"), e.message, scLoad); });
+  }
+  function scOpen(name){ SC.hk = name; if(state.tab !== "scores") setTab("scores"); else scRender(); window.scrollTo({ top:0, behavior:"smooth" }); }
+  function scRender(){
+    var j = SC.data; if(!j) return;
+    var pt = (j.portfolio && j.portfolio.total) || {};
+    var sum = $("scSum"); sum.innerHTML = "";
+    [["Period", monLabel(j.months[0]) + " to " + monLabel(j.months[5])], ["Portfolio cleanliness", s2(pt.clean)], ["5-star cleanliness", pt.fiveStarClean + "%"], ["Guest reviews", String(pt.reviews)]].forEach(function(x){
+      var c = el("span", "sc-chip"); c.appendChild(document.createTextNode(x[0] + " ")); c.appendChild(el("b", "", x[1])); sum.appendChild(c);
+    });
+    var h = SC.hk ? (j.housekeepers || []).filter(function(x){ return x.name === SC.hk; })[0] : null;
+    $("scCard").hidden = !h; $("scBoard").hidden = !!h; $("scSum").hidden = !!h;
+    if(h) scCard(h); else scBoard();
+  }
+
+  /* Leaderboard: ranked housekeepers on a 4.0 to 5.0 track with the portfolio marked. */
+  function scBoard(){
+    var j = SC.data, box = $("scBoard"); box.innerHTML = ""; var pt = j.portfolio.total;
+    var p = el("div", "sc-panel"); p.appendChild(el("h3", "", "Guest cleanliness by housekeeper"));
+    p.appendChild(el("p", "sc-sub", "Average guest cleanliness score (out of 5) on stays each housekeeper cleaned before, " + monLabel(j.months[0]) + " to " + monLabel(j.months[5]) + ". Ranked when they have 15 or more scored reviews. Tap a name for their scorecard."));
+    var tools = el("div", "sc-tools"), q = el("input"); q.type = "search"; q.placeholder = "Find a housekeeper"; q.value = SC.q; q.setAttribute("aria-label", "Find a housekeeper");
+    tools.appendChild(q); p.appendChild(tools);
+    var list = el("div"); p.appendChild(list);
+    var draw = function(){
+      list.innerHTML = ""; var term = SC.q.toLowerCase();
+      var hd = el("div", "sc-row head"); ["#", "Housekeeper", "Cleanliness: 4.0 to 5.0 (line = portfolio " + s2(pt.clean) + ")", "Score", "5-star clean", "6-month trend"].forEach(function(t, i){ var d = el("div", i >= 3 ? "sc-meta" : "", t); hd.appendChild(d); }); list.appendChild(hd);
+      var all = (j.housekeepers || []).filter(function(x){ return !x.owner && x.total && x.total.clean !== null && (!term || x.name.toLowerCase().indexOf(term) >= 0); });
+      var ranked = all.filter(function(x){ return x.rank; }).sort(function(a, b){ return a.rank - b.rank; });
+      var rest = all.filter(function(x){ return !x.rank; }).sort(function(a, b){ return b.total.cleanReviews - a.total.cleanReviews; });
+      ranked.forEach(function(x){ list.appendChild(scRowEl(x, pt)); });
+      if(!ranked.length) list.appendChild(el("p", "sc-note", term ? "No ranked housekeeper matches." : "No ranked housekeepers yet."));
+      if(rest.length){
+        var d = el("details", "sc-more"); d.appendChild(el("summary", "", rest.length + " with fewer than 15 scored reviews (not ranked)"));
+        rest.forEach(function(x){ d.appendChild(scRowEl(x, pt)); }); if(term) d.open = true; list.appendChild(d);
+      }
+    };
+    q.addEventListener("input", function(){ SC.q = q.value.trim(); draw(); });
+    draw(); box.appendChild(p);
+  }
+  function scRowEl(x, pt){
+    var t = x.total, r = el("div", "sc-row"); r.tabIndex = 0; r.setAttribute("role", "button"); r.setAttribute("aria-label", "Open scorecard for " + x.name);
+    var rk = el("div", "sc-rank" + (x.rank && x.rank <= 3 ? " top" : ""), x.rank ? String(x.rank) : "-"); r.appendChild(rk);
+    var n = el("div", "sc-name", x.name); n.appendChild(el("small", "", t.reviews + " reviews, " + x.properties.length + " propert" + (x.properties.length === 1 ? "y" : "ies"))); r.appendChild(n);
+    var tr = el("div", "sc-track"), pos = function(v){ return Math.max(0, Math.min(100, (v - 4) * 100)) + "%"; };
+    tr.appendChild(el("div", "ln")); var vs = scVs(t.clean, pt.clean);
+    var bar = el("div", "bar " + vs); var a = Math.min(t.clean, pt.clean), b = Math.max(t.clean, pt.clean); bar.style.left = pos(a); bar.style.width = "calc(" + pos(b) + " - " + pos(a) + ")"; tr.appendChild(bar);
+    var pf = el("div", "pf"); pf.style.left = pos(pt.clean); pf.title = "Portfolio " + s2(pt.clean); tr.appendChild(pf);
+    var dot = el("div", "dot " + vs); dot.style.left = pos(t.clean); dot.title = s2(t.clean); tr.appendChild(dot); r.appendChild(tr);
+    r.appendChild(el("div", "sc-val", s2(t.clean)));
+    r.appendChild(el("div", "sc-meta", t.fiveStarClean + "%"));
+    var sp = el("div", "sc-spark"), d = scTrend(x); sp.appendChild(scSpark(x.cells));
+    sp.appendChild(el("span", d === null || Math.abs(d) < 0.05 ? "sc-t-fl" : d > 0 ? "sc-t-up" : "sc-t-dn", d === null ? "" : Math.abs(d) < 0.05 ? "steady" : (d > 0 ? "+" : "") + d.toFixed(2)));
+    r.appendChild(sp);
+    var go = function(){ scOpen(x.name); };
+    r.addEventListener("click", go); r.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); go(); } });
+    return r;
+  }
+
+  /* Scorecard for one housekeeper. */
+  function scCard(h){
+    var j = SC.data, box = $("scCard"); box.innerHTML = ""; var t = h.total || {}, pt = j.portfolio.total, port = j.portfolio.cells;
+    var back = el("button", "sc-back", "← All housekeepers"); back.type = "button"; back.addEventListener("click", function(){ SC.hk = ""; scRender(); }); box.appendChild(back);
+    var hd = el("div", "sc-head"), ttl = el("div"); ttl.appendChild(el("h2", "", h.name));
+    ttl.appendChild(el("p", "sc-sub", "Guest review scorecard, " + monLabel(j.months[0]) + " to " + monLabel(j.months[5]) + " (plus " + monLabel(j.current) + " so far). Office only.")); hd.appendChild(ttl);
+    var btns = el("div", "scbtns"), cb = el("button", "btn ghost small", "Download CSV"), pb = el("button", "btn small", "Print scorecard");
+    cb.type = pb.type = "button"; cb.addEventListener("click", function(){ scCsv(h); }); pb.addEventListener("click", function(){ scPrint(h); });
+    btns.appendChild(cb); btns.appendChild(pb); hd.appendChild(btns); box.appendChild(hd);
+
+    /* Hero: ring, badges, tiles */
+    var hero = el("div", "sc-panel sc-hero"), ring = el("div", "sc-ring"), R = 56, C = 2 * Math.PI * R;
+    var sv = svg("svg", { width:132, height:132, viewBox:"0 0 132 132", "aria-hidden":"true" });
+    sv.appendChild(svg("circle", { cx:66, cy:66, r:R, fill:"none", stroke:"#eef1f2", "stroke-width":"12" }));
+    var frac = t.clean === null ? 0 : Math.max(0, Math.min(1, (t.clean - 3) / 2));
+    sv.appendChild(svg("circle", { cx:66, cy:66, r:R, fill:"none", stroke: t.clean >= pt.clean ? "#5bbfb5" : t.clean >= pt.clean - 0.2 ? "#f6b81a" : "#e4574d", "stroke-width":"12", "stroke-linecap":"round",
+      "stroke-dasharray": (C * frac) + " " + C, transform:"rotate(-90 66 66)" }));
+    var pa = (Math.max(0, Math.min(1, (pt.clean - 3) / 2)) * 360 - 90) * Math.PI / 180;
+    sv.appendChild(svg("line", { x1: 66 + (R - 9) * Math.cos(pa), y1: 66 + (R - 9) * Math.sin(pa), x2: 66 + (R + 9) * Math.cos(pa), y2: 66 + (R + 9) * Math.sin(pa), stroke:"#26323a", "stroke-width":"2.5" }));
+    ring.appendChild(sv); var cc = el("div", "c"); cc.appendChild(el("b", "", s2(t.clean))); cc.appendChild(el("span", "", "Cleanliness")); ring.appendChild(cc); hero.appendChild(ring);
+    var right = el("div"), bd = el("div", "sc-badges"), diff = t.clean - pt.clean;
+    bd.appendChild(el("span", "sc-badge " + (diff >= 0 ? "good" : diff >= -0.2 ? "warn" : "bad"), (diff >= 0 ? "+" : "") + diff.toFixed(2) + " vs portfolio " + s2(pt.clean)));
+    if(h.rank) bd.appendChild(el("span", "sc-badge " + (h.rank <= Math.ceil(j.rankedOf / 4) ? "good" : ""), scOrd(h.rank) + " of " + j.rankedOf + " housekeepers"));
+    else bd.appendChild(el("span", "sc-badge", "Not ranked (under 15 scored reviews)"));
+    var td = scTrend(h); if(td !== null) bd.appendChild(el("span", "sc-badge " + (td >= 0.05 ? "good" : td <= -0.05 ? "warn" : ""), Math.abs(td) < 0.05 ? "Steady over 6 months" : (td > 0 ? "Up " : "Down ") + Math.abs(td).toFixed(2) + " in the last 3 months"));
+    right.appendChild(bd);
+    var tiles = el("div", "sc-tiles");
+    var tile = function(big, lab, mine, ref){
+      var d = el("div", "sc-tile"); d.appendChild(el("b", "", big)); d.appendChild(el("span", "", lab));
+      if(mine !== undefined && ref !== undefined && mine !== null && ref !== null){ var c = el("div", "sc-cmp"), i = el("i"), e = el("em"); i.style.width = Math.min(100, mine) + "%"; e.style.left = Math.min(100, ref) + "%"; c.appendChild(i); c.appendChild(e); d.appendChild(c); }
+      tiles.appendChild(d);
+    };
+    tile((t.fiveStarClean === null ? "-" : t.fiveStarClean + "%"), "5-star cleanliness (portfolio " + pt.fiveStarClean + "%)", t.fiveStarClean, pt.fiveStarClean);
+    tile(s2(t.stars), "Overall stars (portfolio " + s2(pt.stars) + ")", (t.stars - 3) * 50, (pt.stars - 3) * 50);
+    tile(String(t.reviews || 0), "Guest reviews, " + h.properties.length + " propert" + (h.properties.length === 1 ? "y" : "ies"));
+    tile(String(t.under35 || 0), "Reviews under 3.5 stars");
+    right.appendChild(tiles); hero.appendChild(right); box.appendChild(hero);
+
+    /* Trend chart */
+    var cp = el("div", "sc-panel sc-chart"); cp.appendChild(el("h3", "", "Month by month")); cp.appendChild(el("p", "sc-sub", "Their cleanliness score against the portfolio. Bars show how many reviews each month."));
+    cp.appendChild(scChart(j, h)); var lg = el("div", "sc-legend");
+    [["#5bbfb5", h.name.split(" ")[0]], ["#8b979e", "Portfolio"], ["#e6f5f3", "Reviews that month"]].forEach(function(x){ var s = el("span"), i = el("i"); i.style.background = x[0]; s.appendChild(i); s.appendChild(document.createTextNode(x[1])); lg.appendChild(s); });
+    cp.appendChild(lg); box.appendChild(cp);
+
+    /* Heatmap */
+    var hp = el("div", "sc-panel"); hp.appendChild(el("h3", "", "Property by month")); hp.appendChild(el("p", "sc-sub", "Cleanliness score with the number of reviews. Striped cells are stays before 23 Sep, put on the regular housekeeper (assumed)."));
+    var wrap = el("div", "tablewrap"), tb = el("table", "sc-heat"), th = el("thead"), hr = el("tr");
+    hr.appendChild(el("th", "", "Property")); j.months.forEach(function(m){ hr.appendChild(el("th", "", monLabel(m).replace(" ", " ") + (m === j.current ? "*" : ""))); }); hr.appendChild(el("th", "", "6 months"));
+    th.appendChild(hr); tb.appendChild(th); var bdy = el("tbody");
+    var hrow = function(name, cells, total, cls){
+      var tr = el("tr", cls || ""), n = el("td", "p", name); n.title = name; tr.appendChild(n);
+      cells.forEach(function(c){ var tdd = el("td", c ? scBand(c.clean) + (c.assumed && c.assumed === c.reviews ? " as" : "") : "b0");
+        if(c){ tdd.appendChild(document.createTextNode(c.clean === null ? "-" : c.clean.toFixed(c.clean === 5 ? 0 : 1))); tdd.appendChild(el("small", "", c.reviews + "")); } else tdd.textContent = "·"; tr.appendChild(tdd); });
+      var tt = el("td", "tot " + (total ? scBand(total.clean) : "b0")); if(total){ tt.appendChild(document.createTextNode(s2(total.clean))); tt.appendChild(el("small", "", total.reviews + " reviews")); } tr.appendChild(tt);
+      bdy.appendChild(tr);
+    };
+    hrow("All properties", h.cells, h.total, "all");
+    h.properties.forEach(function(p){ hrow(scName(p), p.cells, p.total); });
+    hrow("Portfolio", port, pt, "pf");
+    tb.appendChild(bdy); wrap.appendChild(tb); hp.appendChild(wrap);
+    var lg2 = el("div", "sc-legend"); [["b5", "4.9 to 5"], ["b4", "4.7 to 4.9"], ["b3", "4.5 to 4.7"], ["b2", "4.0 to 4.5"], ["b1", "under 4.0"]].forEach(function(x){ var s = el("span"), i = el("i", x[0]); s.appendChild(i); s.appendChild(document.createTextNode(x[1])); lg2.appendChild(s); });
+    lg2.appendChild(el("span", "", "* " + monLabel(j.current) + " so far")); hp.appendChild(lg2); box.appendChild(hp);
+
+    /* Highlights */
+    var props = h.properties.filter(function(p){ return p.total && p.total.clean !== null; }), firm = props.filter(function(p){ return p.total.cleanReviews >= 3; });
+    var pool = firm.length ? firm : props;
+    var best = pool.slice().sort(function(a, b){ return b.total.clean - a.total.clean || b.total.reviews - a.total.reviews; })[0];
+    var worst = pool.slice().sort(function(a, b){ return a.total.clean - b.total.clean || b.total.reviews - a.total.reviews; })[0];
+    var mons = h.cells.slice(0, 6).map(function(c, i){ return { c:c, m:j.months[i] }; }).filter(function(x){ return x.c && x.c.clean !== null; });
+    var bm = mons.slice().sort(function(a, b){ return b.c.clean - a.c.clean; })[0], wm = mons.slice().sort(function(a, b){ return a.c.clean - b.c.clean; })[0];
+    var hl = el("div", "sc-panel"); hl.appendChild(el("h3", "", "Highlights")); var g = el("div", "sc-hl");
+    var card = function(lab, big, small, warn){ var d = el("div", warn ? "w" : ""); d.appendChild(el("span", "", lab)); d.appendChild(el("b", "", big)); d.appendChild(el("small", "", small)); g.appendChild(d); };
+    if(best) card("Strongest property", scName(best), s2(best.total.clean) + " from " + best.total.reviews + " reviews");
+    if(worst && worst !== best) card("Worth a look", scName(worst), s2(worst.total.clean) + " from " + worst.total.reviews + " review" + (worst.total.reviews === 1 ? "" : "s") + (worst.total.reviews < 3 ? " (small sample)" : ""), worst.total.clean < pt.clean);
+    if(bm) card("Best month", monLabel(bm.m), s2(bm.c.clean) + " from " + bm.c.reviews + " reviews (portfolio " + s2(port[j.months.indexOf(bm.m)].clean) + ")");
+    if(wm && wm !== bm) card("Toughest month", monLabel(wm.m), s2(wm.c.clean) + " from " + wm.c.reviews + " reviews (portfolio " + s2(port[j.months.indexOf(wm.m)].clean) + ")", wm.c.clean < port[j.months.indexOf(wm.m)].clean);
+    hl.appendChild(g); box.appendChild(hl);
+
+    /* What guests said */
+    var said = el("div", "sc-panel"); said.id = "scSaid"; said.appendChild(el("h3", "", "What guests said"));
+    said.appendChild(el("p", "sc-sub", "Read these before acting on a number: a low score is not always about the clean.")); var sb = el("div"); sb.id = "scSaidBody"; sb.appendChild(el("p", "msg", "Loading reviews...")); said.appendChild(sb); box.appendChild(said);
+    if(t.assumed) box.appendChild(el("p", "sc-note", t.assumed + " of " + t.reviews + " reviews are from stays before Clean Check clean records began (23 Sep), so they are put on the property's regular housekeeper."));
+    scSaid(h.name);
+  }
+  function scChart(j, h){
+    var nar = window.innerWidth < 700, W = nar ? 440 : 1000, H = nar ? 270 : 250, L = 36, R = nar ? 24 : 40, T = 22, B = 42, n = j.months.length, xs = function(i){ return L + i * (W - L - R) / (n - 1); };
+    var lo = 3.5, all = h.cells.concat(j.portfolio.cells).filter(function(c){ return c && c.clean !== null; }).map(function(c){ return c.clean; });
+    if(all.length && Math.min.apply(null, all) < 3.5) lo = Math.floor(Math.min.apply(null, all) * 2) / 2;
+    var ys = function(v){ return T + (5 - v) / (5 - lo) * (H - T - B); };
+    var s = svg("svg", { viewBox:"0 0 " + W + " " + H, role:"img", "aria-label":"Monthly cleanliness for " + h.name + " against the portfolio" });
+    for(var v = lo; v <= 5.001; v += 0.5){ s.appendChild(svg("line", { x1:L, x2:W - R, y1:ys(v), y2:ys(v), stroke:"#eef1f2" })); var tx = svg("text", { x:L - 8, y:ys(v) + 4, "text-anchor":"end", "font-size":"11", fill:"#8b979e" }); tx.textContent = v.toFixed(1); s.appendChild(tx); }
+    var maxN = Math.max.apply(null, h.cells.map(function(c){ return c ? c.reviews : 0 }).concat([1]));
+    h.cells.forEach(function(c, i){ if(!c) return; var bh = 26 * c.reviews / maxN; s.appendChild(svg("rect", { x:xs(i) - 12, y:H - B - bh, width:24, height:bh, fill:"#e6f5f3", rx:"2" })); });
+    var line = function(cells, color, dash, dots){
+      var pts = []; cells.forEach(function(c, i){ if(c && c.clean !== null) pts.push([xs(i), ys(c.clean), c, i]); });
+      if(pts.length > 1) s.appendChild(svg("polyline", { points: pts.map(function(p){ return p[0] + "," + p[1]; }).join(" "), fill:"none", stroke:color, "stroke-width": dash ? "2" : "3", "stroke-dasharray": dash ? "5 4" : "none", "stroke-linejoin":"round" }));
+      if(dots) pts.forEach(function(p){ var cur = j.months[p[3]] === j.current;
+        s.appendChild(svg("circle", { cx:p[0], cy:p[1], r:"5", fill: cur ? "#fff" : color, stroke:color, "stroke-width":"2.5" }));
+        var tx = svg("text", { x:p[0], y:p[1] - 10, "text-anchor":"middle", "font-size":"12", "font-weight":"700", fill:"#26323a" }); tx.textContent = p[2].clean.toFixed(2); s.appendChild(tx); });
+    };
+    line(j.portfolio.cells, "#8b979e", true, false); line(h.cells, "#23807a", false, true);
+    j.months.forEach(function(m, i){ var tx = svg("text", { x:xs(i), y:H - B + 16, "text-anchor":"middle", "font-size":"11", fill:"#5d6b73" }); tx.textContent = monLabel(m); s.appendChild(tx);
+      var c = h.cells[i]; var t2 = svg("text", { x:xs(i), y:H - B + 30, "text-anchor":"middle", "font-size":"10", fill:"#8b979e" }); t2.textContent = c ? c.reviews + (m === j.current ? " so far" : "") : "none"; s.appendChild(t2); });
+    return s;
+  }
+  function scSaid(name){
+    var put = function(r){
+      var bx = $("scSaidBody"); if(!bx || SC.hk !== name) return; bx.innerHTML = "";
+      var grid = el("div", "sc-said"), col = function(title, list, empty){
+        var c = el("div"); c.appendChild(el("h4", "", title));
+        if(!list.length) c.appendChild(el("p", "sc-note", empty));
+        list.forEach(function(q){
+          var d = el("div", "sc-q"), top = el("div", "top");
+          var pill = el("span", "sc-pill " + scBand(q.clean === null ? q.stars : q.clean), q.clean === null ? q.stars.toFixed(1) + " stars" : "Clean " + q.clean.toFixed(1) + " / " + q.stars.toFixed(1) + " stars"); top.appendChild(pill);
+          top.appendChild(document.createTextNode(scName({ name:q.property }) + ", " + new Date(q.at).toLocaleDateString("en-AU", { timeZone:TZ, day:"numeric", month:"short" }) + (q.booking ? " | #" + q.booking : "")));
+          if(q.assumed) top.appendChild(el("span", "sc-tag", "assumed"));
+          d.appendChild(top);
+          var txt = q.text || (q.privateNote ? "" : "(No written comment)"), p = el("p", "", txt.length > 260 ? txt.slice(0, 257) + "..." : txt);
+          if(txt.length > 260){ p.style.cursor = "pointer"; p.title = "Show all"; p.addEventListener("click", function(){ p.textContent = txt; p.style.cursor = ""; }); }
+          d.appendChild(p);
+          if(q.privateNote) d.appendChild(el("p", "sc-note", "Private to PHH: " + q.privateNote));
+          c.appendChild(d);
+        });
+        return c;
+      };
+      grid.appendChild(col("Lowest scores", r.lows || [], "No reviews under 5 for cleanliness. Nice."));
+      grid.appendChild(col("Guests on the clean", r.praise || [], "No 5-star comments mentioning the clean yet."));
+      bx.appendChild(grid);
+    };
+    if(SC.reviews[name]) return put(SC.reviews[name]);
+    scFetch("scores-reviews", { hk:name }).then(function(r){ SC.reviews[name] = r; put(r); })
+      .catch(function(e){ var bx = $("scSaidBody"); if(bx && SC.hk === name) scError(bx, e.message, function(){ scSaid(name); }); });
+  }
+  function scCsv(h){
+    var j = SC.data, rows = [["Housekeeper", "Property", "Month", "Reviews", "Cleanliness reviews", "Average cleanliness (out of 5)", "5-star cleanliness %", "Average stars (out of 5)", "Under 3.5 stars", "Reviews assumed (before 23 Sep)"]];
+    var add = function(prop, cells, total){ cells.concat([total]).forEach(function(x, i){ var m = i === cells.length ? "6 months total" : scMon(j, j.months[i]);
+      rows.push([h.name, prop, m, x ? x.reviews : 0, x ? x.cleanReviews : 0, x && x.clean !== null ? x.clean : "", x && x.fiveStarClean !== null ? x.fiveStarClean : "", x ? x.stars : "", x ? x.under35 : 0, x ? x.assumed : 0]); }); };
+    add("All their properties", h.cells, h.total); h.properties.forEach(function(p){ add(scName(p), p.cells, p.total); });
+    add("Portfolio average (all housekeepers)", j.portfolio.cells, j.portfolio.total);
+    var csv = rows.map(function(r){ return r.map(function(v){ v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(","); }).join("\n");
+    var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type:"text/csv" }));
+    a.download = "PHH review scores " + h.name.replace(/[^A-Za-z0-9 ]+/g, "").trim() + " " + j.months[0] + " to " + j.current + ".csv"; document.body.appendChild(a); a.click(); a.remove();
+  }
+  function scPrint(h){
+    var ex = function(v){ return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
+    var clone = $("scCard").cloneNode(true); clone.querySelectorAll(".sc-back,.scbtns,.btn").forEach(function(x){ x.remove(); });
+    var root = getComputedStyle(document.documentElement), vars = ["--teal","--teal-ink","--teal-soft","--ink","--muted","--faint","--line","--line-2","--ok-ink","--pend","--pend-ink","--miss","--idle","--idle-ink"].map(function(k){ return k + ":" + root.getPropertyValue(k); }).join(";");
+    var html = '<!doctype html><html><head><meta charset="utf-8"><title>' + ex("Guest review scorecard - " + h.name) + "</title><style>:root{" + vars + "}" +
+      "@page{size:A4;margin:11mm}body{margin:0;font-family:Raleway,Helvetica,Arial,sans-serif;color:#26323a;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}" +
+      SC_CSS + ".sc-panel{break-inside:avoid;padding:12px;margin-bottom:10px}.sc-head h2{font-size:20px}.tablewrap{overflow:visible}.brand{display:flex;justify-content:space-between;color:#5d6b73;font-size:11px;border-bottom:2px solid #5bbfb5;padding-bottom:6px;margin-bottom:10px}" +
+      "</style></head><body><div class=\"brand\"><b>Professional Holiday Homes | Clean Check</b><span>Internal, office only | " + ex(new Date().toLocaleDateString("en-AU", { timeZone:TZ, day:"numeric", month:"short", year:"numeric" })) + "</span></div>" +
+      clone.innerHTML + "<script>window.addEventListener('load',function(){setTimeout(function(){try{print();}catch(e){}},400);});<\/script></body></html>";
+    var w = window.open("", "_blank");
+    if(w){ w.document.open(); w.document.write(html); w.document.close(); return; }
+    var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type:"text/html" })); a.download = "PHH scorecard " + h.name.replace(/[^A-Za-z0-9 ]+/g, "").trim() + ".html"; document.body.appendChild(a); a.click(); a.remove();
   }
   $("rvU35").addEventListener("change", function(){ if(RV.data) rvRender(); });
   $("pcQ").addEventListener("input", pcFilter);
@@ -2218,17 +2565,18 @@ html,body{overflow-x:clip}
   var assetsOn = false;
   function assetsInit(){ if(assetsOn || !window.phhAssets) return; assetsOn = true; window.phhAssets($("assetHost"), post, { includeTest: true }); }
 
-  var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables", reviews:"Reviews", insp:"Inspections", sched:"Schedule" };
+  var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables", reviews:"Reviews", scores:"Scores", insp:"Inspections", sched:"Schedule" };
   function setTab(t){
     state.tab = t;
     document.querySelectorAll(".tab").forEach(function(b){ b.setAttribute("aria-selected", String(b.getAttribute("data-tab") === t)); });
     $("sectionTitle").textContent = TITLES[t];
-    var day = t === "cleans" || t === "attention", spring = t === "spring", cons = t === "cons", rv = t === "reviews", insp = t === "insp", sched = t === "sched";
-    $("dayView").hidden = !day; $("insView").hidden = day || spring || cons || rv || insp || sched; $("springView").hidden = !spring; $("consView").hidden = !cons; $("rvView").hidden = !rv;
+    var day = t === "cleans" || t === "attention", spring = t === "spring", cons = t === "cons", rv = t === "reviews", insp = t === "insp", sched = t === "sched", scr = t === "scores";
+    $("dayView").hidden = !day; $("insView").hidden = day || spring || cons || rv || insp || sched || scr; $("scView").hidden = !scr; $("springView").hidden = !spring; $("consView").hidden = !cons; $("rvView").hidden = !rv;
     $("b4InspView").hidden = !insp; $("b4SchedView").hidden = !sched;
     $("pcBox").hidden = t !== "props"; $("assetBox").hidden = t !== "props"; if(t === "props"){ pcInit(); assetsInit(); }
     if(insp){ inspLoad(); }
     else if(sched){ schedTab(); }
+    else if(scr){ scLoad(); }
     else if(rv){ if(RV.data) rvRender(); else rvLoad(); }
     else if(cons){ $("consMsg").className = "msg"; $("consMsg").textContent = "Loading..."; consLoad(true).catch(function(e){ $("consMsg").className = "msg err"; $("consMsg").textContent = e.message; }); }
     else if(spring) spLoad(); else if(day){ if(state.rows.length) renderRows(); } else loadIns();

@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261110084822"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261110091125"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -2057,7 +2057,7 @@ html,body{overflow-x:clip}
       var tr = el("tr", cls || ""), n = el("td", "p", name); n.title = name; tr.appendChild(n);
       cells.forEach(function(c){ var tdd = el("td", c ? scBand(c.clean) + (c.assumed && c.assumed === c.reviews ? " as" : "") : "b0");
         if(c){ tdd.appendChild(document.createTextNode(c.clean === null ? "-" : c.clean.toFixed(c.clean === 5 ? 0 : 1))); tdd.appendChild(el("small", "", c.reviews + "")); } else tdd.textContent = "·"; tr.appendChild(tdd); });
-      var tt = el("td", "tot " + (total ? scBand(total.clean) : "b0")); if(total){ tt.appendChild(document.createTextNode(s2(total.clean))); tt.appendChild(el("small", "", total.reviews + " reviews")); } tr.appendChild(tt);
+      var tt = el("td", "tot " + (total ? scBand(total.clean) : "b0")); if(total){ tt.appendChild(document.createTextNode(s2(total.clean))); tt.appendChild(el("small", "", total.reviews + (total.reviews === 1 ? " review" : " reviews"))); } tr.appendChild(tt);
       bdy.appendChild(tr);
     };
     hrow("All properties", h.cells, h.total, "all");

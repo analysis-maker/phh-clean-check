@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261110023529"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261110082200"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -158,6 +158,13 @@ td.st{padding:0;width:118px}
 .rvon{display:inline-flex;align-items:center;gap:6px;background:var(--teal-soft);border-radius:999px;padding:3px 6px 3px 12px;font-size:13px;margin:0 6px 8px 0}
 .rvon button{border:0;background:none;font:inherit;cursor:pointer;color:var(--muted)}
 .rvh{margin:18px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-ink)}
+/* Monthly scores (10 Nov 2026, Alisa): a housekeeper's guest review scores by property and month, 6 months. */
+.sctbl td.m{min-width:64px}
+.sctbl tr.all td{font-weight:600;background:var(--teal-soft)}
+.sctbl tr.port td{color:var(--muted);font-style:italic}
+.sctbl td.lo{color:var(--miss);font-weight:600}
+.sctbl th.now,.sctbl td.now{background:#fafbfc}
+.scbtns{display:flex;gap:8px;flex-wrap:wrap}
 .prop{font-weight:500}
 td.col-prop{min-width:170px}
 .sub{color:var(--faint);font-size:12px}
@@ -622,6 +629,13 @@ html,body{overflow-x:clip}
     <div id="rvHkCard"></div>
     <div class="tablewrap" id="rvHkTable"><table class="hk"><thead><tr><th>Housekeeper</th><th>Reviews</th><th>Average stars</th><th>Average cleanliness</th><th>5-star cleanliness</th><th>Cleanliness under 5</th><th>Clean had a check</th></tr></thead><tbody id="rvHk"></tbody></table></div>
     <p class="hint">Scored on the housekeeper who did the clean before each stay. Guests score many things they can't control, so read the reviews before acting on a number.</p>
+    <!-- Monthly scores (10 Nov 2026, Alisa's ask): pick a housekeeper, see cleanliness by property and month for 6 months. Office only. -->
+    <h3 class="rvh">Monthly scores by housekeeper, last 6 months</h3>
+    <div class="rvsel"><select id="scHk" aria-label="Housekeeper for monthly scores"><option value="">Pick a housekeeper</option></select>
+      <span class="scbtns"><button type="button" class="btn ghost small" id="scCsv" disabled>Download CSV</button><button type="button" class="btn ghost small" id="scPrint" disabled>Print / PDF</button></span></div>
+    <div id="scBox"></div>
+    <p class="msg" id="scMsg"></p>
+    <p class="hint">Guest cleanliness score (out of 5) per property per month, with stars and the number of reviews underneath. Matched to the housekeeper who did the clean before the stay. Clean Check only has clean records from 23 Sep, so earlier stays are put on the property's regular housekeeper (shown as "assumed").</p>
     <h3 class="rvh">Star rating by property, last 6 months</h3>
     <div class="rvsel"><select id="rvPropSel" aria-label="Property"><option value="">All properties</option></select></div>
     <div id="rvPropCard"></div>
@@ -1805,6 +1819,107 @@ html,body{overflow-x:clip}
     c.appendChild(el("p", "sub2", "Its reviews are in the list above (period and filters apply)."));
     box.appendChild(c);
   }
+  /* ---------- Monthly scores (10 Nov 2026, Alisa's ask). scores-api, office only. ----------
+     A housekeeper's guest cleanliness scores by property and month for the last 6 full months (plus this month so far),
+     against the portfolio average, with their rank. CSV and print for fee reviews. */
+  var SCORES_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/scores-api-staging";
+  var SC = { data:null, busy:false };
+  function scLoad(){
+    if(SC.data || SC.busy) return; SC.busy = true;
+    $("scMsg").className = "msg"; $("scMsg").textContent = "Loading monthly scores...";
+    fetch(SCORES_API + "/scores", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: CODE }) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })
+      .then(function(j){
+        SC.busy = false; SC.data = j; var sel = $("scHk"), cur = sel.value;
+        sel.innerHTML = '<option value="">Pick a housekeeper</option>';
+        (j.housekeepers || []).forEach(function(h){ var o = el("option", "", h.name + (h.total ? " (" + h.total.reviews + ")" : "")); o.value = h.name; sel.appendChild(o); });
+        sel.value = cur; $("scMsg").textContent = ""; scRender();
+      }).catch(function(e){ SC.busy = false; $("scMsg").className = "msg err"; $("scMsg").textContent = e.message; });
+  }
+  /* Short property name: "Unwind - Pet Friendly - 1 Min Walk to Beach" -> "Unwind"; motel rooms keep their room ("3A - Bay & Beach Motel"). */
+  function scName(p){ var n = String(p.name || "Property " + p.listingId), r = roomFirst(n); return r !== n ? r : n.split(" - ")[0].split(" @ ")[0].trim(); }
+  function scMon(j, m){ return monLabel(m) + (m === j.current ? " so far" : ""); }
+  function s2(n){ return n === null || n === undefined ? "-" : Number(n).toFixed(2); }
+  function scCell(c){ return c ? s2(c.clean) : ""; }
+  function scHk(){ var j = SC.data, n = $("scHk").value; return j && n ? (j.housekeepers || []).filter(function(h){ return h.name === n; })[0] : null; }
+  function scRender(){
+    var j = SC.data, box = $("scBox"); box.innerHTML = ""; var h = scHk();
+    $("scCsv").disabled = $("scPrint").disabled = !h; if(!h) return;
+    var t = h.total || {}, pt = (j.portfolio && j.portfolio.total) || {};
+    var c = el("div", "rvcard"); c.appendChild(el("h4", "", h.name));
+    c.appendChild(el("p", "sub", "Guest reviews of stays they cleaned before, " + monLabel(j.months[0]) + " to " + monLabel(j.months[5]) + " (plus " + monLabel(j.current) + " so far in the table). Office only."));
+    c.appendChild(tiles([
+      [s2(t.clean), "Cleanliness (portfolio " + s2(pt.clean) + ")", t.clean !== null && t.clean < pt.clean],
+      [t.fiveStarClean === null || t.fiveStarClean === undefined ? "-" : t.fiveStarClean + "%", "5-star cleanliness (portfolio " + pt.fiveStarClean + "%)", t.fiveStarClean < pt.fiveStarClean],
+      [s2(t.stars), "Average stars (portfolio " + s2(pt.stars) + ")", t.stars < pt.stars],
+      [t.reviews || 0, "Reviews"], [t.under35 || 0, "Under 3.5 stars", (t.under35 || 0) > 0],
+      [h.rank ? h.rank + " of " + j.rankedOf : (h.owner ? "Owner" : "-"), h.rank ? "Rank on cleanliness" : (h.owner ? "Not ranked" : "Under 15 reviews, not ranked")]
+    ]));
+    var w = el("div", "tablewrap"), tb = el("table", "hk trend sctbl"), th = el("thead"), hr = el("tr");
+    hr.appendChild(el("th", "", "Property"));
+    j.months.forEach(function(m){ hr.appendChild(el("th", m === j.current ? "now" : "", scMon(j, m))); });
+    hr.appendChild(el("th", "", "6 months")); th.appendChild(hr); tb.appendChild(th);
+    var bd = el("tbody"), port = (j.portfolio && j.portfolio.cells) || [];
+    var row = function(name, cells, total, cls, compare){
+      var tr = el("tr", cls || ""); var n = el("td", "name", name); n.setAttribute("data-l", "Property"); tr.appendChild(n);
+      cells.concat([total]).forEach(function(x, i){
+        var isTot = i === cells.length, m = isTot ? "6 months" : scMon(j, j.months[i]);
+        var td = el("td", "m" + (!isTot && j.months[i] === j.current ? " now" : "")); td.setAttribute("data-l", m);
+        if(x){
+          td.appendChild(document.createTextNode(scCell(x)));
+          td.appendChild(el("small", "", x.reviews + (x.reviews === 1 ? " review" : " reviews") + ", " + s2(x.stars) + " stars"));
+          var ref = isTot ? (j.portfolio && j.portfolio.total) : port[i];
+          if(compare && x.clean !== null && ref && ref.clean !== null && x.clean < ref.clean - 0.2) td.className += " lo";
+        }
+        tr.appendChild(td);
+      });
+      bd.appendChild(tr);
+    };
+    row("All their properties", h.cells, h.total, "all", true);
+    (h.properties || []).forEach(function(p){ row(scName(p), p.cells, p.total, "", true); });
+    row("Portfolio average (all housekeepers)", port, j.portfolio && j.portfolio.total, "port", false);
+    tb.appendChild(bd); w.appendChild(tb); c.appendChild(w);
+    var as = t.assumed || 0;
+    if(as) c.appendChild(el("p", "sub2", as + " of " + t.reviews + " reviews are from stays before Clean Check clean records (23 Sep), so they are put on the regular housekeeper for the property (assumed)."));
+    c.appendChild(el("p", "sub2", "Red: more than 0.2 below the portfolio cleanliness that month. Blank: no reviews that month. Guests score things the housekeeper can't control, so read the reviews before acting on a number."));
+    box.appendChild(c);
+  }
+  function scRows(){
+    var j = SC.data, h = scHk(); if(!h) return [];
+    var out = [["Housekeeper", "Property", "Month", "Reviews", "Cleanliness reviews", "Average cleanliness (out of 5)", "5-star cleanliness %", "Average stars (out of 5)", "Under 3.5 stars", "Reviews assumed (before 23 Sep)"]];
+    var add = function(prop, cells, total){
+      cells.concat([total]).forEach(function(x, i){
+        var m = i === cells.length ? "6 months total" : scMon(j, j.months[i]);
+        out.push([h.name, prop, m, x ? x.reviews : 0, x ? x.cleanReviews : 0, x && x.clean !== null ? x.clean : "", x && x.fiveStarClean !== null ? x.fiveStarClean : "", x ? x.stars : "", x ? x.under35 : 0, x ? x.assumed : 0]);
+      });
+    };
+    add("All their properties", h.cells, h.total);
+    (h.properties || []).forEach(function(p){ add(scName(p), p.cells, p.total); });
+    add("Portfolio average (all housekeepers)", (j.portfolio && j.portfolio.cells) || [], j.portfolio && j.portfolio.total);
+    return out;
+  }
+  $("scHk").addEventListener("change", scRender);
+  $("scCsv").addEventListener("click", function(){
+    var h = scHk(); if(!h) return;
+    var csv = scRows().map(function(r){ return r.map(function(v){ v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(","); }).join("\n");
+    var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type:"text/csv" }));
+    a.download = "PHH review scores " + h.name.replace(/[^A-Za-z0-9 ]+/g, "").trim() + " " + SC.data.months[0] + " to " + SC.data.current + ".csv";
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+  $("scPrint").addEventListener("click", function(){
+    var h = scHk(); if(!h) return;
+    var ex = function(v){ return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); };
+    var html = '<!doctype html><html><head><meta charset="utf-8"><title>' + ex("Review scores " + h.name) + '</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Raleway,Helvetica,Arial,sans-serif;color:#1a3a4a;font-size:11.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+      'h1{font-size:18px;margin:0 0 2px}.strip{display:flex;flex-wrap:wrap;border:1px solid #dce5ec;margin:10px 0}.strip div{flex:1 1 120px;padding:8px 10px;border-right:1px solid #dce5ec}.strip b{display:block;font-size:17px}.strip span{color:#4f5c6b;font-size:10.5px}.strip .bad b{color:#b3261e}' +
+      'table{border-collapse:collapse;width:100%}th,td{padding:4px 6px;border-bottom:1px solid #dce5ec;text-align:center}th{background:#e8f0f6}td.name{text-align:left}td small{display:block;color:#8a9bb0;font-size:9.5px}tr.all td{font-weight:700;background:#eef6f7}tr.port td{color:#4f5c6b;font-style:italic}td.lo{color:#b3261e;font-weight:700}.sub,.sub2{color:#4f5c6b}' +
+      '</style></head><body><div style="color:#4f5c6b;font-size:10.5px;margin-bottom:8px">Professional Holiday Homes | Clean Check | Internal, office only</div>' +
+      $("scBox").innerHTML.replace(/<h4>/, "<h1>").replace(/<\/h4>/, "</h1>") +
+      '<p class="sub2">Generated ' + ex(new Date().toLocaleString("en-AU", { timeZone:TZ, day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit" })) + '.</p>' +
+      "<script>window.addEventListener('load',function(){setTimeout(function(){try{print();}catch(e){}},400);});<\/script></body></html>";
+    var w = window.open("", "_blank");
+    if(w){ w.document.open(); w.document.write(html); w.document.close(); return; }
+    var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type:"text/html" })); a.download = "PHH review scores " + h.name.replace(/[^A-Za-z0-9 ]+/g, "").trim() + ".html"; document.body.appendChild(a); a.click(); a.remove();
+  });
   $("rvU35").addEventListener("change", function(){ if(RV.data) rvRender(); });
   $("pcQ").addEventListener("input", pcFilter);
   $("rvNotes").addEventListener("change", function(){ if(RV.data) rvRender(); });
@@ -2240,7 +2355,7 @@ html,body{overflow-x:clip}
     $("pcBox").hidden = t !== "props"; $("assetBox").hidden = t !== "props"; if(t === "props"){ pcInit(); assetsInit(); }
     if(insp){ inspLoad(); }
     else if(sched){ schedTab(); }
-    else if(rv){ if(RV.data) rvRender(); else rvLoad(); }
+    else if(rv){ if(RV.data) rvRender(); else rvLoad(); scLoad(); }
     else if(cons){ $("consMsg").className = "msg"; $("consMsg").textContent = "Loading..."; consLoad(true).catch(function(e){ $("consMsg").className = "msg err"; $("consMsg").textContent = e.message; }); }
     else if(spring) spLoad(); else if(day){ if(state.rows.length) renderRows(); } else loadIns();
   }

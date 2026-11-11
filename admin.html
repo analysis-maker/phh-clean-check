@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261110085543"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261111050324"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -270,7 +270,7 @@ html,body{overflow-x:clip}
 <header class="bar">
   <div class="brand"><img src="icon-180.png" alt="" width="24" height="24">Clean Check</div>
   <div class="section">Admin</div>
-  <div class="me" id="me" hidden><span id="mename"></span><a href="office.html?v=1110sc" style="color:var(--teal-ink);font-weight:500;text-decoration:none">Cleaning</a><a href="maintenance.html?v=1109u" style="color:var(--teal-ink);font-weight:500;text-decoration:none">Maintenance</a><button type="button" id="signout">Sign out</button></div>
+  <div class="me" id="me" hidden><span id="mename"></span><a href="office.html?v=1111w" style="color:var(--teal-ink);font-weight:500;text-decoration:none">Cleaning</a><a href="maintenance.html?v=1111w" style="color:var(--teal-ink);font-weight:500;text-decoration:none">Maintenance</a><button type="button" id="signout">Sign out</button></div>
 </header>
 <nav class="tabs" role="tablist" aria-label="Admin views" id="tabs" hidden>
   <button class="tab" role="tab" data-tab="hk" aria-selected="true">Housekeepers &amp; codes<span class="n" id="reqN" hidden></span></button>
@@ -505,7 +505,7 @@ html,body{overflow-x:clip}
   function hkById(id){ return D && D.housekeepers.filter(function(x){ return x.id === id; })[0]; }
   /* Copy code message = the welcome Marson pastes into an email or text. Always carries the How It Works guide and video (Ian, 2 Nov). */
   var GUIDE_PDF = "https://drive.google.com/file/d/1ey89ZX-pvR839gnkHRL2Pz08Co8_91zt/view", GUIDE_VIDEO = "https://drive.google.com/file/d/1ByAaWI-VpATFER-VKVeEO0c0VSFl2iCC/view";
-  function codeMsg(h){ return "Hi " + first(h.name) + ", welcome to Clean Check, our short end-of-clean checklist with a few photos. It takes about 5 minutes and your feedback shapes how it works.\n\nYour code is " + h.code + ". Open " + SITE + " on your phone, add it to your home screen, then tap Turn on so you get a ping when guests have left.\n\nHow it works (1-page guide): " + GUIDE_PDF + "\nShort video: " + GUIDE_VIDEO + "\n\nThanks, Professional Holiday Homes"; }
+  function codeMsg(h){ return "Hi " + first(h.name) + ", welcome to Clean Check, our short end-of-clean checklist with a few photos. It takes about 5 minutes and your feedback shapes how it works.\n\nYour code is " + h.code + ". Open " + SITE + " on your phone, add it to your home screen, then tap Turn on so you get a ping when guests have left.\n\nNo signal at a property? Join the property Wi-Fi (QR code on the fridge). If that's down too, just keep going: your photos save on your phone and send by themselves once you're back in signal (on an iPhone, open the app again to finish sending). Tip: open the app on Wi-Fi in the morning so your day's cleans are loaded.\n\nHow it works (1-page guide): " + GUIDE_PDF + "\nShort video: " + GUIDE_VIDEO + "\n\nThanks, Professional Holiday Homes"; }
   function steps(h){
     var s = [!!h.codeSentAt, !!h.firstSeenAt, h.phones > 0, !!h.firstCheckAt], n = s.filter(Boolean).length;
     var t = ["Code sent", "Signed in", "Notifications on", "First clean check"].map(function(l, i){ return (s[i] ? "Done: " : "Not yet: ") + l; }).join(", ");
@@ -560,7 +560,7 @@ html,body{overflow-x:clip}
   function leadShort(n){ return String(n || "").replace(/\s*\(.*\)\s*$/, ""); }
   /* Welcome for a team member: positive, the guide and video always included (Ian, 28 Oct). */
   function teamMsg(m, leadName){
-    return "Hi " + first(m.name) + ", you're set up on Clean Check for the cleans you do for " + leadShort(leadName) + ". It's our short end-of-clean checklist with a few photos, about 5 minutes, and your feedback shapes how it works.\n\nYour code is " + m.code + ". Open " + SITE + " on your phone, add it to your home screen, then tap Turn on for notifications.\n\nHow it works (1-page guide): " + GUIDE_PDF + "\nShort video: " + GUIDE_VIDEO + "\n\nThanks, Professional Holiday Homes";
+    return "Hi " + first(m.name) + ", you're set up on Clean Check for the cleans you do for " + leadShort(leadName) + ". It's our short end-of-clean checklist with a few photos, about 5 minutes, and your feedback shapes how it works.\n\nYour code is " + m.code + ". Open " + SITE + " on your phone, add it to your home screen, then tap Turn on for notifications.\n\nNo signal at a property? Join the property Wi-Fi (QR code on the fridge). If that's down too, just keep going: your photos save on your phone and send by themselves once you're back in signal (on an iPhone, open the app again to finish sending). Tip: open the app on Wi-Fi in the morning so your day's cleans are loaded.\n\nHow it works (1-page guide): " + GUIDE_PDF + "\nShort video: " + GUIDE_VIDEO + "\n\nThanks, Professional Holiday Homes";
   }
   function loadTeams(){
     $("terr").textContent = "";
@@ -793,7 +793,7 @@ html,body{overflow-x:clip}
   /* ---------- messages ---------- */
   var TPL = [
     { id:"", name:"Blank message", title:"", body:"", guides:false },
-    { id:"welcome", name:"Welcome and code (email)", title:"Welcome to Clean Check", body:"Hi {first}, welcome to Clean Check, our short end-of-clean checklist with a few photos. It takes about 5 minutes and your feedback shapes how it works.\n\nYour code is {code}. Open professionalholidayhomes.com.au/checkcleaning on your phone, add it to your home screen, then tap Turn on so you get a ping when guests have left.\n\nThe one-page guide and a short video are below.", guides:true, channel:"email" },
+    { id:"welcome", name:"Welcome and code (email)", title:"Welcome to Clean Check", body:"Hi {first}, welcome to Clean Check, our short end-of-clean checklist with a few photos. It takes about 5 minutes and your feedback shapes how it works.\n\nYour code is {code}. Open professionalholidayhomes.com.au/checkcleaning on your phone, add it to your home screen, then tap Turn on so you get a ping when guests have left.\n\nNo signal at a property? Join the property Wi-Fi (QR code on the fridge). If that's down too, just keep going: your photos save on your phone and send by themselves once you're back in signal (on an iPhone, open the app again to finish sending). Tip: open the app on Wi-Fi in the morning so your day's cleans are loaded.\n\nThe one-page guide and a short video are below.", guides:true, channel:"email" },
     { id:"start", name:"Your start date", title:"Your Clean Check start date", body:"Hi {first}, from {start} please do a Clean Check at the end of each departure clean, before marking it done in HomHero. Thanks for being part of it, and tell us anything that would make it easier.", guides:true },
     { id:"reminder", name:"Friendly reminder", title:"Quick Clean Check reminder", body:"Hi {first}, a quick reminder to tap Complete clean in Clean Check before marking the clean done in HomHero. Thanks so much.", guides:false },
     { id:"thanks", name:"Thank you", title:"Thank you", body:"Hi {first}, thank you for your clean checks this month. They really help, and the photos back you up if a guest ever raises anything.", guides:false },
@@ -1337,4 +1337,22 @@ html.aphh-open body{margin-right:var(--aphh-w,400px)}
 })();
 </script>
 <!-- ASK-PHH END -->
+<script>
+/* Australian dates (Ian, 11 Nov meeting): a browser set to US English shows date boxes as MM/DD/YYYY ("11/10" for 10 Nov).
+   Every date box gets a small day-first label next to it, e.g. "Tue 10 Nov 2026". Kept in step on change and every second. */
+(function(){
+  function fmt(v){ if(!/^\d{4}-\d{2}-\d{2}$/.test(v || "")) return ""; try{ return new Date(v + "T12:00:00Z").toLocaleDateString("en-AU", { timeZone:"UTC", weekday:"short", day:"numeric", month:"short", year:"numeric" }); }catch(e){ return ""; } }
+  function tag(i){
+    if(!i || i.type !== "date") return;
+    var s = i._auTag;
+    if(!s || !s.isConnected){ s = document.createElement("span"); s.className = "au-date"; s.setAttribute("aria-hidden", "true"); s.style.cssText = "font-size:12px;color:#5b6b7a;white-space:nowrap;margin:0 6px;align-self:center"; i.insertAdjacentElement("afterend", s); i._auTag = s; }
+    var t = fmt(i.value); if(s.textContent !== t) s.textContent = t;
+  }
+  function scan(){ var l = document.querySelectorAll('input[type="date"]'); for(var k = 0; k < l.length; k++) tag(l[k]); }
+  document.addEventListener("input", function(e){ tag(e.target); }, true);
+  document.addEventListener("change", function(e){ tag(e.target); }, true);
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", scan); else scan();
+  setInterval(scan, 1000);
+})();
+</script>
 </body></html>

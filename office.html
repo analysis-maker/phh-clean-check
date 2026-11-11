@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261110091125"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261111050324"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -126,6 +126,7 @@ td.st{padding:0;width:118px}
 .rv>li{background:#fff;border:1px solid var(--line);border-radius:4px;padding:12px 14px;margin-bottom:10px}
 .rv .rh{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;margin-bottom:4px}
 .rv .rh b{font-weight:600}
+.rv .rvprop{margin:0 0 2px;font-size:16px;font-weight:700;color:#0b2545}
 .rv .sc{font-weight:700}
 .rv .sc.low{color:var(--miss)}
 .rv .tx{margin:4px 0;white-space:pre-wrap;font-size:14px}
@@ -372,6 +373,8 @@ tr.r td.acts{white-space:nowrap}
 /* Phones: header on two rows (brand, then links) so nothing runs off the side; page never scrolls sideways. */
 html,body{overflow-x:clip}
 .tabs{justify-content:safe center}
+/* 11 Nov: 11 tabs with Warnings. Tighter padding on wide screens, and wrap rather than hide a tab off the edge. */
+@media (min-width:761px){ .tabs{flex-wrap:wrap} .tab{padding:14px 13px 12px} }
 @media (max-width:760px){
   .bar{flex-wrap:wrap}
   .brand{flex:1 1 100%;min-height:46px;padding:0 16px;font-size:17px}
@@ -468,7 +471,7 @@ html,body{overflow-x:clip}
 <header class="bar">
   <div class="brand"><img src="icon-180.png" alt="" width="24" height="24">Clean Check</div>
   <div class="section" id="sectionTitle">Cleaning</div>
-  <div class="me" id="me"><span id="mename"></span><a href="maintenance.html?v=1109u" style="color:var(--teal-ink);font-weight:500;text-decoration:none">Maintenance</a><a href="admin.html?v=1105t" id="toAdmin" hidden style="color:var(--teal-ink);font-weight:500;text-decoration:none">Admin<span class="adn" id="adminN" hidden></span></a><button type="button" id="signout">Sign out</button></div>
+  <div class="me" id="me"><span id="mename"></span><a href="maintenance.html?v=1111w" style="color:var(--teal-ink);font-weight:500;text-decoration:none">Maintenance</a><a href="admin.html?v=1111w" id="toAdmin" hidden style="color:var(--teal-ink);font-weight:500;text-decoration:none">Admin<span class="adn" id="adminN" hidden></span></a><button type="button" id="signout">Sign out</button></div>
 </header>
 <nav class="tabs" role="tablist" aria-label="Views">
   <button class="tab" role="tab" data-tab="cleans" aria-selected="true">Cleans</button>
@@ -479,6 +482,7 @@ html,body{overflow-x:clip}
   <button class="tab" role="tab" data-tab="cons" aria-selected="false">Consumables<span class="n" id="consN" hidden></span></button>
   <button class="tab" role="tab" data-tab="reviews" aria-selected="false">Reviews<span class="n" id="rvN" hidden></span></button>
   <button class="tab" role="tab" data-tab="scores" aria-selected="false">Scores</button>
+  <button class="tab" role="tab" data-tab="warn" aria-selected="false">Warnings</button>
   <button class="tab" role="tab" data-tab="insp" aria-selected="false">Inspections</button>
   <button class="tab" role="tab" data-tab="sched" aria-selected="false">Schedule</button>
 </nav>
@@ -642,6 +646,15 @@ html,body{overflow-x:clip}
   </section>
 
   <!-- Batch 4 (8 Nov 2026, staging): inspections (items 11 and 13). Office only: housekeepers never see inspection results. -->
+  <section id="wnView" hidden>
+    <div class="wn-rule" id="wnRule"></div>
+    <div class="sc-sum" id="wnSum"></div>
+    <div class="wn-form" id="wnForm"></div>
+    <div class="wn-tools"><input type="search" id="wnQ" placeholder="Search housekeeper" aria-label="Search housekeeper"><select id="wnShow" aria-label="Show"><option value="active">With an active strike</option><option value="all">Everyone with any warning</option></select></div>
+    <p class="msg" id="wnMsg"></p>
+    <div id="wnList"></div>
+    <p class="hint">Office only: housekeepers and owners never see this page. Written warnings go out by HelpScout first, then get logged here with the link.</p>
+  </section>
   <section id="b4InspView" hidden>
     <div class="toprow">
       <h2>Inspections</h2>
@@ -998,7 +1011,7 @@ html,body{overflow-x:clip}
   if(!/^\d{4}-\d{2}-\d{2}$/.test(state.date)) state.date = sydToday();
   /* Deep links (Ask PHH): ?tab=cleans|attention|hk|props &status= &who= &q= &open=<booking> */
   var LINK = { tab: params.get("tab") || "", open: params.get("open") || "" };
-  if(["cleans","attention","hk","props","spring","cons","reviews","insp","sched"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
+  if(["cleans","attention","hk","props","spring","cons","reviews","scores","warn","insp","sched"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
   if(["checked","missing","cleaned","waiting","inprog","notstarted"].indexOf(params.get("status") || "") >= 0) state.status = params.get("status");
   state.who = (params.get("who") || "").slice(0, 120); state.q = (params.get("q") || "").slice(0, 120);
   if(/^[A-Za-z0-9-]{3,40}$/.test(LINK.open)) state.open[LINK.open] = true; else LINK.open = "";
@@ -1641,7 +1654,7 @@ html,body{overflow-x:clip}
     var ul = $("rvList"); ul.innerHTML = "";
     list.slice(0, 200).forEach(function(r){
       var li = el("li"); var h = el("div", "rh");
-      h.appendChild(el("b", "", roomFirst(r.property)));
+      li.appendChild(el("p", "rvprop", roomFirst(r.property) || "Property not given"));
       /* Stay dates first (Ian 8 Nov): the review date is when the guest wrote it, often days after checkout. */
       var dm = function(d){ return new Date(d + "T12:00:00+10:00").toLocaleDateString("en-AU", { timeZone:TZ, day:"numeric", month:"short" }); };
       var stayTx = r.stay && r.stay.departure ? "Stayed " + (r.stay.arrival ? dm(r.stay.arrival) + " to " : "checked out ") + dm(r.stay.departure) + " | " : "";
@@ -2565,18 +2578,122 @@ html,body{overflow-x:clip}
   var assetsOn = false;
   function assetsInit(){ if(assetsOn || !window.phhAssets) return; assetsOn = true; window.phhAssets($("assetHost"), post, { includeTest: true }); }
 
-  var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables", reviews:"Reviews", scores:"Scores", insp:"Inspections", sched:"Schedule" };
+  /* ---------- Warnings tab (11 Nov 2026, CST's ask in the weekly review, Ian approved the strike rule). warnings-api, office only. ----------
+     Manual log only, never from the AI. 1 = conversation (logged the same day), 2 = written warning by HelpScout,
+     3 = formal written warning by HelpScout plus a review by Bella and Alisa (their call). Each strike counts for 12 months.
+     Only admins remove one, with a reason. Housekeepers and owners never see this page. */
+  var WARN_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/warnings-api";
+  var WN = { data:null, busy:false, show:"active", q:"" };
+  (function(){ var st = document.createElement("style"); st.textContent = [
+    ".wn-rule{background:#fff;border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:6px;padding:12px 14px;margin:0 0 14px;font-size:13px;color:var(--muted)}.wn-rule b{color:var(--ink)}",
+    ".wn-form{background:#fff;border:1px solid var(--line);border-radius:6px;padding:14px;margin:0 0 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}",
+    ".wn-form label{display:block;font-size:12px;color:var(--muted);margin:0 0 4px}.wn-form select,.wn-form input,.wn-form textarea{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--line);border-radius:4px;font:inherit;background:#fff}",
+    ".wn-form .wide{grid-column:1/-1}.wn-form textarea{min-height:64px;resize:vertical}",
+    ".wn-hk{background:#fff;border:1px solid var(--line);border-radius:6px;margin:0 0 10px;padding:12px 14px}",
+    ".wn-hk h3{margin:0;font-size:15px;color:var(--ink);display:flex;flex-wrap:wrap;gap:8px;align-items:center}",
+    ".wn-st{font-size:12px;border-radius:999px;padding:3px 10px;border:1px solid var(--line);color:var(--muted);background:#fff;font-weight:600}",
+    ".wn-st.s1{border-color:#d9c27a;color:#7a5d00}.wn-st.s2{border-color:#e0a36b;color:#8a4a10}.wn-st.s3{border-color:#d98080;color:#9b1c1c}",
+    ".wn-item{border-top:1px solid var(--line-2);padding:8px 0;font-size:13px;color:var(--ink)}.wn-item:first-of-type{margin-top:8px}",
+    ".wn-item .meta{color:var(--muted);font-size:12px}.wn-item.off{opacity:.55}.wn-item a{color:var(--teal-ink)}",
+    ".wn-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}.wn-tools input{flex:1 1 200px;padding:8px 10px;border:1px solid var(--line);border-radius:4px;font:inherit}"
+  ].join("\n"); document.head.appendChild(st); })();
+  function wnFetch(route, body){
+    body.code = CODE;
+    return fetch(WARN_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || "Clean Check could not load warnings (" + r.status + ")."); return j; }); },
+        function(){ throw new Error("Couldn't reach Clean Check just now. Check the connection and try again."); });
+  }
+  function wnDay(d){ return d ? new Date(d + "T12:00:00Z").toLocaleDateString("en-AU", { timeZone:"UTC", day:"numeric", month:"short", year:"numeric" }) : ""; }
+  var WN_CAT = { review:"Guest review or complaint (checked)", below_standard:"Below-standard clean (confirmed by a person)", inspection:"Failed inspection", other:"Other" };
+  function wnLoad(){
+    if(WN.busy) return; WN.busy = true; $("wnMsg").className = "msg"; $("wnMsg").textContent = WN.data ? "" : "Loading...";
+    wnFetch("warnings-list", {}).then(function(j){ WN.busy = false; WN.data = j; $("wnMsg").textContent = ""; wnRender(); })
+      .catch(function(e){ WN.busy = false; $("wnMsg").className = "msg err"; $("wnMsg").textContent = e.message; });
+  }
+  function wnForm(){
+    var box = $("wnForm"); box.innerHTML = ""; var d = WN.data;
+    function field(lbl, node, wide){ var w = el("div", wide ? "wide" : ""); var l = el("label", "", lbl); w.appendChild(l); w.appendChild(node); box.appendChild(w); return node; }
+    var hk = el("select"); hk.appendChild(new Option("Pick a housekeeper", ""));
+    d.housekeepers.forEach(function(h){ hk.appendChild(new Option(h.name + (h.live ? "" : " (not on Clean Check yet)"), h.id)); });
+    field("Housekeeper", hk);
+    var lv = el("select"); [["", "Pick a level"], ["1", "1: Conversation (logged)"], ["2", "2: Written warning (HelpScout)"], ["3", "3: Formal written warning (HelpScout)"]].forEach(function(o){ lv.appendChild(new Option(o[1], o[0])); });
+    field("Level", lv);
+    var ct = el("select"); Object.keys(WN_CAT).forEach(function(k){ ct.appendChild(new Option(WN_CAT[k], k)); });
+    field("What it was for", ct);
+    var dt = el("input"); dt.type = "date"; dt.value = d.today; dt.max = d.today; field("Date given", dt);
+    var rs = el("input"); rs.placeholder = "e.g. 267195 (optional)"; rs.inputMode = "numeric"; field("Booking number", rs);
+    var hs = el("input"); hs.placeholder = "https://secure.helpscout.net/conversation/..."; field("HelpScout link (needed for 2 and 3)", hs);
+    var rn = el("textarea"); rn.placeholder = "What happened, and what was agreed. Keep it factual."; field("Reason", rn, true);
+    var bar = el("div", "wide"); var go = el("button", "btn", "Save warning"); go.type = "button"; var m = el("span", "msg"); m.style.marginLeft = "10px";
+    bar.appendChild(go); bar.appendChild(m); box.appendChild(bar);
+    go.addEventListener("click", function(){
+      if(!hk.value){ m.className = "msg err"; m.textContent = "Pick a housekeeper."; return; }
+      if(!lv.value){ m.className = "msg err"; m.textContent = "Pick a level."; return; }
+      var active = d.warnings.filter(function(w){ return w.active && w.cleanerId === hk.value; }).length;
+      var nm = hk.options[hk.selectedIndex].text;
+      if(!confirm("Save a level " + lv.value + " warning for " + nm + "?" + (active ? "\nThey already have " + active + " active." : ""))) return;
+      go.disabled = true; m.className = "msg"; m.textContent = "Saving...";
+      wnFetch("warnings-add", { cleanerId: hk.value, level: Number(lv.value), category: ct.value, givenOn: dt.value, res: rs.value.trim(), helpscoutUrl: hs.value.trim(), reason: rn.value.trim() })
+        .then(function(){ go.disabled = false; m.textContent = "Saved."; WN.data = null; wnLoad(); })
+        .catch(function(e){ go.disabled = false; m.className = "msg err"; m.textContent = e.message; });
+    });
+  }
+  function wnRender(){
+    var d = WN.data; if(!d) return;
+    $("wnRule").innerHTML = "";
+    var r = $("wnRule");
+    r.appendChild(el("b", "", "Strike rule. ")); r.appendChild(document.createTextNode("Only a confirmed housekeeping fault counts: a guest review or complaint checked against the photos, booking notes and the clean after the stay; a below-standard clean confirmed by a person; or a failed inspection. Never from the AI alone. Missed clean checks are chased, not strikes, during rollout. 1 = conversation, logged the same day. 2 = written warning by HelpScout. 3 = formal written warning by HelpScout and a review by Bella and Alisa. Each strike counts for 12 months. Every strike is told to the housekeeper in writing, never through the app."));
+    wnForm();
+    var by = {}; d.warnings.forEach(function(w){ (by[w.cleanerId] = by[w.cleanerId] || { name: w.cleanerName, list: [] }).list.push(w); });
+    var ids = Object.keys(by).filter(function(id){
+      var g = by[id], act = g.list.filter(function(w){ return w.active; }).length;
+      if(WN.show === "active" && !act) return false;
+      if(WN.q && g.name.toLowerCase().indexOf(WN.q) < 0) return false; return true;
+    }).sort(function(a, b){ var x = by[a].list.filter(function(w){ return w.active; }).length, y = by[b].list.filter(function(w){ return w.active; }).length; return y - x || by[a].name.localeCompare(by[b].name); });
+    var host = $("wnList"); host.innerHTML = "";
+    var actAll = d.warnings.filter(function(w){ return w.active; });
+    $("wnSum").innerHTML = "";
+    [["Active strikes", actAll.length], ["Housekeepers with a strike", Object.keys(by).filter(function(id){ return by[id].list.some(function(w){ return w.active; }); }).length], ["At 3 (review due)", Object.keys(by).filter(function(id){ return by[id].list.filter(function(w){ return w.active; }).length >= 3; }).length]].forEach(function(c){ var s = el("span", "sc-chip"); s.appendChild(document.createTextNode(c[0] + " ")); s.appendChild(el("b", "", String(c[1]))); $("wnSum").appendChild(s); });
+    if(!ids.length){ host.appendChild(el("p", "msg", d.warnings.length ? "Nothing matches." : "No warnings logged yet.")); return; }
+    ids.forEach(function(id){
+      var g = by[id], act = g.list.filter(function(w){ return w.active; }).length;
+      var card = el("div", "wn-hk"); var h = el("h3", "", g.name);
+      h.appendChild(el("span", "wn-st" + (act ? " s" + Math.min(act, 3) : ""), act + " of 3 active"));
+      if(act >= 3) h.appendChild(el("span", "chip warn", "Review by Bella and Alisa"));
+      card.appendChild(h);
+      g.list.forEach(function(w){
+        var it = el("div", "wn-item" + (w.active ? "" : " off"));
+        var top = el("div"); top.appendChild(el("b", "", "Level " + w.level + ": " + w.levelName)); top.appendChild(document.createTextNode(" | " + (WN_CAT[w.category] || w.category)));
+        it.appendChild(top);
+        it.appendChild(el("div", "", w.reason));
+        var meta = el("div", "meta", "Given " + wnDay(w.givenOn) + " by " + w.createdBy + (w.active ? " | counts until " + wnDay(w.expiresOn) : (w.removedAt ? " | removed by " + w.removedBy + ": " + w.removedReason : " | expired")) + (w.property ? " | " + roomFirst(w.property) : "") + (w.res ? " | #" + w.res : ""));
+        it.appendChild(meta);
+        if(w.helpscoutUrl){ var a = el("a", "", "Open in HelpScout"); a.href = w.helpscoutUrl; a.target = "_blank"; a.rel = "noopener"; it.appendChild(a); }
+        if(d.admin && !w.removedAt){ var rb = el("button", "btn ghost small", "Remove"); rb.type = "button"; rb.style.marginLeft = "8px";
+          rb.addEventListener("click", function(){ var why = prompt("Why is this warning being removed? (kept in the log)"); if(!why || why.trim().length < 3) return;
+            rb.disabled = true; wnFetch("warnings-remove", { id: w.id, reason: why.trim() }).then(function(){ WN.data = null; wnLoad(); }).catch(function(e){ rb.disabled = false; alert(e.message); }); });
+          it.appendChild(rb); }
+        card.appendChild(it);
+      });
+      host.appendChild(card);
+    });
+  }
+  $("wnShow").addEventListener("change", function(){ WN.show = this.value; wnRender(); });
+  $("wnQ").addEventListener("input", function(){ WN.q = this.value.trim().toLowerCase(); wnRender(); });
+
+  var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables", reviews:"Reviews", scores:"Scores", warn:"Warnings", insp:"Inspections", sched:"Schedule" };
   function setTab(t){
     state.tab = t;
     document.querySelectorAll(".tab").forEach(function(b){ b.setAttribute("aria-selected", String(b.getAttribute("data-tab") === t)); });
     $("sectionTitle").textContent = TITLES[t];
-    var day = t === "cleans" || t === "attention", spring = t === "spring", cons = t === "cons", rv = t === "reviews", insp = t === "insp", sched = t === "sched", scr = t === "scores";
-    $("dayView").hidden = !day; $("insView").hidden = day || spring || cons || rv || insp || sched || scr; $("scView").hidden = !scr; $("springView").hidden = !spring; $("consView").hidden = !cons; $("rvView").hidden = !rv;
+    var day = t === "cleans" || t === "attention", spring = t === "spring", cons = t === "cons", rv = t === "reviews", insp = t === "insp", sched = t === "sched", scr = t === "scores", wn = t === "warn";
+    $("dayView").hidden = !day; $("insView").hidden = day || spring || cons || rv || insp || sched || scr || wn; $("wnView").hidden = !wn; $("scView").hidden = !scr; $("springView").hidden = !spring; $("consView").hidden = !cons; $("rvView").hidden = !rv;
     $("b4InspView").hidden = !insp; $("b4SchedView").hidden = !sched;
     $("pcBox").hidden = t !== "props"; $("assetBox").hidden = t !== "props"; if(t === "props"){ pcInit(); assetsInit(); }
     if(insp){ inspLoad(); }
     else if(sched){ schedTab(); }
     else if(scr){ scLoad(); }
+    else if(wn){ wnLoad(); }
     else if(rv){ if(RV.data) rvRender(); else rvLoad(); }
     else if(cons){ $("consMsg").className = "msg"; $("consMsg").textContent = "Loading..."; consLoad(true).catch(function(e){ $("consMsg").className = "msg err"; $("consMsg").textContent = e.message; }); }
     else if(spring) spLoad(); else if(day){ if(state.rows.length) renderRows(); } else loadIns();
@@ -3114,5 +3231,23 @@ window.phhAssets = function(host, post, opts){
   window.phhAssetPick = function(pid){ S.want = pid; if(S.props.length){ q.value = ""; options(); sel.value = pid; S.want = null; if(sel.value === String(pid)){ S.edit = null; load(); } } };
   post("b4-props", opts.includeTest ? { includeTest:true } : {}).then(function(j){ S.props = (j.properties || []).map(function(p){ return p.id === "TEST-DEMO" ? Object.assign({}, p, { name: p.name + " (practice)" }) : p; }); options(); if(S.want) window.phhAssetPick(S.want); }).catch(function(e){ say(e.message, true); });
 };
+</script>
+<script>
+/* Australian dates (Ian, 11 Nov meeting): a browser set to US English shows date boxes as MM/DD/YYYY ("11/10" for 10 Nov).
+   Every date box gets a small day-first label next to it, e.g. "Tue 10 Nov 2026". Kept in step on change and every second. */
+(function(){
+  function fmt(v){ if(!/^\d{4}-\d{2}-\d{2}$/.test(v || "")) return ""; try{ return new Date(v + "T12:00:00Z").toLocaleDateString("en-AU", { timeZone:"UTC", weekday:"short", day:"numeric", month:"short", year:"numeric" }); }catch(e){ return ""; } }
+  function tag(i){
+    if(!i || i.type !== "date") return;
+    var s = i._auTag;
+    if(!s || !s.isConnected){ s = document.createElement("span"); s.className = "au-date"; s.setAttribute("aria-hidden", "true"); s.style.cssText = "font-size:12px;color:#5b6b7a;white-space:nowrap;margin:0 6px;align-self:center"; i.insertAdjacentElement("afterend", s); i._auTag = s; }
+    var t = fmt(i.value); if(s.textContent !== t) s.textContent = t;
+  }
+  function scan(){ var l = document.querySelectorAll('input[type="date"]'); for(var k = 0; k < l.length; k++) tag(l[k]); }
+  document.addEventListener("input", function(e){ tag(e.target); }, true);
+  document.addEventListener("change", function(e){ tag(e.target); }, true);
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", scan); else scan();
+  setInterval(scan, 1000);
+})();
 </script>
 </body></html>

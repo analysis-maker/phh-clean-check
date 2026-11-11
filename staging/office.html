@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261111053544"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261111064217"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1610,6 +1610,12 @@ html,body{overflow-x:clip}
         if(render) consRender(rows);
       });
   }
+  function consMark(id, undo){
+    return fetch("https://rxhpnowszmetjxbwylil.supabase.co/rest/v1/rpc/qa_consumables_mark_collected", { method:"POST",
+      headers:{ "content-type":"application/json", "apikey":"sb_publishable_JaFEZTFufkk0hrminCZdXQ_fQFJ0kLb" }, body: JSON.stringify({ p_code: CODE, p_run_id: id, p_undo: undo }) })
+      .then(function(r){ if(!r.ok) throw new Error("Could not save. Try again in a minute."); return r.json(); })
+      .then(function(j){ if(!j || !j.ok) throw new Error((j && j.error) || "Could not save."); return j; });
+  }
   function consWhen(t){ return t ? new Date(t).toLocaleString("en-AU", { timeZone:"Australia/Sydney", weekday:"short", day:"numeric", month:"short", hour:"numeric", minute:"2-digit" }).replace(/\s?(am|pm)/i, function(x){ return x.trim().toLowerCase(); }) : ""; }
   function consRender(rows){
     var body = $("consRows"); body.innerHTML = "";
@@ -1632,6 +1638,17 @@ html,body{overflow-x:clip}
         if(r.missingNote){ cc.appendChild(el("br")); cc.appendChild(el("span", "sub", "\u201c" + r.missingNote + "\u201d")); }
         cc.appendChild(el("br")); cc.appendChild(el("span", "sub", "Reported " + consWhen(r.missingAt))); }
       else if(r.checkedAt){ cc.appendChild(el("br")); cc.appendChild(el("span", "sub", "All there")); }
+      /* 11 Nov 2026 (plan 1.5): the Process Street run is finished when the bags are labelled, so the office marks collection by hand. */
+      var office = r.pickedUpBy && / \(office\)$/.test(r.pickedUpBy);
+      if((r.labelledAt && !r.pickedUpAt) || office){
+        if(cc.textContent) cc.appendChild(el("br"));
+        var mb = el("button", "linkbtn", office ? "Undo" : "Mark collected"); mb.type = "button";
+        mb.addEventListener("click", function(){
+          mb.disabled = true;
+          consMark(r.id, !!office).then(function(){ return consLoad(true); }).catch(function(err){ $("consMsg").className = "msg err"; $("consMsg").textContent = err.message; mb.disabled = false; });
+        });
+        cc.appendChild(mb);
+      }
       body.appendChild(tr);
     });
     $("consMsg").className = "msg"; $("consMsg").textContent = rows.length ? "" : "No consumables orders in the last 30 days.";

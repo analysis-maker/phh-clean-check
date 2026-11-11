@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261111050324"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261111053544"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1149,7 +1149,7 @@ html,body{overflow-x:clip}
     var h = el("td", "", r.hhCleaner || "Not assigned"); h.setAttribute("data-l", "Housekeeper"); tr.appendChild(h);
     var dh = el("td", "nowrap", r.hhCleanedAt ? localTime(r.hhCleanedAt) : ""); dh.setAttribute("data-l", "HomHero"); tr.appendChild(dh);
     var cc = el("td", "nowrap" + (r.submitted || r.onCleanCheck ? "" : " sub"), r.submitted ? time(r.submittedAt) : (r.onCleanCheck ? "" : "n/a")); cc.setAttribute("data-l", "Clean check"); cc.title = r.onCleanCheck || r.submitted ? "" : "This housekeeper is not on Clean Check yet"; tr.appendChild(cc);
-    var ct = el("td", "nowrap", r.checkMins === null && r.arrivedAt ? "Since " + time(r.arrivedAt) : hm(r.checkMins)); ct.setAttribute("data-l", "Time on site"); tr.appendChild(ct);
+    var ct = el("td", "nowrap" + (r.keysAtEnd ? " sub" : ""), r.keysAtEnd ? "Not known" : (r.checkMins === null && r.arrivedAt && !r.submitted ? "Since " + time(r.arrivedAt) : hm(r.checkMins))); if(r.keysAtEnd) ct.title = "Keys photo taken at the end of the clean, so time on site isn't known"; ct.setAttribute("data-l", "Time on site"); tr.appendChild(ct);
     var ph = el("td", "", r.submitted ? String(r.photoCount || 0) : (r.hhPhotos !== null && r.hhPhotos !== undefined ? r.hhPhotos + " in HH" : "")); ph.setAttribute("data-l", "Photos"); tr.appendChild(ph);
     tr.appendChild(scoreCell(r));
     tr.appendChild(flagCell(r));
@@ -1230,7 +1230,7 @@ html,body{overflow-x:clip}
     add("Clean check", r.submitted ? time(r.submittedAt) : "");
     add("Arrived (keys photo)", r.arrivedAt ? time(r.arrivedAt) : "");
     if(r.submitted) add("Keys photo location", locText(r.keysLoc));
-    add("Time on site (keys photo to Complete)", hm(r.checkMins));
+    add("Time on site (keys photo to Complete)", r.keysAtEnd ? "Not known (keys photo taken at the end)" : hm(r.checkMins));
     add("Items N/A", r.submitted ? String(r.naCount) : "");
     add("Next guests", nextGuests(r));
     if(preDue(r) && (r.nextPreInspection !== null || r.nextPreMaintenance !== null))
@@ -1293,9 +1293,9 @@ html,body{overflow-x:clip}
   }
 
   /* ---------- Housekeepers and properties ---------- */
-  var FLAGNAME = { duplicate:"Reused photo", timing:"Photos all at the end", order:"HomHero before check", late:"After 3pm", na:"Many N/A", old:"Old photos", bbq:"No BBQ", rooms:"Rooms missing", maint:"Maintenance", consumables:"Consumables",
+  var FLAGNAME = { duplicate:"Reused photo", timing:"Photos all at the end", short:"Short visit", order:"HomHero before check", late:"After 3pm", na:"Many N/A", old:"Old photos", bbq:"No BBQ", rooms:"Rooms missing", maint:"Maintenance", consumables:"Consumables",
     ai_wrong_photo:"Wrong photo (AI)", ai_not_clean:"Not clean (AI)", ai_presentation:"Presentation (AI)", ai_unclear_photo:"Unclear photo (AI)", ai_same_scene:"Same scene twice (AI)", ai_other:"Other (AI)" };
-  var SKIP = { maint:1, consumables:1, bbq:1 };
+  var SKIP = { maint:1, consumables:1, bbq:1, keys_end:1 };
   function topFlags(fc){
     return Object.keys(fc || {}).filter(function(k){ return !SKIP[k]; }).sort(function(a, b){ return fc[b] - fc[a]; }).slice(0, 3)
       .map(function(k){ return (FLAGNAME[k] || k) + " " + fc[k]; }).join(", ");
@@ -1313,8 +1313,8 @@ html,body{overflow-x:clip}
     $("insTitle").textContent = hk ? "Housekeepers on Clean Check" : "Properties with clean checks";
     var head = $("insHead"), body = $("insRows"); head.innerHTML = ""; body.innerHTML = "";
     var cols = hk
-      ? ["Housekeeper", "Cleans done", "Checks", "Check rate", "Missing", "AI score", "Below standard", "Average time on site", "Short visits", "Most common flags"]
-      : ["Property", "Checks", "AI score", "Below standard", "Average time on site", "Short visits", "Most common flags"];
+      ? ["Housekeeper", "Cleans done", "Checks", "Check rate", "Missing", "AI score", "Below standard", "Average time on site", "Short visits", "Keys photo at end", "Most common flags"]
+      : ["Property", "Checks", "AI score", "Below standard", "Average time on site", "Short visits", "Keys photo at end", "Most common flags"];
     var htr = el("tr"); cols.forEach(function(c){ htr.appendChild(el("th", "", c)); }); head.appendChild(htr);
     var list = hk ? j.cleaners : j.properties;
     list.forEach(function(x){
@@ -1332,6 +1332,7 @@ html,body{overflow-x:clip}
       cell("Below standard", String(x.belowStandard));
       cell("Average time on site", hm(x.avgCheckMins) || "-");
       var sv = cell("Short visits", String(x.shortVisits || 0)); if(x.shortVisits) sv.style.color = "var(--miss)";
+      cell("Keys photo at end", String(x.keysAtEnd || 0));
       cell("Most common flags", topFlags(x.flagCount) || "None");
       body.appendChild(tr);
     });
@@ -1343,7 +1344,7 @@ html,body{overflow-x:clip}
     } else iss.hidden = true;
     if(hk) $("hknotes").hidden = true; else loadNotes();
     renderNew(hk ? j.newcomers : null); expSetup(hk ? j : null);
-    $("insMsg").textContent = list.length ? "From " + j.from + " to " + j.to + ". Time on site runs from the keys photo (taken on arrival) to Complete. A short visit is under 45 minutes." : "No clean checks in this period yet.";
+    $("insMsg").textContent = list.length ? "From " + j.from + " to " + j.to + ". Time on site runs from the keys photo (taken on arrival) to Complete. A short visit is under 45 minutes. If the keys photo was taken at the end, time on site isn't known: that clean shows under Keys photo at end, not as a short visit." : "No clean checks in this period yet.";
   }
 
   /* New housekeepers' first 5 checks (Batch 1 item 28). */
@@ -1356,7 +1357,7 @@ html,body{overflow-x:clip}
       p.checks.forEach(function(c){
         var item = el("li"); var a = el("a", "", c.property || "Clean"); a.href = "view.html?id=" + encodeURIComponent(c.id) + "&from=office"; item.appendChild(a);
         var bits = [new Date(c.date + "T12:00:00+10:00").toLocaleDateString("en-AU", { timeZone:TZ, day:"numeric", month:"short" })];
-        if(c.score) bits.push("AI " + c.score + "/5"); if(c.mins !== null) bits.push(hm(c.mins) + " on site"); if(c.mins !== null && c.mins < 45) bits.push("short");
+        if(c.score) bits.push("AI " + c.score + "/5"); if(c.keysAtEnd) bits.push("keys photo at end"); else if(c.mins !== null) bits.push(hm(c.mins) + " on site"); if(!c.keysAtEnd && c.mins !== null && c.mins < 45) bits.push("short");
         item.appendChild(document.createTextNode(", " + bits.join(", "))); ol.appendChild(item);
       });
       li.appendChild(ol); ul.appendChild(li);

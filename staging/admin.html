@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261111042354"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261111042609"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -525,7 +525,7 @@ html,body{overflow-x:clip}
   function hkById(id){ return D && D.housekeepers.filter(function(x){ return x.id === id; })[0]; }
   /* Copy code message = the welcome Marson pastes into an email or text. Always carries the How It Works guide and video (Ian, 2 Nov). */
   var GUIDE_PDF = "https://drive.google.com/file/d/1ey89ZX-pvR839gnkHRL2Pz08Co8_91zt/view", GUIDE_VIDEO = "https://drive.google.com/file/d/1ByAaWI-VpATFER-VKVeEO0c0VSFl2iCC/view";
-  function codeMsg(h){ return "Hi " + first(h.name) + ", welcome to Clean Check, our short end-of-clean checklist with a few photos. It takes about 5 minutes and your feedback shapes how it works.\n\nYour code is " + h.code + ". Open " + SITE + " on your phone, add it to your home screen, then tap Turn on so you get a ping when guests have left.\n\nHow it works (1-page guide): " + GUIDE_PDF + "\nShort video: " + GUIDE_VIDEO + "\n\nThanks, Professional Holiday Homes"; }
+  function codeMsg(h){ return "Hi " + first(h.name) + ", welcome to Clean Check, our short end-of-clean checklist with a few photos. It takes about 5 minutes and your feedback shapes how it works.\n\nYour code is " + h.code + ". Open " + SITE + " on your phone, add it to your home screen, then tap Turn on so you get a ping when guests have left.\n\nNo signal at a property? Join the property Wi-Fi (QR code on the fridge). If that's down too, just keep going: your photos save on your phone and send by themselves once you're back in signal (on an iPhone, open the app again to finish sending). Tip: open the app on Wi-Fi in the morning so your day's cleans are loaded.\n\nHow it works (1-page guide): " + GUIDE_PDF + "\nShort video: " + GUIDE_VIDEO + "\n\nThanks, Professional Holiday Homes"; }
   function steps(h){
     var s = [!!h.codeSentAt, !!h.firstSeenAt, h.phones > 0, !!h.firstCheckAt], n = s.filter(Boolean).length;
     var t = ["Code sent", "Signed in", "Notifications on", "First clean check"].map(function(l, i){ return (s[i] ? "Done: " : "Not yet: ") + l; }).join(", ");
@@ -600,7 +600,7 @@ html,body{overflow-x:clip}
   function leadShort(n){ return String(n || "").replace(/\s*\(.*\)\s*$/, ""); }
   /* Welcome for a team member: positive, the guide and video always included (Ian, 28 Oct). */
   function teamMsg(m, leadName){
-    return "Hi " + first(m.name) + ", you're set up on Clean Check for the cleans you do for " + leadShort(leadName) + ". It's our short end-of-clean checklist with a few photos, about 5 minutes, and your feedback shapes how it works.\n\nYour code is " + m.code + ". Open " + SITE + " on your phone, add it to your home screen, then tap Turn on for notifications.\n\nHow it works (1-page guide): " + GUIDE_PDF + "\nShort video: " + GUIDE_VIDEO + "\n\nThanks, Professional Holiday Homes";
+    return "Hi " + first(m.name) + ", you're set up on Clean Check for the cleans you do for " + leadShort(leadName) + ". It's our short end-of-clean checklist with a few photos, about 5 minutes, and your feedback shapes how it works.\n\nYour code is " + m.code + ". Open " + SITE + " on your phone, add it to your home screen, then tap Turn on for notifications.\n\nNo signal at a property? Join the property Wi-Fi (QR code on the fridge). If that's down too, just keep going: your photos save on your phone and send by themselves once you're back in signal (on an iPhone, open the app again to finish sending). Tip: open the app on Wi-Fi in the morning so your day's cleans are loaded.\n\nHow it works (1-page guide): " + GUIDE_PDF + "\nShort video: " + GUIDE_VIDEO + "\n\nThanks, Professional Holiday Homes";
   }
   function loadTeams(){
     $("terr").textContent = "";
@@ -833,7 +833,7 @@ html,body{overflow-x:clip}
   /* ---------- messages ---------- */
   var TPL = [
     { id:"", name:"Blank message", title:"", body:"", guides:false },
-    { id:"welcome", name:"Welcome and code (email)", title:"Welcome to Clean Check", body:"Hi {first}, welcome to Clean Check, our short end-of-clean checklist with a few photos. It takes about 5 minutes and your feedback shapes how it works.\n\nYour code is {code}. Open professionalholidayhomes.com.au/checkcleaning on your phone, add it to your home screen, then tap Turn on so you get a ping when guests have left.\n\nThe one-page guide and a short video are below.", guides:true, channel:"email" },
+    { id:"welcome", name:"Welcome and code (email)", title:"Welcome to Clean Check", body:"Hi {first}, welcome to Clean Check, our short end-of-clean checklist with a few photos. It takes about 5 minutes and your feedback shapes how it works.\n\nYour code is {code}. Open professionalholidayhomes.com.au/checkcleaning on your phone, add it to your home screen, then tap Turn on so you get a ping when guests have left.\n\nNo signal at a property? Join the property Wi-Fi (QR code on the fridge). If that's down too, just keep going: your photos save on your phone and send by themselves once you're back in signal (on an iPhone, open the app again to finish sending). Tip: open the app on Wi-Fi in the morning so your day's cleans are loaded.\n\nThe one-page guide and a short video are below.", guides:true, channel:"email" },
     { id:"start", name:"Your start date", title:"Your Clean Check start date", body:"Hi {first}, from {start} please do a Clean Check at the end of each departure clean, before marking it done in HomHero. Thanks for being part of it, and tell us anything that would make it easier.", guides:true },
     { id:"reminder", name:"Friendly reminder", title:"Quick Clean Check reminder", body:"Hi {first}, a quick reminder to tap Complete clean in Clean Check before marking the clean done in HomHero. Thanks so much.", guides:false },
     { id:"thanks", name:"Thank you", title:"Thank you", body:"Hi {first}, thank you for your clean checks this month. They really help, and the photos back you up if a guest ever raises anything.", guides:false },

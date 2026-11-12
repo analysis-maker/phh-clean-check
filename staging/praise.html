@@ -106,7 +106,7 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
     c.appendChild(el("p", "prop", it.property || "Your clean"));
     var r = el("p", "rate"); var b = el("b", "", "\u2605\u2605\u2605\u2605\u2605"); r.appendChild(b); r.appendChild(document.createTextNode(" Cleanliness 5 out of 5")); c.appendChild(r);
     if(it.quote) c.appendChild(el("p", "quote", it.quote));
-    else c.appendChild(el("p", "plain", "Full marks for cleanliness. The guest didn't leave a comment, but the score says it all."));
+    else c.appendChild(el("p", "plain", "Full marks for cleanliness. Great job."));
     c.appendChild(el("p", "when", "Guest review, " + day(it.reviewAt) + (site(it.source) ? " (" + site(it.source) + ")" : "")));
     return c;
   }

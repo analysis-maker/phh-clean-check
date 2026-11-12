@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261112041527"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261112044614"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -661,7 +661,7 @@ html,body{overflow-x:clip}
     <div class="wn-tools"><input type="search" id="wnQ" placeholder="Search housekeeper" aria-label="Search housekeeper"><select id="wnShow" aria-label="Show"><option value="active">With an active strike</option><option value="all">Everyone with any warning</option></select></div>
     <p class="msg" id="wnMsg"></p>
     <div id="wnList"></div>
-    <p class="hint">Office only: housekeepers and owners never see this page. Written warnings go out by HelpScout first, then get logged here with the link.</p>
+    <p class="hint">Office only: housekeepers and owners never see this page. Formal warnings go out by HelpScout first, then get logged here with the link.</p>
   </section>
   <section id="b4InspView" hidden>
     <div class="toprow">
@@ -2616,8 +2616,9 @@ html,body{overflow-x:clip}
   function assetsInit(){ if(assetsOn || !window.phhAssets) return; assetsOn = true; window.phhAssets($("assetHost"), post, { includeTest: true }); }
 
   /* ---------- Warnings tab (11 Nov 2026, CST's ask in the weekly review, Ian approved the strike rule). warnings-api, office only. ----------
-     Manual log only, never from the AI. 1 = conversation (logged the same day), 2 = written warning by HelpScout,
-     3 = formal written warning by HelpScout plus a review by Bella and Alisa (their call). Each strike counts for 12 months.
+     Manual log only, never from the AI. 12 Nov (Bella): levels renamed to 1 = first formal warning, 2 = second formal warning,
+     3 = final formal warning, all in writing by HelpScout (link needed for all). Final = review by Bella and Alisa (their call).
+     Each strike counts for 12 months. WN_LEVEL relabels here until warnings-api is redeployed with the same names.
      Only admins remove one, with a reason. Housekeepers and owners never see this page. */
   var WARN_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/warnings-api";
   var WN = { data:null, busy:false, show:"active", q:"" };
@@ -2634,6 +2635,7 @@ html,body{overflow-x:clip}
     ".wn-item .meta{color:var(--muted);font-size:12px}.wn-item.off{opacity:.55}.wn-item a{color:var(--teal-ink)}",
     ".wn-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}.wn-tools input{flex:1 1 200px;padding:8px 10px;border:1px solid var(--line);border-radius:4px;font:inherit}"
   ].join("\n"); document.head.appendChild(st); })();
+  var WN_LEVEL = { 1: "First formal warning", 2: "Second formal warning", 3: "Final formal warning" };
   function wnFetch(route, body){
     body.code = CODE;
     return fetch(WARN_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
@@ -2653,22 +2655,23 @@ html,body{overflow-x:clip}
     var hk = el("select"); hk.appendChild(new Option("Pick a housekeeper", ""));
     d.housekeepers.forEach(function(h){ hk.appendChild(new Option(h.name + (h.live ? "" : " (not on Clean Check yet)"), h.id)); });
     field("Housekeeper", hk);
-    var lv = el("select"); [["", "Pick a level"], ["1", "1: Conversation (logged)"], ["2", "2: Written warning (HelpScout)"], ["3", "3: Formal written warning (HelpScout)"]].forEach(function(o){ lv.appendChild(new Option(o[1], o[0])); });
+    var lv = el("select"); [["", "Pick a level"], ["1", "First formal warning"], ["2", "Second formal warning"], ["3", "Final formal warning"]].forEach(function(o){ lv.appendChild(new Option(o[1], o[0])); });
     field("Level", lv);
     var ct = el("select"); Object.keys(WN_CAT).forEach(function(k){ ct.appendChild(new Option(WN_CAT[k], k)); });
     field("What it was for", ct);
     var dt = el("input"); dt.type = "date"; dt.value = d.today; dt.max = d.today; field("Date given", dt);
     var rs = el("input"); rs.placeholder = "e.g. 267195 (optional)"; rs.inputMode = "numeric"; field("Booking number", rs);
-    var hs = el("input"); hs.placeholder = "https://secure.helpscout.net/conversation/..."; field("HelpScout link (needed for 2 and 3)", hs);
+    var hs = el("input"); hs.placeholder = "https://secure.helpscout.net/conversation/..."; field("HelpScout link (needed)", hs);
     var rn = el("textarea"); rn.placeholder = "What happened, and what was agreed. Keep it factual."; field("Reason", rn, true);
     var bar = el("div", "wide"); var go = el("button", "btn", "Save warning"); go.type = "button"; var m = el("span", "msg"); m.style.marginLeft = "10px";
     bar.appendChild(go); bar.appendChild(m); box.appendChild(bar);
     go.addEventListener("click", function(){
       if(!hk.value){ m.className = "msg err"; m.textContent = "Pick a housekeeper."; return; }
       if(!lv.value){ m.className = "msg err"; m.textContent = "Pick a level."; return; }
+      if(!/^https?:\/\//.test(hs.value.trim())){ m.className = "msg err"; m.textContent = "Every level is a formal warning: send it by HelpScout first, then add the link."; return; }
       var active = d.warnings.filter(function(w){ return w.active && w.cleanerId === hk.value; }).length;
       var nm = hk.options[hk.selectedIndex].text;
-      if(!confirm("Save a level " + lv.value + " warning for " + nm + "?" + (active ? "\nThey already have " + active + " active." : ""))) return;
+      if(!confirm("Save a " + WN_LEVEL[lv.value].toLowerCase() + " for " + nm + "?" + (active ? "\nThey already have " + active + " active." : ""))) return;
       go.disabled = true; m.className = "msg"; m.textContent = "Saving...";
       wnFetch("warnings-add", { cleanerId: hk.value, level: Number(lv.value), category: ct.value, givenOn: dt.value, res: rs.value.trim(), helpscoutUrl: hs.value.trim(), reason: rn.value.trim() })
         .then(function(){ go.disabled = false; m.textContent = "Saved."; WN.data = null; wnLoad(); })
@@ -2679,7 +2682,7 @@ html,body{overflow-x:clip}
     var d = WN.data; if(!d) return;
     $("wnRule").innerHTML = "";
     var r = $("wnRule");
-    r.appendChild(el("b", "", "Strike rule. ")); r.appendChild(document.createTextNode("Only a confirmed housekeeping fault counts: a guest review or complaint checked against the photos, booking notes and the clean after the stay; a below-standard clean confirmed by a person; or a failed inspection. Never from the AI alone. Missed clean checks are chased, not strikes, during rollout. 1 = conversation, logged the same day. 2 = written warning by HelpScout. 3 = formal written warning by HelpScout and a review by Bella and Alisa. Each strike counts for 12 months. Every strike is told to the housekeeper in writing, never through the app."));
+    r.appendChild(el("b", "", "Strike rule. ")); r.appendChild(document.createTextNode("Only a confirmed housekeeping fault counts: a guest review or complaint checked against the photos, booking notes and the clean after the stay; a below-standard clean confirmed by a person; or a failed inspection. Never from the AI alone. Missed clean checks are chased, not strikes, during rollout. Levels: first formal warning, second formal warning, final formal warning. Each one is sent by HelpScout first, then logged here with the link. A final formal warning means a review by Bella and Alisa. Each strike counts for 12 months. Every strike is told to the housekeeper in writing, never through the app."));
     wnForm();
     var by = {}; d.warnings.forEach(function(w){ (by[w.cleanerId] = by[w.cleanerId] || { name: w.cleanerName, list: [] }).list.push(w); });
     var ids = Object.keys(by).filter(function(id){
@@ -2690,7 +2693,7 @@ html,body{overflow-x:clip}
     var host = $("wnList"); host.innerHTML = "";
     var actAll = d.warnings.filter(function(w){ return w.active; });
     $("wnSum").innerHTML = "";
-    [["Active strikes", actAll.length], ["Housekeepers with a strike", Object.keys(by).filter(function(id){ return by[id].list.some(function(w){ return w.active; }); }).length], ["At 3 (review due)", Object.keys(by).filter(function(id){ return by[id].list.filter(function(w){ return w.active; }).length >= 3; }).length]].forEach(function(c){ var s = el("span", "sc-chip"); s.appendChild(document.createTextNode(c[0] + " ")); s.appendChild(el("b", "", String(c[1]))); $("wnSum").appendChild(s); });
+    [["Active strikes", actAll.length], ["Housekeepers with a strike", Object.keys(by).filter(function(id){ return by[id].list.some(function(w){ return w.active; }); }).length], ["At final warning (review due)", Object.keys(by).filter(function(id){ return by[id].list.filter(function(w){ return w.active; }).length >= 3; }).length]].forEach(function(c){ var s = el("span", "sc-chip"); s.appendChild(document.createTextNode(c[0] + " ")); s.appendChild(el("b", "", String(c[1]))); $("wnSum").appendChild(s); });
     if(!ids.length){ host.appendChild(el("p", "msg", d.warnings.length ? "Nothing matches." : "No warnings logged yet.")); return; }
     ids.forEach(function(id){
       var g = by[id], act = g.list.filter(function(w){ return w.active; }).length;
@@ -2700,7 +2703,7 @@ html,body{overflow-x:clip}
       card.appendChild(h);
       g.list.forEach(function(w){
         var it = el("div", "wn-item" + (w.active ? "" : " off"));
-        var top = el("div"); top.appendChild(el("b", "", "Level " + w.level + ": " + w.levelName)); top.appendChild(document.createTextNode(" | " + (WN_CAT[w.category] || w.category)));
+        var top = el("div"); top.appendChild(el("b", "", WN_LEVEL[w.level] || w.levelName)); top.appendChild(document.createTextNode(" | " + (WN_CAT[w.category] || w.category)));
         it.appendChild(top);
         it.appendChild(el("div", "", w.reason));
         var meta = el("div", "meta", "Given " + wnDay(w.givenOn) + " by " + w.createdBy + (w.active ? " | counts until " + wnDay(w.expiresOn) : (w.removedAt ? " | removed by " + w.removedBy + ": " + w.removedReason : " | expired")) + (w.property ? " | " + roomFirst(w.property) : "") + (w.res ? " | #" + w.res : ""));

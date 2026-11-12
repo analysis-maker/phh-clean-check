@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261112045117"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261112051120"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -787,6 +787,16 @@ html,body{overflow-x:clip}
     return fetch(CLEAN_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
       .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
   }
+  /* 9 Nov 2026 (live 12 Nov, Ian "go"): phone ping to the housekeeper after the office writes on a clean. msg-push decides who gets it
+     (qa_secrets office_msg_push_live = on) and never includes the message text. A failed ping never blocks the message. */
+  var MSG_PUSH = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/msg-push";
+  function msgPing(res, out){
+    fetch(MSG_PUSH + "/office-msg", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: CODE, res: res }) })
+      .then(function(r){ return r.json(); }).then(function(j){
+        if(!out || !j) return;
+        out.textContent = j.sent ? "Sent. Their phone got a ping." : j.skipped === "notifications not on" ? "Sent. No ping: their notifications are off, they'll see it in the app." : j.skipped === "pinged in the last 15 minutes" ? "Sent. They were pinged a few minutes ago." : "Sent. Shows in their app (no phone ping).";
+      }).catch(function(){});
+  }
   /* Spring cleans (5 Nov 2026): their own function, spring-api. */
   var SPRING_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/spring-api";
   function spost(route, body){
@@ -836,7 +846,7 @@ html,body{overflow-x:clip}
     ta.addEventListener("input", function(){ TH.draft[r.res] = ta.value; });
     ta.addEventListener("click", function(e){ e.stopPropagation(); });
     var send = el("button", "btn small", "Send"); send.type = "button";
-    var said = el("span", "sub", "Shows in the housekeeper's app for this clean. They can reply. No notification is sent.");
+    var said = el("span", "sub", "Shows in the housekeeper's app for this clean. They can reply. Their phone gets a ping if notifications are on.");
     var draw = function(j){
       list.innerHTML = "";
       ((j && j.comments) || []).forEach(function(c){ var m = el("div", "m" + (c.kind === "housekeeper" ? " hk" : "")); m.appendChild(el("b", "", (c.kind === "office" ? c.name + " (office)" : c.name) + ", " + new Date(c.at).toLocaleString("en-AU", { timeZone:TZ, day:"numeric", month:"short", hour:"numeric", minute:"2-digit" }))); m.appendChild(document.createTextNode(c.text)); list.appendChild(m); });
@@ -849,6 +859,7 @@ html,body{overflow-x:clip}
       cpost("thread-post", { res: r.res, text: t }).then(function(j){
         TH.threads[r.res] = j; TH.draft[r.res] = ""; ta.value = ""; send.disabled = false; draw(j);
         r.flags = (r.flags || []).filter(function(f){ return !f.th; }); renderStrip();
+        msgPing(r.res, said);
       }).catch(function(er){ send.disabled = false; said.textContent = er.message; });
     });
     wrap.appendChild(ta); var ag = el("div", "agree"); ag.appendChild(send); ag.appendChild(said); wrap.appendChild(ag);
@@ -1591,6 +1602,12 @@ html,body{overflow-x:clip}
         if(render) consRender(rows);
       });
   }
+  function consMark(id, undo){
+    return fetch("https://rxhpnowszmetjxbwylil.supabase.co/rest/v1/rpc/qa_consumables_mark_collected", { method:"POST",
+      headers:{ "content-type":"application/json", "apikey":"sb_publishable_JaFEZTFufkk0hrminCZdXQ_fQFJ0kLb" }, body: JSON.stringify({ p_code: CODE, p_run_id: id, p_undo: undo }) })
+      .then(function(r){ if(!r.ok) throw new Error("Could not save. Try again in a minute."); return r.json(); })
+      .then(function(j){ if(!j || !j.ok) throw new Error((j && j.error) || "Could not save."); return j; });
+  }
   function consWhen(t){ return t ? new Date(t).toLocaleString("en-AU", { timeZone:"Australia/Sydney", weekday:"short", day:"numeric", month:"short", hour:"numeric", minute:"2-digit" }).replace(/\s?(am|pm)/i, function(x){ return x.trim().toLowerCase(); }) : ""; }
   function consRender(rows){
     var body = $("consRows"); body.innerHTML = "";
@@ -1613,6 +1630,17 @@ html,body{overflow-x:clip}
         if(r.missingNote){ cc.appendChild(el("br")); cc.appendChild(el("span", "sub", "\u201c" + r.missingNote + "\u201d")); }
         cc.appendChild(el("br")); cc.appendChild(el("span", "sub", "Reported " + consWhen(r.missingAt))); }
       else if(r.checkedAt){ cc.appendChild(el("br")); cc.appendChild(el("span", "sub", "All there")); }
+      /* 11 Nov 2026 (plan 1.5): the Process Street run is finished when the bags are labelled, so the office marks collection by hand. */
+      var office = r.pickedUpBy && / \(office\)$/.test(r.pickedUpBy);
+      if((r.labelledAt && !r.pickedUpAt) || office){
+        if(cc.textContent) cc.appendChild(el("br"));
+        var mb = el("button", "linkbtn", office ? "Undo" : "Mark collected"); mb.type = "button";
+        mb.addEventListener("click", function(){
+          mb.disabled = true;
+          consMark(r.id, !!office).then(function(){ return consLoad(true); }).catch(function(err){ $("consMsg").className = "msg err"; $("consMsg").textContent = err.message; mb.disabled = false; });
+        });
+        cc.appendChild(mb);
+      }
       body.appendChild(tr);
     });
     $("consMsg").className = "msg"; $("consMsg").textContent = rows.length ? "" : "No consumables orders in the last 30 days.";

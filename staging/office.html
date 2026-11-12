@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261112044614"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261112052046"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -194,6 +194,7 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
 .sev-high{color:var(--miss);font-weight:700}
 .sev-medium{color:var(--warn);font-weight:700}
 .sev-low{color:var(--muted);font-weight:700}
+.sev-minor{color:var(--muted);font-weight:400;font-style:italic}
 .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .agree{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
 .agree input{flex:1 1 200px;border:1px solid var(--line);border-radius:4px;padding:7px 8px}
@@ -1130,8 +1131,11 @@ html,body{overflow-x:clip}
     var td = el("td", "col-flags"); var c = el("div", "chips");
     if(r.status === "missing") c.appendChild(el("span", "chip warn", "No clean check"));
     if(r.ai && r.ai.status === "done"){
-      (r.ai.flags || []).slice(0, 3).forEach(function(f){ c.appendChild(el("span", "chip " + (f.severity === "low" ? "info" : "warn"), f.label)); });
-      if((r.ai.flags || []).length > 3) c.appendChild(el("span", "chip", "+" + (r.ai.flags.length - 3) + " more"));
+      /* 12 Nov 2026 (plan 1.7, staging): "minor" AI notes never get a chip of their own, just a quiet count. */
+      var mainF = (r.ai.flags || []).filter(function(f){ return f.severity !== "minor"; }), minorN = (r.ai.flags || []).length - mainF.length;
+      mainF.slice(0, 3).forEach(function(f){ c.appendChild(el("span", "chip " + (f.severity === "low" ? "info" : "warn"), f.label)); });
+      if(mainF.length > 3) c.appendChild(el("span", "chip", "+" + (mainF.length - 3) + " more"));
+      if(minorN) c.appendChild(el("span", "chip", minorN + " minor note" + (minorN > 1 ? "s" : "")));
     }
     r.flags.forEach(function(f){ c.appendChild(el("span", "chip " + f.tone, f.label)); });
     td.appendChild(c); return td;
@@ -1175,8 +1179,9 @@ html,body{overflow-x:clip}
         left.appendChild(el("p", "", r.ai.score + "/5, " + verdict + ". " + (r.ai.summary || "")));
         if((r.ai.flags || []).length){
           var ul = el("ul");
-          r.ai.flags.forEach(function(f){
-            var li = el("li"); li.appendChild(el("span", "sev-" + (f.severity || "low"), f.label));
+          var rank = { high: 0, medium: 1, low: 2, minor: 3 };
+          r.ai.flags.slice().sort(function(a, b){ return (rank[a.severity] == null ? 2 : rank[a.severity]) - (rank[b.severity] == null ? 2 : rank[b.severity]); }).forEach(function(f){
+            var li = el("li"); li.appendChild(el("span", "sev-" + (f.severity || "low"), (f.severity === "minor" ? "Minor: " : "") + f.label));
             if(f.note) li.appendChild(document.createTextNode(". " + f.note));
             ul.appendChild(li);
           });

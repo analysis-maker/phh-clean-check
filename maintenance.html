@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261111061552"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261112032817"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -111,6 +111,23 @@ tr.rep td:first-child{box-shadow:inset 4px 0 0 #c62828}
 .metabox .sub{font-size:12px}
 /* Batch 4 (8 Nov 2026, staging): bill to owner, trade job links, asset register. */
 .chip.bill{background:#fff3cd;color:#6b4e00}
+/* 12 Nov 2026 (Angus meeting, live 12 Nov): owner emails, gas round, filter note. */
+.chip.own{background:#e3f0fb;color:#1b5f90}
+.chip.optout{background:#fdecea;color:#8a1f11}
+.fnote{font-size:12px;color:var(--muted);margin:-6px 0 10px}
+.gasround{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:8px 0 2px;border-top:1px solid var(--line-2);margin-top:6px}
+.gasround .due{color:#a11d1d;font-weight:600}
+.gasround input[type=date]{padding:5px 6px;border:1px solid var(--line);border-radius:4px;font:inherit}
+.commgrid{display:grid;gap:8px}
+.commgrid label{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+.commgrid input,.commgrid select,.commgrid textarea{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:4px;font:inherit;box-sizing:border-box}
+.commgrid textarea{min-height:220px;line-height:1.45}
+.commlist{list-style:none;margin:0;padding:0}
+.commlist li{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 0;border-top:1px solid var(--line-2)}
+.commlist li:first-child{border-top:0}
+.commlist .p{font-weight:600}
+.commlist .w{color:var(--muted);font-size:12px}
+.commlist li .btn{margin-left:auto}
 .b4box{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
 .b4box h3{margin:0 0 6px}
 .b4box .row,.box2 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -377,12 +394,13 @@ html,body{overflow-x:clip}
   <button class="tab" role="tab" data-tab="props" aria-selected="false">By property</button>
   <button class="tab" role="tab" data-tab="bills" aria-selected="false">Bill to owner</button>
   <button class="tab" role="tab" data-tab="assets" aria-selected="false">Assets</button>
+  <button class="tab" role="tab" data-tab="comm" aria-selected="false">Owner emails</button>
 </nav>
 <main>
   <p class="trial">Maintenance issues housekeepers log in Clean Check, with their photos. Each one is also a HomHero maintenance job: assign and update it in HomHero as usual. Status here follows HomHero (checked every 10 minutes).</p>
   <div class="pushbox" id="pushbox" hidden></div>
   <section class="repeatbox" id="repeatbox" hidden aria-labelledby="reph"><h2 id="reph">Repeat faults</h2><ul id="replist"></ul></section>
-  <section class="gasbox" id="gasbox" hidden aria-labelledby="gash"><h2 id="gash">Gas requests from housekeepers</h2><ul id="gaslist"></ul></section>
+  <section class="gasbox" id="gasbox" aria-labelledby="gash"><h2 id="gash">Gas</h2><ul id="gaslist"></ul><div class="gasround" id="gasround"><span><b>House gas round</b> (every 14 days)</span><span id="grText">Loading...</span><input type="date" id="grDate" aria-label="Date the round was done"><button class="btn small" type="button" id="grDone">Round done</button><span class="w" id="grMsg"></span></div></section>
   <div class="filters" id="filters">
     <input type="search" id="q" placeholder="Search property or issue" aria-label="Search property or issue" autocomplete="off">
     <select id="urg" aria-label="Priority"><option value="">All priorities</option><option value="urgent">Urgent</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option></select>
@@ -391,6 +409,7 @@ html,body{overflow-x:clip}
     <button class="btn ghost small" id="refresh" type="button">Refresh</button>
   </div>
   <div class="strip" id="strip"></div>
+  <p class="fnote" id="fnote" hidden></p>
   <p class="msg" id="msg">Loading...</p>
   <div class="tablewrap" id="wrap" hidden>
     <table>
@@ -408,6 +427,31 @@ html,body{overflow-x:clip}
       <button class="btn small" id="billGo" type="button">Download</button>
     </div>
     <p class="msg" id="billMsg"></p>
+  </section>
+  <!-- 12 Nov 2026 (Angus): owner emails. Sent from the Help Scout Maintenance mailbox (maintenance@) as Angus, one email per tap. -->
+  <section class="box2" id="commBox" hidden>
+    <h3>Owner emails</h3>
+    <p class="hint">Pick any property, use one of your saved replies or write your own, then tap Send. It goes from maintenance@professionalholidayhomes.com.au as Angus, with your Help Scout signature, and is kept in the Maintenance mailbox. Owner names, emails and "Maintenance Opt Out" come from the PHH Property Database.</p>
+    <div class="commgrid" id="comp">
+      <div><label for="cProp">Property</label><input id="cProp" list="cProps" autocomplete="off" placeholder="Start typing a property"><datalist id="cProps"></datalist></div>
+      <div><label for="cIssue">Issue (optional)</label><input id="cIssue" placeholder="What needs fixing"></div>
+      <div><label for="cTpl">Template</label><select id="cTpl"><option value="optout">Owner opted out of PHH maintenance</option><option value="owner">Owner to arrange (outside PHH maintenance)</option><option value="own">Write your own email</option></select></div>
+      <div class="row"><button class="btn small" type="button" id="cGo">Write email</button><span class="w" id="cInfo"></span></div>
+      <div id="cOut" hidden class="commgrid">
+        <div><label for="cTo">To</label><input id="cTo"></div>
+        <div><label for="cSub">Subject</label><input id="cSub"></div>
+        <div><label for="cBody">Email</label><textarea id="cBody"></textarea></div>
+        <div class="row"><button class="btn small" type="button" id="cSend">Send from Maintenance (as Angus)</button><span class="w" id="cSent"></span></div>
+        <div class="row"><button class="btn ghost small" type="button" id="cCopyTo">Copy email address</button><button class="btn ghost small" type="button" id="cCopySub">Copy subject</button><button class="btn ghost small" type="button" id="cCopy">Copy email</button><a class="btn ghost small" id="cHS" target="_blank" rel="noopener" href="https://secure.helpscout.net/mailbox/e502c1f2b6e65049/">Open Help Scout</a><button class="btn ghost small" type="button" id="cMark">Mark as emailed</button><span class="w" id="cMsg"></span></div>
+      </div>
+    </div>
+    <h3 style="margin-top:16px">Open issues at owners who opted out of PHH maintenance</h3>
+    <ul class="commlist" id="cOpt"></ul>
+    <h3 style="margin-top:16px">All properties</h3>
+    <div class="commgrid"><div><label for="cFind">Find a property or owner</label><input id="cFind" placeholder="Type to filter" autocomplete="off"></div></div>
+    <ul class="commlist" id="cAll"></ul>
+    <h3 style="margin-top:16px">Owner emails (last 60 days)</h3>
+    <ul class="commlist" id="cLog"></ul>
   </section>
   <section class="box2" id="assetBox" hidden>
     <h3>Asset register</h3>
@@ -492,13 +536,13 @@ html,body{overflow-x:clip}
   var $ = function(id){ return document.getElementById(id); };
   var params = new URLSearchParams(location.search);
   var FOCUS = params.get("k") || "";
-  var state = { tab: FOCUS ? "all" : "open", q: "", urg: "", forr: "", days: 60, issues: [], repeats: [], open: {}, bills: {}, trades: {} };
+  var state = { tab: FOCUS ? "all" : "open", q: "", urg: "", forr: "", days: 60, issues: [], repeats: [], open: {}, bills: {}, trades: {}, owners: {}, comm: {} };
   /* Filters are remembered on this device (Batch 1, 8 Nov). Deep links override them. */
   var LKEY = "phh-maint-last";
   try{ var last = JSON.parse(localStorage.getItem(LKEY) || "null"); if(last){ state.urg = last.urg || ""; state.forr = last.forr || ""; state.days = [60,90,180].indexOf(+last.days) >= 0 ? +last.days : 60; } }catch(e){}
   function remember(){ try{ localStorage.setItem(LKEY, JSON.stringify({ urg: state.urg, forr: state.forr, days: state.days })); }catch(e){} }
   /* Deep links (Ask PHH): ?tab=open|done|all|props &q=<property or issue> */
-  if(["open","done","all","props","bills","assets"].indexOf(params.get("tab") || "") >= 0) state.tab = params.get("tab");
+  if(["open","done","all","props","bills","assets","comm"].indexOf(params.get("tab") || "") >= 0) state.tab = params.get("tab");
   state.q = (params.get("q") || "").slice(0, 120);
   if(FOCUS) state.open[FOCUS] = true;
 
@@ -520,6 +564,8 @@ html,body{overflow-x:clip}
     if(!CLEAN_API) return;
     cpost("gas-requests", { days: 14 }).then(function(j){
       var rows = (j.rows || []).filter(function(r){ return !r.doneAt || Date.now() - Date.parse(r.doneAt) < 2 * 86400000; });
+      /* 12 Nov (Angus, Casa Bianca twice): the same clean check saved twice is one request. Done marks every copy. */
+      var byKey = {}; rows = rows.filter(function(r){ var k = r.res + "|" + r.at; if(byKey[k]){ byKey[k].ids.push(r.id); if(!r.doneAt) byKey[k].doneAt = null; return false; } r.ids = [r.id]; byKey[k] = r; return true; });
       var box = $("gasbox"), ul = $("gaslist"); ul.innerHTML = "";
       rows.forEach(function(r){
         var li = el("li", r.doneAt ? "done" : "");
@@ -529,14 +575,34 @@ html,body{overflow-x:clip}
         li.appendChild(el("span", "w", (r.housekeeper || "") + ", " + when + (r.doneAt ? ". Done" + (r.doneBy ? " by " + r.doneBy : "") : "")));
         if(!r.doneAt){
           var b = el("button", "btn small", "Done"); b.type = "button";
-          b.addEventListener("click", function(){ b.disabled = true; cpost("gas-done", { id: r.id }).then(loadGas).catch(function(e){ b.disabled = false; b.textContent = e.message; }); });
+          b.addEventListener("click", function(){ b.disabled = true; Promise.all(r.ids.map(function(id){ return cpost("gas-done", { id: id }); })).then(loadGas).catch(function(e){ b.disabled = false; b.textContent = e.message; }); });
           li.appendChild(b);
         }
         ul.appendChild(li);
       });
-      box.hidden = !rows.length;
+      ul.hidden = !rows.length;
+      if(!rows.length){ var none = el("li", "done", "No gas requests from housekeepers in the last 14 days."); ul.appendChild(none); ul.hidden = false; }
     }).catch(function(){});
+    loadRound();
   }
+  /* House gas round every 14 days (Angus, 12 Nov). "Round done" records the date; a weekday reminder goes to maintenance phones when it is due. */
+  var XAPI = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/maint-extras";
+  function xpost(route, body){
+    return fetch(XAPI + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(Object.assign({ code: CODE }, body || {})) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+  function dmy(ymd){ return ymd ? new Date(ymd + "T12:00:00").toLocaleDateString("en-AU", { weekday:"short", day:"numeric", month:"short" }) : ""; }
+  function showRound(g){
+    var t = $("grText"); t.className = g.due ? "due" : "";
+    t.textContent = g.lastDone ? "Last done " + dmy(g.lastDone) + (g.lastBy ? " by " + g.lastBy : "") + ". " + (g.due ? "Due now." : "Next due " + dmy(g.nextDue) + ".") : "No round recorded yet. Tap Round done after the next one.";
+    if(!$("grDate").value) $("grDate").value = g.today || "";
+  }
+  function loadRound(){ xpost("gas-round").then(showRound).catch(function(){ $("grText").textContent = ""; }); }
+  $("grDone").addEventListener("click", function(){
+    var b = this; b.disabled = true; $("grMsg").textContent = "Saving...";
+    xpost("gas-round-done", { doneOn: $("grDate").value }).then(function(g){ showRound(g); $("grMsg").textContent = "Saved."; })
+      .catch(function(e){ $("grMsg").textContent = e.message; }).then(function(){ b.disabled = false; });
+  });
   $("signout").addEventListener("click", signOut);
 
   function when(iso){
@@ -576,19 +642,40 @@ html,body{overflow-x:clip}
     });
   }
 
+  /* 12 Nov (Ian/Angus: "Urgent doesn't recategorize"): the priority, For and search filters now apply to the number strip
+     and the By property tab too, not only to the Open / Complete / All lists. */
+  function scoped(){
+    var q = state.q.toLowerCase();
+    return state.issues.filter(function(i){
+      if(state.urg && i.priority !== state.urg) return false;
+      if(state.forr && i.route !== state.forr) return false;
+      if(q && (i.property + " " + i.text + " " + i.housekeeper).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    });
+  }
+  function filterNote(){
+    var bits = [];
+    if(state.urg) bits.push({ urgent:"Urgent", high:"High", normal:"Normal", low:"Low" }[state.urg] + " only");
+    if(state.forr) bits.push(state.forr === "maint" ? "Maintenance (Angus) only" : "Housekeeping (CST) only");
+    if(state.q) bits.push('Search "' + state.q + '"');
+    var n = $("fnote"); n.hidden = !bits.length; n.textContent = bits.length ? "Showing: " + bits.join(", ") + ". Numbers and By property follow these filters." : "";
+  }
   function strip(){
     var s = $("strip"); s.innerHTML = "";
-    var open = state.issues.filter(function(i){ return !isDone(i); });
+    filterNote();
+    var all = scoped();
+    var open = all.filter(function(i){ return !isDone(i); });
     var items = [
       [open.length, "Open", open.length ? "" : ""],
       [open.filter(function(i){ return i.priority === "urgent"; }).length, "Urgent open", "bad"],
       [open.filter(function(i){ return (i.repeatOf || []).length; }).length, "Repeat faults open", "bad"],
       [open.filter(function(i){ return i.route === "house"; }).length, "For housekeeping (CST)", ""],
       [open.filter(function(i){ return !i.homhero || i.homhero.status === "pending"; }).length, "Not assigned yet", ""],
-      [state.issues.filter(isDone).length, "Complete (" + state.days + " days)", ""]
+      [all.filter(isDone).length, "Complete (" + state.days + " days)", ""]
     ];
     items.forEach(function(x){ var d = el("div", x[0] && x[2] ? x[2] : ""); d.appendChild(el("b", "", String(x[0]))); d.appendChild(el("span", "", x[1])); s.appendChild(d); });
-    var n = $("openN"); n.hidden = !open.length; n.textContent = String(open.length);
+    var allOpen = state.issues.filter(function(i){ return !isDone(i); }).length;
+    var n = $("openN"); n.hidden = !allOpen; n.textContent = String(allOpen);
   }
 
   function photosOf(i){ return (i.photos || []).map(function(p, k){ return { url: p.url, label: i.property + ": photo " + (k + 1) + " of " + i.photos.length, sub: i.text + (p.takenAt ? " | " + when(p.takenAt) : "") }; }); }
@@ -615,6 +702,9 @@ html,body{overflow-x:clip}
     var h = i.homhero || {};
     kv("Property", i.property);
     kv("Housekeeper ticked urgent", i.urgent ? "Yes" : "No");
+    kv("Priority in HomHero", h.priority ? ({ urgent:"Urgent", high:"High", medium:"Normal", low:"Low" }[h.priority] || h.priority) : "");
+    if(ownerOf(i.property).optOut) kv("Owner", "Opted out of PHH maintenance");
+    if(state.comm[i.key]) kv("Owner emailed", state.comm[i.key]);
     kv("Logged by", i.housekeeper + (i.loggedAt ? ", " + when(i.loggedAt) : ""));
     kv("Clean date", i.cleanDate ? new Date(i.cleanDate + "T12:00:00").toLocaleDateString("en-AU", { weekday:"short", day:"numeric", month:"short" }) : "");
     kv("HomHero job", h.job ? "#" + h.job : (i.sentToHomHero ? "Not created, office to check" : "Being created (up to 10 minutes)"));
@@ -652,6 +742,9 @@ html,body{overflow-x:clip}
     }
     var acts = el("div", "actions");
     var a = el("a", "btn ghost small", "Full clean check"); a.href = "view.html?id=" + encodeURIComponent(i.submissionId) + "&from=maint"; acts.appendChild(a);
+    var em = el("button", "btn small", "Email the owner"); em.type = "button";
+    em.addEventListener("click", function(e){ e.stopPropagation(); composeFor(i); });
+    acts.appendChild(em);
     right.appendChild(acts);
     return tr;
   }
@@ -757,11 +850,11 @@ html,body{overflow-x:clip}
   /* By property (Batch 1 item 22): which properties log the most issues. */
   function renderProps(){
     var by = {};
-    state.issues.forEach(function(i){
+    scoped().forEach(function(i){
       var k = i.property || "Unknown property"; var p = by[k] || (by[k] = { name:k, n:0, open:0, urgent:0, repeat:0, last:"" });
       p.n++; if(!isDone(i)) p.open++; if(i.priority === "urgent") p.urgent++; if((i.repeatOf || []).length) p.repeat++; if(String(i.loggedAt) > p.last) p.last = i.loggedAt;
     });
-    var list = Object.keys(by).map(function(k){ return by[k]; }).filter(function(p){ return !state.q || p.name.toLowerCase().indexOf(state.q.toLowerCase()) >= 0; })
+    var list = Object.keys(by).map(function(k){ return by[k]; })
       .sort(function(a, b){ return b.n - a.n || b.open - a.open || a.name.localeCompare(b.name); });
     $("thead").innerHTML = "<tr><th>Property</th><th>Issues</th><th>Open</th><th>Urgent</th><th>Repeat faults</th><th>Last logged</th></tr>";
     var tb = $("rows"); tb.innerHTML = "";
@@ -770,19 +863,20 @@ html,body{overflow-x:clip}
       [[p.name, "Property"], [String(p.n), "Issues"], [String(p.open), "Open"], [String(p.urgent), "Urgent"], [String(p.repeat), "Repeat faults"], [when(p.last), "Logged"]].forEach(function(c, k){
         var td = el("td", k === 0 ? "col-prop" : "", c[0]); td.dataset.l = c[1]; if(k === 4 && p.repeat){ td.style.color = "#a11d1d"; td.style.fontWeight = "600"; } tr.appendChild(td);
       });
-      var go = function(){ state.tab = "all"; state.q = p.name; $("q").value = p.name; setTabs(); render(); };
+      var go = function(){ state.tab = "all"; state.q = p.name; $("q").value = p.name; setTabs(); render(); };  /* keeps the Urgent / For filters */
       tr.addEventListener("click", go); tr.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); go(); } });
       tb.appendChild(tr);
     });
     $("wrap").hidden = !list.length;
-    $("msg").className = "msg"; $("msg").textContent = list.length ? "Last " + state.days + " days, most issues first. Tap a property to see its issues." : "No maintenance issues in this period.";
+    $("msg").className = "msg"; $("msg").textContent = list.length ? "Last " + state.days + " days, most issues first. Tap a property to see its issues." : (state.urg || state.forr || state.q ? "Nothing matches these filters." : "No maintenance issues in this period.");
   }
   var ISSUE_HEAD = "<tr><th>Status</th><th>Logged</th><th>Property</th><th>Issue</th><th>Photos</th><th>Logged by</th><th>Assigned to</th></tr>";
   function render(){
-    var assets = state.tab === "assets";
-    $("assetBox").hidden = !assets; $("billBox").hidden = state.tab !== "bills";
-    $("filters").hidden = assets; $("strip").hidden = assets;
+    var assets = state.tab === "assets", comm = state.tab === "comm";
+    $("assetBox").hidden = !assets; $("billBox").hidden = state.tab !== "bills"; $("commBox").hidden = !comm;
+    $("filters").hidden = assets || comm; $("strip").hidden = assets || comm; if(assets || comm) $("fnote").hidden = true;
     if(assets){ $("wrap").hidden = true; $("msg").textContent = ""; $("repeatbox").hidden = true; assetsInit(); return; }
+    if(comm){ $("wrap").hidden = true; $("msg").textContent = ""; $("repeatbox").hidden = true; renderComm(); return; }
     strip(); renderRepeats();
     if(state.tab === "props"){ renderProps(); return; }
     $("thead").innerHTML = ISSUE_HEAD;
@@ -809,6 +903,8 @@ html,body{overflow-x:clip}
       else if(i.priority === "high") ch.appendChild(el("span", "chip warn", "High"));
       else if(i.priority === "low") ch.appendChild(el("span", "chip", "Low"));
       if(i.route === "house") ch.appendChild(el("span", "chip cst", "For CST"));
+      if(ownerOf(i.property).optOut) ch.appendChild(el("span", "chip optout", "Owner opted out"));
+      if(state.comm[i.key]) ch.appendChild(el("span", "chip own", "Owner emailed"));
       var bl = state.bills[i.key]; if(bl) ch.appendChild(el("span", "chip bill", "Bill to owner" + (bl.amount !== null ? " $" + bl.amount.toFixed(2) : "")));
       var tl = (state.trades[i.key] || [])[0]; if(tl && tl.doneAt) ch.appendChild(el("span", "chip ok", "Trade marked done"));
       if(ch.children.length) c3.appendChild(ch);
@@ -827,15 +923,124 @@ html,body{overflow-x:clip}
     });
   }
 
+  /* ---------- Owner emails (Angus, 12 Nov). Send goes through maint-extras /owner-send (Help Scout Maintenance mailbox, as Angus). ---------- */
+  function nkey(s){ return String(s || "").toLowerCase().replace(/\s+-\s+po$/i, "").replace(/@.*$/, "").replace(/&/g, "and").replace(/^the\s+/, "").replace(/[^a-z0-9]+/g, ""); }
+  function ownerOf(prop){
+    var k = nkey(prop), o = state.owners[k];
+    if(o) return o;
+    for(var x in state.owners){ if(x.length >= 4 && (k.indexOf(x) === 0 || x.indexOf(k) === 0)) return state.owners[x]; }
+    return {};
+  }
+  function loadComm(){
+    return Promise.all([xpost("owner-props").catch(function(){ return null; }), xpost("comm-list", { days: 60 }).catch(function(){ return null; }), xpost("owner-list").catch(function(){ return null; })]).then(function(x){
+      if(x[0]) state.owners = x[0].props || {};
+      if(x[2]) state.ownerList = x[2].rows || [];
+      if(x[1]){ state.comm = {}; state.commRows = x[1].rows || []; state.commRows.forEach(function(r){ if(r.issue_key && !state.comm[r.issue_key]) state.comm[r.issue_key] = when(r.at) + " by " + r.by_name; }); }
+    });
+  }
+  var cur = null;
+  function composeFor(i){
+    cur = i || null;
+    state.tab = "comm"; setTabs(); render();
+    $("cProp").value = i ? i.property : ""; $("cIssue").value = i ? String(i.text || "").replace(/\s+/g, " ").trim() : "";
+    $("cTpl").value = i && !ownerOf(i.property).optOut ? "owner" : "optout";
+    $("cOut").hidden = true; $("cMsg").textContent = ""; $("cSent").textContent = "";
+    if(i) write(); else $("cProp").focus();
+    window.scrollTo({ top: $("commBox").offsetTop - 10, behavior: "smooth" });
+  }
+  function write(){
+    var prop = $("cProp").value.trim(); if(!prop){ $("cInfo").textContent = "Pick a property."; return; }
+    if(cur && cur.property !== prop) cur = null;
+    $("cInfo").textContent = "Writing...";
+    xpost("owner-draft", { property: prop, issue: $("cIssue").value, job: cur && cur.homhero ? cur.homhero.job : "", template: $("cTpl").value }).then(function(d){
+      $("cTo").value = d.to || ""; $("cSub").value = d.subject; $("cBody").value = d.body; $("cOut").hidden = false; $("cMsg").textContent = ""; $("cSent").textContent = ""; $("cSend").disabled = false; cFirst = d.first || "";
+      $("cInfo").textContent = !d.found ? "This property is not in the PHH Property Database under that name: add the owner's name and email." :
+        (d.to ? "Owner: " + d.first + (d.optOut ? ". Opted out of PHH maintenance." : ".") : "No owner email in the PHH Property Database for this property.");
+    }).catch(function(e){ $("cInfo").textContent = e.message; });
+  }
+  var cFirst = "";
+  function forProp(name){
+    cur = null; $("cProp").value = name; $("cIssue").value = "";
+    $("cTpl").value = ownerOf(name).optOut ? "optout" : "own";
+    write(); window.scrollTo({ top: $("commBox").offsetTop - 10, behavior: "smooth" });
+  }
+  $("cSend").addEventListener("click", function(){
+    var b = this, to = $("cTo").value.trim(), sub = $("cSub").value.trim(), body = $("cBody").value;
+    if(!/^[^@\s,;]+@[^@\s,;]+\.[a-z]{2,}$/i.test(to)){ $("cSent").textContent = "Add the owner's email address first."; return; }
+    if(!sub){ $("cSent").textContent = "Add a subject."; return; }
+    if(!confirm("Send this email to " + to + " from maintenance@ as Angus?")) return;
+    b.disabled = true; $("cSent").textContent = "Sending...";
+    xpost("owner-send", { to: to, subject: sub, body: body, first: cFirst, property: $("cProp").value.trim(), key: cur ? cur.key : null, template: $("cTpl").value })
+      .then(function(){ $("cSent").textContent = "Sent to " + to + ". It is in the Help Scout Maintenance mailbox."; return loadComm().then(renderComm); })
+      .catch(function(e){ $("cSent").textContent = e.message; b.disabled = false; });
+  });
+  $("cFind").addEventListener("input", function(){ renderAll(); });
+  function renderAll(){
+    var ul = $("cAll"); ul.innerHTML = "";
+    var q = $("cFind").value.trim().toLowerCase(), rows = state.ownerList || [];
+    var list = rows.filter(function(r){ return !q || (r.name + " " + r.first).toLowerCase().indexOf(q) >= 0; });
+    if(!rows.length){ ul.appendChild(el("li", "", "Loading the property list...")); return; }
+    if(!list.length){ ul.appendChild(el("li", "", "No property matches that.")); return; }
+    list.forEach(function(r){
+      var li = el("li"); li.appendChild(el("span", "p", r.name));
+      if(r.first) li.appendChild(el("span", "w", "Owner: " + r.first));
+      if(r.optOut) li.appendChild(el("span", "chip own", "Opted out"));
+      if(!r.hasEmail) li.appendChild(el("span", "w", "No email on file"));
+      var b = el("button", "btn small", "Email"); b.type = "button"; b.addEventListener("click", function(){ forProp(r.name); }); li.appendChild(b);
+      ul.appendChild(li);
+    });
+  }
+  function copy(text, label){
+    var done = function(){ $("cMsg").textContent = label + " copied."; };
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(function(){ $("cMsg").textContent = "Select the text and copy it."; });
+    else $("cMsg").textContent = "Select the text and copy it.";
+  }
+  $("cGo").addEventListener("click", write);
+  $("cTpl").addEventListener("change", function(){ if(!$("cOut").hidden) write(); });
+  $("cCopyTo").addEventListener("click", function(){ copy($("cTo").value, "Email address"); });
+  $("cCopySub").addEventListener("click", function(){ copy($("cSub").value, "Subject"); });
+  $("cCopy").addEventListener("click", function(){ copy($("cBody").value, "Email"); });
+  $("cMark").addEventListener("click", function(){
+    var b = this; b.disabled = true; $("cMsg").textContent = "Saving...";
+    xpost("comm-log", { key: cur ? cur.key : null, property: $("cProp").value.trim(), template: $("cTpl").value, subject: $("cSub").value })
+      .then(loadComm).then(function(){ $("cMsg").textContent = "Marked as emailed."; renderComm(); })
+      .catch(function(e){ $("cMsg").textContent = e.message; }).then(function(){ b.disabled = false; });
+  });
+  function renderComm(){
+    var dl = $("cProps"); dl.innerHTML = "";
+    var names = {}; state.issues.forEach(function(i){ if(i.property) names[i.property] = 1; }); (state.ownerList || []).forEach(function(r){ if(r.name) names[r.name] = 1; });
+    Object.keys(names).sort().forEach(function(n){ var o = el("option"); o.value = n; dl.appendChild(o); });
+    var ul = $("cOpt"); ul.innerHTML = "";
+    var list = state.issues.filter(function(i){ return ownerOf(i.property).optOut && !isDone(i); });
+    if(!list.length) ul.appendChild(el("li", "", "None right now."));
+    list.forEach(function(i){
+      var li = el("li"); li.appendChild(el("span", "p", i.property)); li.appendChild(el("span", "", i.text));
+      li.appendChild(el("span", "w", (i.housekeeper || "") + ", " + when(i.loggedAt) + (state.comm[i.key] ? ". Owner emailed " + state.comm[i.key] : "")));
+      var b = el("button", "btn small", state.comm[i.key] ? "Email again" : "Email the owner"); b.type = "button"; b.addEventListener("click", function(){ composeFor(i); }); li.appendChild(b);
+      ul.appendChild(li);
+    });
+    var lg = $("cLog"); lg.innerHTML = "";
+    var rows = state.commRows || [];
+    if(!rows.length) lg.appendChild(el("li", "", "None yet."));
+    rows.slice(0, 50).forEach(function(r){ var li = el("li"); li.appendChild(el("span", "p", r.property_name || "")); li.appendChild(el("span", "", r.subject || "")); li.appendChild(el("span", "w", (r.sent ? "Sent" + (r.to_masked ? " to " + r.to_masked : "") : "Marked as emailed") + ", " + when(r.at) + " by " + r.by_name)); lg.appendChild(li); });
+    renderAll();
+  }
+
   function load(){
     loadGas();
     $("msg").className = "msg"; if(!state.issues.length) $("msg").textContent = "Loading...";
-    var extras = Promise.all([post("b4-bill-list").catch(function(){ return null; }), post("b4-trade-list").catch(function(){ return null; })]);
+    var extras = Promise.all([post("b4-bill-list").catch(function(){ return null; }), post("b4-trade-list").catch(function(){ return null; }), loadComm()]);
     post("maint", { days: state.days }).then(function(j){
       return extras.then(function(x){ if(x[0]) state.bills = x[0].bills || {}; if(x[1]) state.trades = x[1].links || {}; return j; });
     }).then(function(j){
       $("mename").textContent = j.name || "";
       state.issues = j.issues || []; state.repeats = j.repeats || [];
+      /* 12 Nov (Angus: "everything comes through as urgent"): when nobody has set a priority in Clean Check, show the one
+         HomHero has now, so a job Angus changes in HomHero shows the same here. */
+      state.issues.forEach(function(i){
+        var hp = i.homhero && i.homhero.priority, m = { urgent:"urgent", high:"high", medium:"normal", low:"low" }[hp];
+        if(!i.metaBy && m) i.priority = m;
+      });
       render();
       if(FOCUS){ var row = $("i-" + FOCUS.replace(/[^a-z0-9]/gi, "")); if(row) row.scrollIntoView({ block: "center" }); FOCUS = ""; }
     }).catch(function(e){ $("wrap").hidden = true; $("msg").className = "msg err"; $("msg").textContent = e.message; });

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261111061552"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261112032817"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -898,6 +898,17 @@ window.PHH_CHECKLIST = {
       var h = document.createElement("h3"); h.className = "endgrp"; h.textContent = sec.title; el.appendChild(h);
       if(sec.id === "bedrooms" || sec.id === "bathrooms"){ var ri = document.createElement("div"); ri.className = "rooms"; ri.id = "rooms_" + sec.id; el.appendChild(ri); }
       var pg = document.createElement("div"); pg.className = "photos"; pg.id = "photos_" + sec.id; el.appendChild(pg);
+      /* 12 Nov (Angus, from Dee and Will at Eclipse): powder rooms and laundry toilets are not in HomHero's bathroom count,
+         so they had no photo box. Optional: one tap adds a captioned extra photo and opens the camera. */
+      if(sec.id === "bathrooms"){
+        var xw = document.createElement("p"); xw.className = "note"; xw.style.marginTop = "8px";
+        xw.textContent = "Extra toilet, powder room or laundry toilet here? ";
+        var xb = document.createElement("button"); xb.type = "button"; xb.className = "absbtn"; xb.textContent = "Add a photo of it";
+        var xm = document.createElement("span"); xm.className = "note";
+        xb.addEventListener("click", function(){ var r = window.phhQuickCam ? window.phhQuickCam("Extra toilet or powder room") : "none";
+          xm.textContent = r === "full" ? " That's 12 extra photos, the most for one clean." : r === "none" ? " Use Extra photo under Anything else." : " Added under Anything else."; });
+        xw.appendChild(xb); xw.appendChild(xm); el.appendChild(xw);
+      }
     });
     return el;
   }
@@ -1104,11 +1115,21 @@ window.PHH_CHECKLIST = {
   }
   /* Booked guests from HomHero (Sharon, 2 Nov): one line on the card, and the number in the arrival question. */
   var BOOKED = null;
+  /* 12 Nov (Angus: housekeepers asked for adults and kids, not just guests): "2 adults, 3 kids, 1 infant, with a pet". */
+  function guestBits(a, c, i, p){
+    a = Number(a) || 0; c = Number(c) || 0; i = Number(i) || 0;
+    var b = [];
+    if(a) b.push(a + " adult" + (a === 1 ? "" : "s"));
+    if(c) b.push(c + " kid" + (c === 1 ? "" : "s"));
+    if(i) b.push(i + " infant" + (i === 1 ? "" : "s"));
+    if(!b.length) return "";
+    return b.join(", ") + (Number(p) ? ", with a pet" : "");
+  }
+  window.phhGuestBits = guestBits;
   function guestsText(g){
     if(!g) return "";
-    var n = (Number(g.adults) || 0) + (Number(g.children) || 0), i = Number(g.infants) || 0;
-    if(!n && !i) return "";
-    return "Booked for " + n + " guest" + (n === 1 ? "" : "s") + (i ? ", plus " + i + " infant" + (i === 1 ? "" : "s") : "") + (Number(g.pets) ? ", with a pet" : "");
+    var t = guestBits(g.adults, g.children, g.infants, g.pets);
+    return t ? "Booked for " + t : "";
   }
   function showGuests(g){
     BOOKED = g || null;
@@ -1175,6 +1196,7 @@ window.PHH_CHECKLIST = {
       d.innerHTML = '<div class="issuehead"><b></b><button type="button" class="rmbtn">Remove</button></div>' +
         '<textarea maxlength="1000" placeholder="What needs fixing, and where? For example: bathroom 2 tap dripping."></textarea>' +
         '<div class="seg"><button type="button" class="segbtn">Normal</button><button type="button" class="segbtn urgent">Urgent</button></div>' +
+        '<p class="note" style="margin:4px 0 0">Urgent only if it is unsafe, or the next guests can\'t use something (no water, no power, a lock or key problem). Everything else is Normal.</p>' +
         '<div class="photos"></div>';
       d.querySelector("b").textContent = "Maintenance issue " + (i + 1);
       d.querySelector(".rmbtn").setAttribute("aria-label", "Remove maintenance issue " + (i + 1));
@@ -1785,9 +1807,9 @@ window.PHH_CHECKLIST = {
             (byDay[ymd] || []).slice().sort(function(x, y){ return String(x.property).localeCompare(String(y.property)); }).forEach(function(c){
               var li = document.createElement("li"); var t = document.createElement("span"); t.className = "cp"; t.textContent = roomFirst(c.property); li.appendChild(t);
               var bits = []; if(c.res) bits.push("Booking " + c.res); if(c.guest) bits.push(c.guest);
-              /* Booked guests (Bec, 9 Nov): "4 guests, plus 1 infant, with a pet", as booked now. */
-              var gn = (Number(c.adults) || 0) + (Number(c.children) || 0), gi = Number(c.infants) || 0;
-              if(gn || gi) bits.push((gn ? gn + " guest" + (gn === 1 ? "" : "s") : "") + (gi ? (gn ? ", plus " : "") + gi + " infant" + (gi === 1 ? "" : "s") : "") + (Number(c.pets) ? ", with a pet" : ""));
+              /* Booked guests (Bec, 9 Nov; adults and kids, Angus 12 Nov): "2 adults, 3 kids, with a pet", as booked now. */
+              var gt = window.phhGuestBits ? window.phhGuestBits(c.adults, c.children, c.infants, c.pets) : "";
+              if(gt) bits.push(gt);
               if(bits.length){ var m = document.createElement("span"); m.className = "cg"; m.textContent = bits.join(", "); li.appendChild(m); }
               list.appendChild(li); });
           }
@@ -1877,7 +1899,7 @@ window.PHH_CHECKLIST = {
           /* Staff: office view, or the maintenance dashboard for a maintenance code (staging asks office-api which one). */
           return fetch(OFFICE_API + "-v2/login", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
             .then(function(r){ return r.ok ? r.json() : {}; }).catch(function(){ return {}; })
-            .then(function(v){ var mv = v && v.view === "maintenance"; try{ localStorage.setItem("phh-staff-view", mv ? "maintenance" : "office"); }catch(e){} location.href = mv ? "maintenance.html?v=1111w" : "office.html?v=1111s"; });
+            .then(function(v){ var mv = v && v.view === "maintenance"; try{ localStorage.setItem("phh-staff-view", mv ? "maintenance" : "office"); }catch(e){} location.href = mv ? "maintenance.html?v=1112b" : "office.html?v=1111s"; });
         })
         .catch(function(e){ reset(e.message, true); });
     }
@@ -2038,7 +2060,7 @@ window.PHH_CHECKLIST = {
     $("switchcode").addEventListener("click", function(e){ e.preventDefault(); $("code").value = ""; reset(""); });
     var staffSaved = ""; try{ staffSaved = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
     var staffView = ""; try{ staffView = localStorage.getItem("phh-staff-view") || ""; }catch(e){}
-    if(staffSaved){ location.replace(staffView === "maintenance" ? "maintenance.html?v=1111w" : "office.html?v=1111s"); return; }
+    if(staffSaved){ location.replace(staffView === "maintenance" ? "maintenance.html?v=1112b" : "office.html?v=1111s"); return; }
     var ownerSaved = ""; try{ ownerSaved = localStorage.getItem("phh-owner-code") || ""; }catch(e){}
     if(ownerSaved){ location.replace("owner.html"); return; }
     var saved = ""; try{ saved = localStorage.getItem(KEY) || ""; }catch(e){}

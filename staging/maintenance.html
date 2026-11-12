@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261112032819"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261112032817"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -435,25 +435,29 @@ html,body{overflow-x:clip}
     </div>
     <p class="msg" id="billMsg"></p>
   </section>
-  <!-- 12 Nov 2026 (Angus, staging): owner emails from his Help Scout saved replies. Nothing is sent from here. -->
+  <!-- 12 Nov 2026 (Angus): owner emails. Sent from the Help Scout Maintenance mailbox (maintenance@) as Angus, one email per tap. -->
   <section class="box2" id="commBox" hidden>
     <h3>Owner emails</h3>
-    <p class="hint">Your Help Scout saved reply, filled in with the owner's first name, the property, the issue and the HomHero job number. Nothing is sent from here: copy it, open Help Scout, paste and send as you do now. Owner names, emails and "Maintenance Opt Out" come from the PHH Property Database.</p>
+    <p class="hint">Pick any property, use one of your saved replies or write your own, then tap Send. It goes from maintenance@professionalholidayhomes.com.au as Angus, with your Help Scout signature, and is kept in the Maintenance mailbox. Owner names, emails and "Maintenance Opt Out" come from the PHH Property Database.</p>
     <div class="commgrid" id="comp">
       <div><label for="cProp">Property</label><input id="cProp" list="cProps" autocomplete="off" placeholder="Start typing a property"><datalist id="cProps"></datalist></div>
-      <div><label for="cIssue">Issue</label><input id="cIssue" placeholder="What needs fixing"></div>
-      <div><label for="cTpl">Template</label><select id="cTpl"><option value="optout">Owner opted out of PHH maintenance</option><option value="owner">Owner to arrange (outside PHH maintenance)</option><option value="blank">Blank</option></select></div>
+      <div><label for="cIssue">Issue (optional)</label><input id="cIssue" placeholder="What needs fixing"></div>
+      <div><label for="cTpl">Template</label><select id="cTpl"><option value="optout">Owner opted out of PHH maintenance</option><option value="owner">Owner to arrange (outside PHH maintenance)</option><option value="own">Write your own email</option></select></div>
       <div class="row"><button class="btn small" type="button" id="cGo">Write email</button><span class="w" id="cInfo"></span></div>
       <div id="cOut" hidden class="commgrid">
         <div><label for="cTo">To</label><input id="cTo"></div>
         <div><label for="cSub">Subject</label><input id="cSub"></div>
         <div><label for="cBody">Email</label><textarea id="cBody"></textarea></div>
-        <div class="row"><button class="btn small" type="button" id="cCopyTo">Copy email address</button><button class="btn small" type="button" id="cCopySub">Copy subject</button><button class="btn small" type="button" id="cCopy">Copy email</button><a class="btn ghost small" id="cHS" target="_blank" rel="noopener" href="https://secure.helpscout.net/mailbox/e502c1f2b6e65049/">Open Help Scout</a><button class="btn ghost small" type="button" id="cMark">Mark as emailed</button><span class="w" id="cMsg"></span></div>
+        <div class="row"><button class="btn small" type="button" id="cSend">Send from Maintenance (as Angus)</button><span class="w" id="cSent"></span></div>
+        <div class="row"><button class="btn ghost small" type="button" id="cCopyTo">Copy email address</button><button class="btn ghost small" type="button" id="cCopySub">Copy subject</button><button class="btn ghost small" type="button" id="cCopy">Copy email</button><a class="btn ghost small" id="cHS" target="_blank" rel="noopener" href="https://secure.helpscout.net/mailbox/e502c1f2b6e65049/">Open Help Scout</a><button class="btn ghost small" type="button" id="cMark">Mark as emailed</button><span class="w" id="cMsg"></span></div>
       </div>
     </div>
     <h3 style="margin-top:16px">Open issues at owners who opted out of PHH maintenance</h3>
     <ul class="commlist" id="cOpt"></ul>
-    <h3 style="margin-top:16px">Owner emails marked sent (last 60 days)</h3>
+    <h3 style="margin-top:16px">All properties</h3>
+    <div class="commgrid"><div><label for="cFind">Find a property or owner</label><input id="cFind" placeholder="Type to filter" autocomplete="off"></div></div>
+    <ul class="commlist" id="cAll"></ul>
+    <h3 style="margin-top:16px">Owner emails (last 60 days)</h3>
     <ul class="commlist" id="cLog"></ul>
   </section>
   <section class="box2" id="assetBox" hidden>
@@ -925,7 +929,7 @@ html,body{overflow-x:clip}
     });
   }
 
-  /* ---------- Owner emails (Angus, 12 Nov, staging). maint-extras-staging. Nothing is sent from the page. ---------- */
+  /* ---------- Owner emails (Angus, 12 Nov). Send goes through maint-extras /owner-send (Help Scout Maintenance mailbox, as Angus). ---------- */
   function nkey(s){ return String(s || "").toLowerCase().replace(/\s+-\s+po$/i, "").replace(/@.*$/, "").replace(/&/g, "and").replace(/^the\s+/, "").replace(/[^a-z0-9]+/g, ""); }
   function ownerOf(prop){
     var k = nkey(prop), o = state.owners[k];
@@ -934,8 +938,9 @@ html,body{overflow-x:clip}
     return {};
   }
   function loadComm(){
-    return Promise.all([xpost("owner-props").catch(function(){ return null; }), xpost("comm-list", { days: 60 }).catch(function(){ return null; })]).then(function(x){
+    return Promise.all([xpost("owner-props").catch(function(){ return null; }), xpost("comm-list", { days: 60 }).catch(function(){ return null; }), xpost("owner-list").catch(function(){ return null; })]).then(function(x){
       if(x[0]) state.owners = x[0].props || {};
+      if(x[2]) state.ownerList = x[2].rows || [];
       if(x[1]){ state.comm = {}; state.commRows = x[1].rows || []; state.commRows.forEach(function(r){ if(r.issue_key && !state.comm[r.issue_key]) state.comm[r.issue_key] = when(r.at) + " by " + r.by_name; }); }
     });
   }
@@ -945,7 +950,7 @@ html,body{overflow-x:clip}
     state.tab = "comm"; setTabs(); render();
     $("cProp").value = i ? i.property : ""; $("cIssue").value = i ? String(i.text || "").replace(/\s+/g, " ").trim() : "";
     $("cTpl").value = i && !ownerOf(i.property).optOut ? "owner" : "optout";
-    $("cOut").hidden = true; $("cMsg").textContent = "";
+    $("cOut").hidden = true; $("cMsg").textContent = ""; $("cSent").textContent = "";
     if(i) write(); else $("cProp").focus();
     window.scrollTo({ top: $("commBox").offsetTop - 10, behavior: "smooth" });
   }
@@ -954,10 +959,42 @@ html,body{overflow-x:clip}
     if(cur && cur.property !== prop) cur = null;
     $("cInfo").textContent = "Writing...";
     xpost("owner-draft", { property: prop, issue: $("cIssue").value, job: cur && cur.homhero ? cur.homhero.job : "", template: $("cTpl").value }).then(function(d){
-      $("cTo").value = d.to || ""; $("cSub").value = d.subject; $("cBody").value = d.body; $("cOut").hidden = false; $("cMsg").textContent = "";
+      $("cTo").value = d.to || ""; $("cSub").value = d.subject; $("cBody").value = d.body; $("cOut").hidden = false; $("cMsg").textContent = ""; $("cSent").textContent = ""; $("cSend").disabled = false; cFirst = d.first || "";
       $("cInfo").textContent = !d.found ? "This property is not in the PHH Property Database under that name: add the owner's name and email." :
         (d.to ? "Owner: " + d.first + (d.optOut ? ". Opted out of PHH maintenance." : ".") : "No owner email in the PHH Property Database for this property.");
     }).catch(function(e){ $("cInfo").textContent = e.message; });
+  }
+  var cFirst = "";
+  function forProp(name){
+    cur = null; $("cProp").value = name; $("cIssue").value = "";
+    $("cTpl").value = ownerOf(name).optOut ? "optout" : "own";
+    write(); window.scrollTo({ top: $("commBox").offsetTop - 10, behavior: "smooth" });
+  }
+  $("cSend").addEventListener("click", function(){
+    var b = this, to = $("cTo").value.trim(), sub = $("cSub").value.trim(), body = $("cBody").value;
+    if(!/^[^@\s,;]+@[^@\s,;]+\.[a-z]{2,}$/i.test(to)){ $("cSent").textContent = "Add the owner's email address first."; return; }
+    if(!sub){ $("cSent").textContent = "Add a subject."; return; }
+    if(!confirm("Send this email to " + to + " from maintenance@ as Angus?")) return;
+    b.disabled = true; $("cSent").textContent = "Sending...";
+    xpost("owner-send", { to: to, subject: sub, body: body, first: cFirst, property: $("cProp").value.trim(), key: cur ? cur.key : null, template: $("cTpl").value })
+      .then(function(){ $("cSent").textContent = "Sent to " + to + ". It is in the Help Scout Maintenance mailbox."; return loadComm().then(renderComm); })
+      .catch(function(e){ $("cSent").textContent = e.message; b.disabled = false; });
+  });
+  $("cFind").addEventListener("input", function(){ renderAll(); });
+  function renderAll(){
+    var ul = $("cAll"); ul.innerHTML = "";
+    var q = $("cFind").value.trim().toLowerCase(), rows = state.ownerList || [];
+    var list = rows.filter(function(r){ return !q || (r.name + " " + r.first).toLowerCase().indexOf(q) >= 0; });
+    if(!rows.length){ ul.appendChild(el("li", "", "Loading the property list...")); return; }
+    if(!list.length){ ul.appendChild(el("li", "", "No property matches that.")); return; }
+    list.forEach(function(r){
+      var li = el("li"); li.appendChild(el("span", "p", r.name));
+      if(r.first) li.appendChild(el("span", "w", "Owner: " + r.first));
+      if(r.optOut) li.appendChild(el("span", "chip own", "Opted out"));
+      if(!r.hasEmail) li.appendChild(el("span", "w", "No email on file"));
+      var b = el("button", "btn small", "Email"); b.type = "button"; b.addEventListener("click", function(){ forProp(r.name); }); li.appendChild(b);
+      ul.appendChild(li);
+    });
   }
   function copy(text, label){
     var done = function(){ $("cMsg").textContent = label + " copied."; };
@@ -977,7 +1014,7 @@ html,body{overflow-x:clip}
   });
   function renderComm(){
     var dl = $("cProps"); dl.innerHTML = "";
-    var names = {}; state.issues.forEach(function(i){ if(i.property) names[i.property] = 1; });
+    var names = {}; state.issues.forEach(function(i){ if(i.property) names[i.property] = 1; }); (state.ownerList || []).forEach(function(r){ if(r.name) names[r.name] = 1; });
     Object.keys(names).sort().forEach(function(n){ var o = el("option"); o.value = n; dl.appendChild(o); });
     var ul = $("cOpt"); ul.innerHTML = "";
     var list = state.issues.filter(function(i){ return ownerOf(i.property).optOut && !isDone(i); });
@@ -991,7 +1028,8 @@ html,body{overflow-x:clip}
     var lg = $("cLog"); lg.innerHTML = "";
     var rows = state.commRows || [];
     if(!rows.length) lg.appendChild(el("li", "", "None yet."));
-    rows.slice(0, 50).forEach(function(r){ var li = el("li"); li.appendChild(el("span", "p", r.property_name || "")); li.appendChild(el("span", "", r.subject || "")); li.appendChild(el("span", "w", when(r.at) + " by " + r.by_name)); lg.appendChild(li); });
+    rows.slice(0, 50).forEach(function(r){ var li = el("li"); li.appendChild(el("span", "p", r.property_name || "")); li.appendChild(el("span", "", r.subject || "")); li.appendChild(el("span", "w", (r.sent ? "Sent" + (r.to_masked ? " to " + r.to_masked : "") : "Marked as emailed") + ", " + when(r.at) + " by " + r.by_name)); lg.appendChild(li); });
+    renderAll();
   }
 
   function load(){

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261112233350"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261113000239"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -563,7 +563,7 @@ window.PHH_CHECKLIST = {
     { id: "ph_micro", sec: "kitchen", label: "Inside of microwave", absent: "microwave" },
     { id: "ph_fridge", sec: "kitchen", label: "Inside of fridge/freezer" },
     { id: "ph_dining", sec: "kitchen", label: "Dining area" },
-    { id: "ph_living", sec: "living", label: "Living room (including couch)" },
+    { id: "ph_living", sec: "living", label: "Living room (including couch)", absent: "living room" },
     { id: "ph_bedroom", sec: "bedrooms", label: "Bedroom", per: "bedrooms" },
     { id: "ph_toilet", sec: "bathrooms", label: "Toilet", per: "bathrooms" },
     { id: "ph_vanity", sec: "bathrooms", label: "Vanity and sink", per: "bathrooms" },
@@ -1873,7 +1873,7 @@ window.PHH_CHECKLIST = {
       msg(list.length ? "" : "No property matches. If your clean is missing, call the PHH office.");
     }
     function reset(t, err){
-      signedIn = false; $("callphh").hidden = false;
+      signedIn = false; $("callphh").hidden = false; window.phhAskOk = false; if(window.phhAskPlace) window.phhAskPlace();
       try{ localStorage.removeItem(KEY); }catch(x){}
       $("codebox").hidden = false; $("searchbox").hidden = true; $("picklist").hidden = true; $("notme").hidden = true; if($("me")) $("me").hidden = true;
       if($("daybar")) $("daybar").hidden = true; officeDay = ""; try{ sessionStorage.removeItem("phh-office-day"); }catch(x){}
@@ -2012,7 +2012,7 @@ window.PHH_CHECKLIST = {
         .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })
         .then(function(j){
           try{ localStorage.setItem(KEY, code); }catch(e){}
-          signedIn = true; $("callphh").hidden = false;
+          signedIn = true; $("callphh").hidden = false; window.phhAskOk = !j.office; if(window.phhAskPlace) window.phhAskPlace();
           office = !!j.office; all = j.cleans || [];
           if(!office) fetch(SPRING_API + "/spring-today", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
             .then(function(r){ return r.ok ? r.json() : null; }).then(function(sj){ var l = (sj && sj.springCleans) || []; showSpring(l); if(l.length && !all.length) msg(""); }).catch(function(){});
@@ -2384,6 +2384,61 @@ window.PHH_CHECKLIST = {
   try{ if(window.ResizeObserver && foot) new ResizeObserver(place).observe(foot); }catch(e){}
   b.addEventListener("click", function(){ window.scrollTo({ top: 0, behavior: "smooth" }); });
   place();
+})();
+</script>
+<button type="button" id="askbtn" aria-label="Ask PHH a question" style="display:none;position:fixed;left:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:7;height:52px;padding:0 16px;border-radius:26px;border:0;background:var(--teal,#23807a);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.22);font:inherit;font-weight:700;font-size:.95rem;cursor:pointer;align-items:center;gap:8px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M9.5 9a2.5 2.5 0 1 1 3.2 2.4c-.5.2-.7.6-.7 1.1"/><circle cx="12" cy="14.6" r=".4" fill="currentColor"/></svg>Ask PHH</button>
+<!-- Ask PHH for housekeepers (13 Nov 2026, plan 1.3). How-to help only, 10 questions a day. Function ask-hk. -->
+<div id="askhk" hidden role="dialog" aria-modal="true" aria-labelledby="askhkT" style="position:fixed;inset:0;z-index:30;background:rgba(14,35,46,.45);display:flex;align-items:flex-end;justify-content:center">
+  <div style="background:#fff;width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;border-radius:16px 16px 0 0;padding:16px 16px calc(14px + env(safe-area-inset-bottom,0px))">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><h2 id="askhkT" style="margin:0;font-size:1.15rem;color:var(--ink)">Ask PHH</h2><button type="button" id="askhkX" aria-label="Close" style="font:inherit;font-size:1.4rem;line-height:1;border:0;background:none;color:var(--muted);padding:6px 10px;cursor:pointer">&times;</button></div>
+    <p class="note" style="margin:4px 0 10px">Quick help with Clean Check and your cleans. Anything urgent, call PHH on <a href="tel:+61291944411">(02) 9194 4411</a>.</p>
+    <div id="askhkLog" style="overflow-y:auto;flex:1;min-height:80px" aria-live="polite"></div>
+    <div id="askhkChips" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0"></div>
+    <form id="askhkF" style="display:flex;gap:8px;align-items:flex-end;margin-top:6px"><textarea id="askhkQ" rows="2" maxlength="600" placeholder="Type your question" aria-label="Your question" style="flex:1;font:inherit;font-size:1rem;border:1px solid var(--line);border-radius:10px;padding:10px;resize:none"></textarea><button type="submit" class="submit" id="askhkGo" style="padding:12px 16px">Ask</button></form>
+  </div>
+</div>
+<script>
+(function(){
+  var API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/ask-hk/ask";
+  var box = document.getElementById("askhk"), log = document.getElementById("askhkLog"), q = document.getElementById("askhkQ"), go = document.getElementById("askhkGo"), chips = document.getElementById("askhkChips");
+  var btn = document.getElementById("askbtn"); if(!box || !btn) return;
+  var hist = [], busy = false, lastFocus = null;
+  var STARTERS = ["No signal at the property?", "There's no oven here, what do I do?", "How do I report something broken?", "More guests stayed than booked"];
+  function bubble(t, me){ var d = document.createElement("div"); d.style.cssText = "margin:8px 0;padding:10px 12px;border-radius:12px;line-height:1.45;white-space:pre-wrap;max-width:88%;" + (me ? "margin-left:auto;background:var(--teal);color:#fff" : "background:#eef4f6;color:var(--ink)"); d.textContent = t; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; }
+  function code(){ try{ return localStorage.getItem("phh-cleaner-code") || ""; }catch(e){ return ""; } }
+  function open(){ lastFocus = document.activeElement; box.hidden = false; btn.style.display = "none"; document.body.style.overflow = "hidden"; if(!log.childNodes.length) bubble("Hi! Ask me how to do anything in Clean Check, like photos, no signal, maintenance or supplies.", false); setTimeout(function(){ q.focus(); }, 50); }
+  function close(){ box.hidden = true; document.body.style.overflow = ""; place(); if(lastFocus && lastFocus.focus && lastFocus.offsetParent) lastFocus.focus(); }
+  STARTERS.forEach(function(t){ var b = document.createElement("button"); b.type = "button"; b.className = "segbtn"; b.style.cssText = "font-size:.85rem;padding:6px 10px"; b.textContent = t; b.addEventListener("click", function(){ q.value = t; send(); }); chips.appendChild(b); });
+  function send(){
+    var t = q.value.trim(); if(!t || busy) return;
+    var c = code(); if(!c){ bubble("Sign in with your code first, then ask again.", false); return; }
+    busy = true; go.disabled = true; q.value = ""; chips.hidden = true; bubble(t, true); var w = bubble("...", false);
+    fetch(API, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: c, question: t, history: hist.slice(-4), page: (window.RES ? "clean" : "list") }) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || "Error"); return j; }); })
+      .then(function(j){ w.textContent = j.answer; hist.push({ q: t, a: j.answer }); if(j.left === 1) bubble("You have 1 question left today.", false); })
+      .catch(function(e){ w.textContent = navigator.onLine === false ? "No signal right now. Try again once you're back in signal, or call PHH on (02) 9194 4411." : (e.message || "Sorry, that didn't work. Try again, or call PHH on (02) 9194 4411."); })
+      .then(function(){ busy = false; go.disabled = false; });
+  }
+  btn.addEventListener("click", open);
+  /* A floating pill like the Extra photo button (Ian, 13 Nov). Housekeeper codes only. On a clean it sits above the Extra photo
+     button (both above the Complete bar); on the cleans list it sits bottom left. */
+  var onClean = !!new URLSearchParams(location.search).get("res"), foot = document.getElementById("foot"), qc = document.getElementById("quickcam");
+  function place(){
+    var ok = !!code() && box.hidden && (onClean || window.phhAskOk === true);
+    btn.style.display = ok ? "flex" : "none"; if(!ok) return;
+    var fh = foot && !foot.hidden && getComputedStyle(foot).display !== "none" ? foot.offsetHeight : 0;
+    var qOn = qc && qc.style.display !== "none";
+    btn.style.bottom = fh ? (fh + 12 + (qOn ? 62 : 0)) + "px" : (qOn ? "calc(82px + env(safe-area-inset-bottom,0px))" : "calc(20px + env(safe-area-inset-bottom,0px))");
+  }
+  window.phhAskPlace = place;
+  window.addEventListener("scroll", place, { passive: true }); window.addEventListener("resize", place);
+  try{ if(window.ResizeObserver && foot) new ResizeObserver(place).observe(foot); }catch(e){}
+  setInterval(place, 1500); place();
+  document.getElementById("askhkX").addEventListener("click", close);
+  box.addEventListener("click", function(e){ if(e.target === box) close(); });
+  document.addEventListener("keydown", function(e){ if(!box.hidden && e.key === "Escape") close(); });
+  document.getElementById("askhkF").addEventListener("submit", function(e){ e.preventDefault(); send(); });
+  q.addEventListener("keydown", function(e){ if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); send(); } });
 })();
 </script>
 </body></html>

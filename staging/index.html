@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261113004640"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261113005203"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -358,6 +358,7 @@ input,textarea,select{font-size:19px}
   </header>
   <div class="pushbox" id="pushbox" hidden></div>
   <div id="phhmsgs" hidden></div>
+  <div id="phhcover" hidden></div>
   <div id="phhcons" hidden></div>
   <div id="phhthreads" hidden></div>
   <div class="who" id="codebox" hidden>
@@ -2007,6 +2008,47 @@ window.PHH_CHECKLIST = {
     /* Consumables ready for pickup (7 Nov 2026, Marson's idea, Ian "build it"; STAGING). When CST ticks "Labeling Bags" in the
        Process Street consumables order, n8n records it and this card shows until the housekeeper taps Got them.
        Database lookups qa_consumables_mine / qa_consumables_got (same wrong-code lockout as Coming up). */
+    /* Cover shifts (13 Nov 2026). The office asks chosen housekeepers to cover a clean; they tap I can do it / Can't this time.
+       The office picks one (not first come, first served) and that housekeeper gets a "You've got it" card. cover-api /mine, /answer. */
+    function showCover(code){
+      var box = $("phhcover"); if(!box || !window.fetch) return;
+      var API_C = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/cover-api-staging";
+      var post = function(r, b){ return fetch(API_C + "/" + r, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(b) }).then(function(x){ return x.ok ? x.json() : null; }); };
+      var el = function(tag, css, text){ var e = document.createElement(tag); if(css) e.style.cssText = css; if(text != null) e.textContent = text; return e; };
+      var CARD = "background:#fff;border:1px solid #f1d58a;border-left:4px solid #f6b81a;border-radius:10px;padding:12px 14px;margin:0 0 10px";
+      var BTN = "margin:10px 8px 0 0;border:0;border-radius:8px;background:#5bbfb5;color:#fff;font-weight:600;padding:10px 16px";
+      var BTN2 = "margin:10px 8px 0 0;border:1px solid #5bbfb5;border-radius:8px;background:#fff;color:#23807a;font-weight:600;padding:9px 14px";
+      var facts = function(c){ return [c.suburb, c.backToBack ? "Back to back" : "", c.guests ? c.guests + " guests" : "", c.bedrooms ? c.bedrooms + " bed, " + (c.bathrooms || "?") + " bath" : "", c.fee].filter(Boolean).join(" | "); };
+      post("mine", { code: code }).then(function(j){
+        var open = (signedIn && j && j.open) || [], won = (signedIn && j && j.won) || [];
+        box.innerHTML = ""; box.hidden = !(open.length || won.length);
+        won.forEach(function(c){
+          var d = el("div", CARD.replace("#f1d58a", "#cfe9e5").replace("#f6b81a", "#5bbfb5")); d.className = "covercard";
+          d.appendChild(el("div", "font-weight:700;margin:0 0 4px", "You've got it: " + roomFirst(c.property) + ", " + c.day));
+          d.appendChild(el("div", "font-size:14px", facts(c) + ". Thanks for covering. It'll show in your cleans for that day."));
+          box.appendChild(d);
+        });
+        open.forEach(function(c){
+          var d = el("div", CARD); d.className = "covercard";
+          d.appendChild(el("div", "font-size:13px;color:#5d6b73", "Cover needed"));
+          d.appendChild(el("div", "font-weight:700;margin:2px 0 4px", roomFirst(c.property) + ", " + c.day));
+          d.appendChild(el("div", "font-size:14px", facts(c)));
+          if(c.note) d.appendChild(el("div", "font-size:14px;margin-top:4px", c.note));
+          var st = el("div", "font-size:14px;margin-top:8px;color:#23807a;font-weight:600"); st.className = "coverstate";
+          var yes = el("button", BTN, "I can do it"); yes.type = "button"; yes.className = "coveryes";
+          var no = el("button", BTN2, "Can't this time"); no.type = "button"; no.className = "coverno";
+          var show = function(a){ st.textContent = a === "yes" ? "Thanks! The office will let you know if it's yours." : a === "no" ? "No worries, thanks for letting us know." : ""; yes.hidden = a === "yes"; no.hidden = a === "no"; if(a === "no") yes.textContent = "Actually, I can do it"; if(a === "yes") no.textContent = "Actually, I can't"; };
+          var send = function(a, b){ var t = b.textContent; b.disabled = true; b.textContent = "Saving...";
+            post("answer", { code: code, id: c.id, answer: a }).then(function(r){ b.disabled = false; b.textContent = t;
+              if(r && r.ok){ show(a); } else if(r && r.closed){ st.textContent = r.message; yes.hidden = no.hidden = true; } else msg("That didn't save. Check your signal and try again.", true); }).catch(function(){ b.disabled = false; b.textContent = t; msg("That didn't save. Check your signal and try again.", true); }); };
+          yes.addEventListener("click", function(){ send("yes", yes); });
+          no.addEventListener("click", function(){ send("no", no); });
+          d.appendChild(st); d.appendChild(yes); d.appendChild(no); show(c.answer);
+          box.appendChild(d);
+        });
+        if((open.length || won.length) && /[?&]cover=1/.test(location.search)) box.scrollIntoView({ block:"start" });
+      }).catch(function(){});
+    }
     function showConsumables(code){
       /* 10 Nov 2026 (Bec): the ready card lists what's in the bag; after pickup a slim "Anything missing?" card stays for 3 days
          so the housekeeper can tick what wasn't there once at the property. Missing items go to the office Consumables tab (and CST). */
@@ -2096,6 +2138,7 @@ window.PHH_CHECKLIST = {
           if(!office) fetch(SPRING_API + "/spring-today", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
             .then(function(r){ return r.ok ? r.json() : null; }).then(function(sj){ var l = (sj && sj.springCleans) || []; showSpring(l); if(l.length && !all.length) msg(""); }).catch(function(){});
           if(!office) showComing(code);
+          if(!office) showCover(code);
           if(!office) showConsumables(code);
           if(!office) showThreads(code);
           showMe(office ? "PHH office" : String(j.cleaner || "").split(" ")[0]);

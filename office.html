@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261112233350"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261113010641"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -195,6 +195,22 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
 .kv dd{margin:0}
 
 /* Housekeeper and property tables */
+.cv-card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin:0 0 14px}
+.cv-card h3{margin:0 0 8px;font-size:15px}
+.cv-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:6px 0}
+.cv-row label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:3px}
+.cv-row input,.cv-row select{font:inherit;padding:7px 8px;border:1px solid var(--line);border-radius:4px;min-width:0}
+.cv-hks{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px 14px;margin:8px 0;max-height:320px;overflow:auto;border-top:1px solid var(--line-2);padding-top:8px}
+.cv-hks label{display:flex;gap:8px;align-items:flex-start;font-size:13px;padding:3px 0;cursor:pointer}
+.cv-hks .sub{color:var(--muted);font-size:12px}
+.cv-sum{font-size:13px;color:var(--ink);margin:6px 0}
+.cv-ans{list-style:none;margin:8px 0 0;padding:0}
+.cv-ans li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line-2);font-size:13px}
+.cv-ans .yes{color:var(--ok-ink);font-weight:600}.cv-ans .no{color:var(--faint)}.cv-ans .wait{color:var(--muted)}
+.cv-st{display:inline-block;font-size:12px;padding:2px 8px;border-radius:10px;margin-left:6px}
+.cv-st.open{background:var(--pend);color:var(--pend-ink)}.cv-st.assigned{background:var(--ok);color:var(--ok-ink)}.cv-st.cancelled{background:var(--idle);color:var(--idle-ink)}
+.cv-hh{font-size:12px;margin-top:6px;color:var(--muted)}.cv-hh.bad{color:#b3261e;font-weight:600}.cv-hh.good{color:var(--ok-ink)}
+.cv-trial{background:#fff7e0;border:1px solid #f1d58a;border-radius:6px;padding:8px 12px;font-size:13px;margin:0 0 12px}
 .toprow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
 .toprow h2{margin:0;font-size:16px;font-weight:500}
 .issues{background:#fff;border:1px solid var(--line);border-radius:4px;padding:12px 16px;margin-bottom:12px}
@@ -484,6 +500,7 @@ html,body{overflow-x:clip}
   <button class="tab" role="tab" data-tab="reviews" aria-selected="false">Reviews<span class="n" id="rvN" hidden></span></button>
   <button class="tab" role="tab" data-tab="scores" aria-selected="false">Scores</button>
   <button class="tab" role="tab" data-tab="warn" aria-selected="false">Warnings</button>
+  <button class="tab" role="tab" data-tab="cover" aria-selected="false">Cover<span class="n" id="cvN" hidden></span></button>
   <button class="tab" role="tab" data-tab="insp" aria-selected="false">Inspections</button>
   <button class="tab" role="tab" data-tab="sched" aria-selected="false">Schedule</button>
 </nav>
@@ -655,6 +672,33 @@ html,body{overflow-x:clip}
     <p class="msg" id="wnMsg"></p>
     <div id="wnList"></div>
     <p class="hint">Office only: housekeepers and owners never see this page. Formal warnings go out by HelpScout first, then get logged here with the link.</p>
+  </section>
+  <!-- Cover shifts (13 Nov 2026, staging): ask chosen housekeepers to cover a clean, they answer in the app, the office picks one.
+       Pick changes the clean's cleaner in HomHero through n8n "PHH Clean Check - Cover Assign" (never bookings or blocks). -->
+  <section id="cvView" hidden>
+    <div class="cv-trial" id="cvTrial" hidden>Trial: only test phones get the cover pings for now. Real housekeepers see nothing until it's switched on.</div>
+    <div class="cv-card">
+      <h3>Ask for cover</h3>
+      <div class="cv-row">
+        <label>Clean date<input type="date" id="cvDate"></label>
+        <label style="flex:1;min-width:220px">Clean<select id="cvClean"><option value="">Pick a date first</option></select></label>
+      </div>
+      <div id="cvForm" hidden>
+        <div class="cv-sum" id="cvSum"></div>
+        <div class="cv-row">
+          <label>Fee ($)<input type="number" id="cvFee" min="0" max="5000" step="1" inputmode="decimal" style="width:110px"></label>
+          <label style="flex:1;min-width:220px">Note for the housekeeper (optional)<input type="text" id="cvNote" maxlength="300" placeholder="e.g. keys in the lockbox, early check-in"></label>
+        </div>
+        <div class="cv-row"><strong style="font-size:13px">Who to ask</strong> <button class="btn ghost small" type="button" id="cvLocal">Tick everyone who works in this suburb</button> <button class="btn ghost small" type="button" id="cvNone">Clear</button></div>
+        <div class="cv-hks" id="cvHks"></div>
+        <button class="btn" type="button" id="cvAsk">Ask for cover</button>
+      </div>
+      <p class="msg" id="cvFormMsg"></p>
+    </div>
+    <div class="toprow"><h2>Cover requests</h2><button class="btn ghost small" type="button" id="cvRefresh">Refresh</button></div>
+    <p class="msg" id="cvMsg"></p>
+    <div id="cvList"></div>
+    <p class="hint">Not first come, first served: everyone who says yes is listed and the office picks. Pick changes the cleaner on that clean in HomHero (about 10 minutes) and lets the housekeeper know. The clean then shows in their Clean Check list after the next sync.</p>
   </section>
   <section id="b4InspView" hidden>
     <div class="toprow">
@@ -1023,7 +1067,7 @@ html,body{overflow-x:clip}
   if(!/^\d{4}-\d{2}-\d{2}$/.test(state.date)) state.date = sydToday();
   /* Deep links (Ask PHH): ?tab=cleans|attention|hk|props &status= &who= &q= &open=<booking> */
   var LINK = { tab: params.get("tab") || "", open: params.get("open") || "" };
-  if(["cleans","attention","hk","props","spring","cons","reviews","scores","warn","insp","sched"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
+  if(["cleans","attention","hk","props","spring","cons","reviews","scores","warn","cover","insp","sched"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
   if(["checked","missing","cleaned","waiting","inprog","notstarted"].indexOf(params.get("status") || "") >= 0) state.status = params.get("status");
   state.who = (params.get("who") || "").slice(0, 120); state.q = (params.get("q") || "").slice(0, 120);
   if(/^[A-Za-z0-9-]{3,40}$/.test(LINK.open)) state.open[LINK.open] = true; else LINK.open = "";
@@ -2718,19 +2762,122 @@ html,body{overflow-x:clip}
   $("wnShow").addEventListener("change", function(){ WN.show = this.value; wnRender(); });
   $("wnQ").addEventListener("input", function(){ WN.q = this.value.trim().toLowerCase(); wnRender(); });
 
-  var TITLES = { cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables", reviews:"Reviews", scores:"Scores", warn:"Warnings", insp:"Inspections", sched:"Schedule" };
+  /* ---------- Cover shifts (13 Nov 2026, staging). cover-api: office asks, housekeepers answer in the app, office picks. ---------- */
+  var COVER_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/cover-api";
+  var CV = { cands:null, board:null };
+  function cvPost(route, body){
+    body = body || {}; body.code = CODE; if(TEST) body.test = true;
+    return fetch(COVER_API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if(!r.ok) throw new Error(j.error || "Couldn't reach Clean Check. Try again."); return j; }); });
+  }
+  function cvLoadCleans(){
+    var d = $("cvDate").value, sel = $("cvClean");
+    $("cvForm").hidden = true; CV.cands = null;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){ sel.innerHTML = "<option value=''>Pick a date first</option>"; return; }
+    sel.innerHTML = "<option value=''>Loading...</option>";
+    cvPost("cleans", { date:d }).then(function(j){
+      sel.innerHTML = "";
+      var o = el("option", "", j.cleans.length ? "Pick the clean that needs cover (" + j.cleans.length + ")" : "No cleans left to cover on " + j.day); o.value = ""; sel.appendChild(o);
+      j.cleans.forEach(function(c){ var x = el("option", "", c.property + (c.suburb ? ", " + c.suburb : "") + " | " + (c.cleaner || "no housekeeper") + (c.backToBack ? " | back to back" : "") + (c.cover ? " | cover " + (c.cover === "open" ? "asked" : "sorted") : "")); x.value = c.res; if(c.cover === "open") x.disabled = true; sel.appendChild(x); });
+    }).catch(function(e){ sel.innerHTML = ""; var o = el("option", "", e.message); o.value = ""; sel.appendChild(o); });
+  }
+  function cvLoadCands(res){
+    $("cvForm").hidden = true; $("cvFormMsg").className = "msg"; $("cvFormMsg").textContent = res ? "Loading housekeepers..." : "";
+    if(!res) return;
+    cvPost("candidates", { res:res }).then(function(j){
+      CV.cands = j; var c = j.clean;
+      $("cvTrial").hidden = !!j.live;
+      $("cvSum").textContent = c.property + " | " + (c.address || c.suburb || "") + " | " + c.day + (c.backToBack ? " | BACK TO BACK" : " | not back to back") + (c.guests ? " | " + c.guests + " guests" : "") + (c.bedrooms ? " | " + c.bedrooms + " bed / " + (c.bathrooms || "?") + " bath" : "") + " | now: " + (c.cleaner || "no housekeeper");
+      var box = $("cvHks"); box.innerHTML = "";
+      j.housekeepers.forEach(function(h){
+        var lab = el("label"); var cb = document.createElement("input"); cb.type = "checkbox"; cb.value = h.id; cb.setAttribute("data-local", h.local ? "1" : "");
+        var t = el("span"); t.appendChild(el("span", "", h.name + (h.tester ? " (tester)" : ""))); t.appendChild(el("br"));
+        t.appendChild(el("span", "sub", (h.local ? h.local + " cleans in " + (c.suburb || "this suburb") + " (4 months)" : "No recent cleans here") + " | " + h.cleansThatDay + " that day | " + (h.phone ? "notifications on" : "no notifications (sees it in the app)")));
+        lab.appendChild(cb); lab.appendChild(t); box.appendChild(lab);
+      });
+      $("cvForm").hidden = false; $("cvFormMsg").textContent = j.housekeepers.length ? "" : "No housekeepers to ask.";
+    }).catch(function(e){ $("cvFormMsg").className = "msg err"; $("cvFormMsg").textContent = e.message; });
+  }
+  function cvAsk(){
+    var res = $("cvClean").value, to = [].slice.call(document.querySelectorAll("#cvHks input:checked")).map(function(x){ return x.value; });
+    if(!res || !to.length){ $("cvFormMsg").className = "msg err"; $("cvFormMsg").textContent = "Pick the clean and at least one housekeeper."; return; }
+    var b = $("cvAsk"); b.disabled = true; b.textContent = "Asking...";
+    cvPost("create", { res:res, fee: $("cvFee").value === "" ? null : Number($("cvFee").value), note: $("cvNote").value, to: to }).then(function(j){
+      $("cvFormMsg").className = "msg"; $("cvFormMsg").textContent = "Asked " + j.asked + (j.asked === 1 ? " housekeeper" : " housekeepers") + ", " + j.pinged + " by phone notification" + (j.trial ? " (trial: test phones only)" : "") + ". The rest see it in the app.";
+      $("cvForm").hidden = true; $("cvFee").value = ""; $("cvNote").value = ""; cvLoadCleans(); cvBoard();
+    }).catch(function(e){ $("cvFormMsg").className = "msg err"; $("cvFormMsg").textContent = e.message; }).then(function(){ b.disabled = false; b.textContent = "Ask for cover"; });
+  }
+  function cvWhen(t){ return t ? new Date(t).toLocaleString("en-AU", { timeZone:"Australia/Sydney", weekday:"short", day:"numeric", month:"short", hour:"numeric", minute:"2-digit" }).replace(",", "").replace(/\s?(am|pm)/i, function(x){ return x.trim().toLowerCase(); }) : ""; }
+  function cvBoard(){
+    $("cvMsg").className = "msg"; if(!CV.board) $("cvMsg").textContent = "Loading...";
+    return cvPost("board", {}).then(function(j){ CV.board = j; $("cvTrial").hidden = !!j.live; cvRender(); }).catch(function(e){ $("cvMsg").className = "msg err"; $("cvMsg").textContent = e.message; });
+  }
+  function cvRender(){
+    var list = $("cvList"); list.innerHTML = ""; var reqs = (CV.board && CV.board.requests) || [];
+    var waiting = reqs.filter(function(r){ return r.status === "open" && r.answers.some(function(a){ return a.answer === "yes"; }); }).length;
+    $("cvN").textContent = waiting; $("cvN").hidden = !waiting;
+    var ord = { open:0, assigned:1, cancelled:2 };
+    reqs.slice().sort(function(a, b){ return ord[a.status] - ord[b.status] || String(a.date).localeCompare(String(b.date)); }).forEach(function(r){
+      var d = el("div", "cv-card");
+      var h = el("h3", "", r.property + ", " + r.day); h.appendChild(el("span", "cv-st " + r.status, r.status === "open" ? "Waiting" : r.status === "assigned" ? "Covered" : "Cancelled")); if(r.test) h.appendChild(el("span", "sub", " (test)")); d.appendChild(h);
+      d.appendChild(el("div", "cv-sum", [r.address || r.suburb, r.backToBack ? "BACK TO BACK" : "not back to back", r.guests ? r.guests + " guests" : "", r.fee ? r.fee : "no fee given", "was " + (r.prevCleaner || "unassigned"), "asked by " + r.createdBy + " " + cvWhen(r.createdAt)].filter(Boolean).join(" | ")));
+      if(r.note) d.appendChild(el("div", "cv-sum", "Note: " + r.note));
+      if(r.status === "assigned"){
+        d.appendChild(el("div", "cv-sum", "Given to " + r.assignedName + " by " + r.assignedBy + " " + cvWhen(r.assignedAt) + "."));
+        var cls = r.hhStatus === "done" ? "good" : (r.hhStatus === "failed" || (r.hhStatus === "skipped" && !r.test)) ? "bad" : "";
+        d.appendChild(el("div", "cv-hh " + cls, r.hhStatus === "done" ? "HomHero updated: " + (r.hhNote || "") : r.hhStatus === "failed" ? "HomHero NOT changed, please change the cleaner in HomHero by hand. " + (r.hhNote || "") : r.hhStatus === "skipped" ? (r.hhNote || "HomHero not changed.") : "Changing the cleaner in HomHero (about 10 minutes)." + (r.hhNote && !/^Waiting/.test(r.hhNote) ? " " + r.hhNote : "")));
+      }
+      var ul = el("ul", "cv-ans");
+      r.answers.forEach(function(a){
+        var li = el("li"); var left = el("span");
+        left.appendChild(el("span", a.answer === "yes" ? "yes" : a.answer === "no" ? "no" : "wait", a.name + ": " + (a.answer === "yes" ? "Can do it" : a.answer === "no" ? "Can't" : "No answer yet")));
+        if(a.note){ left.appendChild(el("span", "sub", " “" + a.note + "”")); }
+        left.appendChild(el("span", "sub", a.answeredAt ? " " + cvWhen(a.answeredAt) : (a.pinged ? " (pinged)" : " (" + (a.pingNote || "no ping") + ", sees it in the app)")));
+        li.appendChild(left);
+        if(r.status === "open" && a.answer !== "no"){
+          var pb = el("button", "btn small" + (a.answer === "yes" ? "" : " ghost"), "Pick"); pb.type = "button";
+          pb.addEventListener("click", function(){
+            if(!confirm("Give " + r.property + " on " + r.day + " to " + a.name + "?\n\nThis changes the cleaner on that clean in HomHero and lets " + a.name + " know.")) return;
+            pb.disabled = true; pb.textContent = "Saving...";
+            cvPost("pick", { id:r.id, cleaner_id:a.id }).then(function(){ cvBoard(); }).catch(function(e){ alert(e.message); pb.disabled = false; pb.textContent = "Pick"; cvBoard(); });
+          });
+          li.appendChild(pb);
+        }
+        ul.appendChild(li);
+      });
+      d.appendChild(ul);
+      if(r.status === "open"){
+        var cb = el("button", "btn ghost small", "Cancel request"); cb.type = "button"; cb.style.marginTop = "8px";
+        cb.addEventListener("click", function(){ if(!confirm("Cancel this cover request? Nobody gets told.")) return; cvPost("cancel", { id:r.id }).then(cvBoard).catch(function(e){ alert(e.message); }); });
+        d.appendChild(cb);
+      }
+      list.appendChild(d);
+    });
+    $("cvMsg").className = "msg"; $("cvMsg").textContent = reqs.length ? "" : "No cover requests in the last 2 weeks.";
+  }
+  $("cvDate").addEventListener("change", cvLoadCleans);
+  $("cvClean").addEventListener("change", function(){ cvLoadCands(this.value); });
+  $("cvLocal").addEventListener("click", function(){ document.querySelectorAll("#cvHks input").forEach(function(x){ x.checked = !!x.getAttribute("data-local"); }); });
+  $("cvNone").addEventListener("click", function(){ document.querySelectorAll("#cvHks input").forEach(function(x){ x.checked = false; }); });
+  $("cvAsk").addEventListener("click", cvAsk);
+  $("cvRefresh").addEventListener("click", cvBoard);
+  if(CODE) setTimeout(function(){ cvPost("board", {}).then(function(j){ CV.board = j; cvRender(); }).catch(function(){}); }, 1500);
+  function cvTab(){ if(!$("cvDate").value){ $("cvDate").value = sydToday(); $("cvDate").min = sydToday(); cvLoadCleans(); } cvBoard(); }
+
+  var TITLES = { cover:"Cover shifts", cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables", reviews:"Reviews", scores:"Scores", warn:"Warnings", insp:"Inspections", sched:"Schedule" };
   function setTab(t){
     state.tab = t;
     document.querySelectorAll(".tab").forEach(function(b){ b.setAttribute("aria-selected", String(b.getAttribute("data-tab") === t)); });
     $("sectionTitle").textContent = TITLES[t];
-    var day = t === "cleans" || t === "attention", spring = t === "spring", cons = t === "cons", rv = t === "reviews", insp = t === "insp", sched = t === "sched", scr = t === "scores", wn = t === "warn";
-    $("dayView").hidden = !day; $("insView").hidden = day || spring || cons || rv || insp || sched || scr || wn; $("wnView").hidden = !wn; $("scView").hidden = !scr; $("springView").hidden = !spring; $("consView").hidden = !cons; $("rvView").hidden = !rv;
+    var day = t === "cleans" || t === "attention", spring = t === "spring", cons = t === "cons", rv = t === "reviews", insp = t === "insp", sched = t === "sched", scr = t === "scores", wn = t === "warn", cv = t === "cover";
+    $("dayView").hidden = !day; $("insView").hidden = day || spring || cons || rv || insp || sched || scr || wn || cv; $("wnView").hidden = !wn; $("cvView").hidden = !cv; $("scView").hidden = !scr; $("springView").hidden = !spring; $("consView").hidden = !cons; $("rvView").hidden = !rv;
     $("b4InspView").hidden = !insp; $("b4SchedView").hidden = !sched;
     $("pcBox").hidden = t !== "props"; $("assetBox").hidden = t !== "props"; if(t === "props"){ pcInit(); assetsInit(); }
     if(insp){ inspLoad(); }
     else if(sched){ schedTab(); }
     else if(scr){ scLoad(); }
     else if(wn){ wnLoad(); }
+    else if(cv){ cvTab(); }
     else if(rv){ if(RV.data) rvRender(); else rvLoad(); }
     else if(cons){ $("consMsg").className = "msg"; $("consMsg").textContent = "Loading..."; consLoad(true).catch(function(e){ $("consMsg").className = "msg err"; $("consMsg").textContent = e.message; }); }
     else if(spring) spLoad(); else if(day){ if(state.rows.length) renderRows(); } else loadIns();

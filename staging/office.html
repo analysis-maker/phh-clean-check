@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261113005203"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261113010641"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -2771,7 +2771,7 @@ html,body{overflow-x:clip}
   $("wnQ").addEventListener("input", function(){ WN.q = this.value.trim().toLowerCase(); wnRender(); });
 
   /* ---------- Cover shifts (13 Nov 2026, staging). cover-api: office asks, housekeepers answer in the app, office picks. ---------- */
-  var COVER_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/cover-api-staging";
+  var COVER_API = "https://rxhpnowszmetjxbwylil.supabase.co/functions/v1/cover-api";
   var CV = { cands:null, board:null };
   function cvPost(route, body){
     body = body || {}; body.code = CODE; if(TEST) body.test = true;
@@ -2832,7 +2832,7 @@ html,body{overflow-x:clip}
       if(r.note) d.appendChild(el("div", "cv-sum", "Note: " + r.note));
       if(r.status === "assigned"){
         d.appendChild(el("div", "cv-sum", "Given to " + r.assignedName + " by " + r.assignedBy + " " + cvWhen(r.assignedAt) + "."));
-        var cls = r.hhStatus === "done" ? "good" : r.hhStatus === "failed" ? "bad" : "";
+        var cls = r.hhStatus === "done" ? "good" : (r.hhStatus === "failed" || (r.hhStatus === "skipped" && !r.test)) ? "bad" : "";
         d.appendChild(el("div", "cv-hh " + cls, r.hhStatus === "done" ? "HomHero updated: " + (r.hhNote || "") : r.hhStatus === "failed" ? "HomHero NOT changed, please change the cleaner in HomHero by hand. " + (r.hhNote || "") : r.hhStatus === "skipped" ? (r.hhNote || "HomHero not changed.") : "Changing the cleaner in HomHero (about 10 minutes)." + (r.hhNote && !/^Waiting/.test(r.hhNote) ? " " + r.hhNote : "")));
       }
       var ul = el("ul", "cv-ans");

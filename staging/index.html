@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261113010641"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261114000441"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -345,6 +345,9 @@ li.own .txt::after{content:" (this property)";color:var(--muted);font-size:.78re
 html{zoom:.85}
 #camov{zoom:1.1765}
 input,textarea,select{font-size:19px}
+/* Back to back on the cleans list (Belinda, 14 Nov): yellow like the old app */
+#picklist .item.b2b .pickrow{background:#fff6d6;border-color:#f1d58a}
+#picklist .sub.b2bt{color:#7a5a00;font-weight:600}
 </style>
 
 <nav class="nav"><div class="wrap"><img src="../logo.png" alt="Professional Holiday Homes" width="183" height="34" fetchpriority="high"><div class="me" id="me" hidden><span id="mename"></span><a href="#" id="signout">Sign out</a></div></div></nav>
@@ -1872,6 +1875,7 @@ window.PHH_CHECKLIST = {
         headers:{ "content-type":"application/json", "apikey":"sb_publishable_JaFEZTFufkk0hrminCZdXQ_fQFJ0kLb" }, body: JSON.stringify({ p_code: code }) })
         .then(function(r){ return r.ok ? r.json() : null; })
         .then(function(j){
+          if(signedIn && j && Array.isArray(j.b2b)){ var bs = {}; j.b2b.forEach(function(r){ bs[String(r)] = true; }); window.phhB2B = bs; markB2B(); }
           if(!signedIn || !j || !Array.isArray(j.cleans) || !j.cleans.length){ sec.hidden = true; return; }
           var byDay = {}; j.cleans.forEach(function(c){ (byDay[c.date] = byDay[c.date] || []).push(c); }); /* c = {date, property, res, guest, adults, children, infants, pets} */
           var start = todayYmd(1), end = todayYmd(365);
@@ -1890,6 +1894,7 @@ window.PHH_CHECKLIST = {
               /* Booked guests (Bec, 9 Nov; adults and kids, Angus 12 Nov): "2 adults, 3 kids, with a pet", as booked now. */
               var gt = window.phhGuestBits ? window.phhGuestBits(c.adults, c.children, c.infants, c.pets) : "";
               if(gt) bits.push(gt);
+              if(c.b2b) bits.push("back to back");
               if(bits.length){ var m = document.createElement("span"); m.className = "cg"; m.textContent = bits.join(", "); li.appendChild(m); }
               list.appendChild(li); });
           }
@@ -1926,11 +1931,22 @@ window.PHH_CHECKLIST = {
           sec.hidden = false; showMonth(firstMonth);
         }).catch(function(){ sec.hidden = true; });
     }
+    /* Back to back (Belinda, 14 Nov): bookings where the next guests arrive the same day, from qa_coming_up "b2b".
+       Shown on the cleans list before opening a clean, like the old app's yellow rows. */
+    function markB2B(){
+      var set = window.phhB2B || {};
+      Array.prototype.forEach.call(document.querySelectorAll("#picklist .pickrow[data-res]"), function(b){
+        var on = !!set[b.getAttribute("data-res")], li = b.parentNode, txt = b.querySelector(".txt"), t = txt && txt.querySelector(".b2bt");
+        li.classList.toggle("b2b", on);
+        if(on && txt && !t){ t = document.createElement("span"); t.className = "sub b2bt"; t.textContent = "Back to back (next guests arrive the same day)"; txt.appendChild(t); }
+        if(!on && t) t.remove();
+      });
+    }
     function show(list){
       var ul = $("picklist"); ul.innerHTML = "";
       list.forEach(function(c){
         var li = document.createElement("li"); li.className = "item" + (c.submitted ? " done" : "");
-        var b = document.createElement("button"); b.type = "button"; b.className = "tick pickrow";
+        var b = document.createElement("button"); b.type = "button"; b.className = "tick pickrow"; b.setAttribute("data-res", c.res || "");
         b.innerHTML = '<span class="txt"></span><span class="chev" aria-hidden="true">&rsaquo;</span>';
         b.querySelector(".txt").textContent = roomFirst(c.property);
         if(office && c.cleaner){ var sub = document.createElement("span"); sub.className = "sub"; sub.textContent = c.cleaner; b.querySelector(".txt").appendChild(sub); }
@@ -1950,6 +1966,7 @@ window.PHH_CHECKLIST = {
         li.appendChild(b); ul.appendChild(li);
       });
       ul.hidden = !list.length;
+      markB2B();
       msg(list.length ? "" : "No property matches. If your clean is missing, call the PHH office.");
     }
     function reset(t, err){

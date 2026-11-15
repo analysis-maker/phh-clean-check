@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261113010641"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261115065733"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -2305,7 +2305,8 @@ html,body{overflow-x:clip}
       host.appendChild(el("h4", "", "Extra checklist items at this property"));
       var ul = el("ul", "pcl");
       j.items.forEach(function(it){
-        var li = el("li"); li.appendChild(el("span", "t", (secTitle[it.sec] || it.sec) + ": " + it.text));
+        var isPh = /^\[photo\]\s*/i.test(it.text || "");
+        var li = el("li"); li.appendChild(el("span", "t", (secTitle[it.sec] || it.sec) + ": " + (isPh ? "Photo of " + it.text.replace(/^\[photo\]\s*/i, "") : it.text)));
         li.appendChild(el("span", "sub", it.created_by ? "Added by " + it.created_by : ""));
         var rm = el("button", "btn ghost small", "Remove"); rm.type = "button";
         rm.addEventListener("click", function(){ rm.disabled = true; post("prop-item-remove", { id: it.id }).then(function(){ pcSay("Removed."); pcLoad(); }).catch(function(e){ rm.disabled = false; pcSay(e.message, true); }); });
@@ -2316,9 +2317,14 @@ html,body{overflow-x:clip}
       var row = el("div", "row"); var d1 = el("div"); d1.appendChild(el("label", "", "Section"));
       var sec = el("select"); sec.setAttribute("aria-label", "Section"); j.checklist.sections.forEach(function(s){ var o = el("option", "", s.title); o.value = s.id; sec.appendChild(o); }); d1.appendChild(sec);
       var d2 = el("div", "grow"); d2.appendChild(el("label", "", "Item")); var tx = el("input"); tx.type = "text"; tx.maxLength = 300; tx.placeholder = "For example: Wipe the pool fence glass"; tx.setAttribute("aria-label", "New checklist item"); d2.appendChild(tx);
+      /* "This house only" photo boxes (Ian, 15 Nov, staging): ticked = a required photo box in that room group, not a tick item. */
+      var phl = el("label", "pcPhoto"); phl.style.cssText = "display:flex;gap:6px;align-items:center;font-weight:500;margin-top:6px";
+      var phc = el("input"); phc.type = "checkbox"; phc.setAttribute("aria-label", "Photo of a room"); phl.appendChild(phc);
+      phl.appendChild(document.createTextNode("Photo box instead of a tick (e.g. Second living room, Spa)")); d2.appendChild(phl);
+      phc.addEventListener("change", function(){ tx.placeholder = phc.checked ? "Room or area, e.g. Second living room" : "For example: Wipe the pool fence glass"; });
       var add = el("button", "btn small", "Add item"); add.type = "button";
       add.addEventListener("click", function(){ var t = tx.value.trim(); if(t.length < 3){ pcSay("Write the checklist item.", true); return; } add.disabled = true;
-        post("prop-item-add", { propertyId: PC.pid, sec: sec.value, text: t }).then(function(){ pcSay("Added. It shows on the next clean at this property."); pcLoad(); }).catch(function(e){ add.disabled = false; pcSay(e.message, true); }); });
+        post("prop-item-add", { propertyId: PC.pid, sec: sec.value, text: (phc.checked ? "[photo] " : "") + t }).then(function(){ pcSay("Added. It shows on the next clean at this property."); pcLoad(); }).catch(function(e){ add.disabled = false; pcSay(e.message, true); }); });
       row.appendChild(d1); row.appendChild(d2); row.appendChild(add); host.appendChild(row);
     }
     host.appendChild(el("h4", "", "Example photos (\"See example\" in the housekeeper app)"));
@@ -2341,7 +2347,7 @@ html,body{overflow-x:clip}
       var og = document.createElement("optgroup"); og.label = s.title;
       j.checklist.photos.filter(function(p){ return p.sec === s.id; }).forEach(function(p){ var o = el("option", "", "Photo: " + p.label); o.value = p.id; og.appendChild(o); });
       s.items.forEach(function(i){ var o = el("option", "", i.text); o.value = i.id; og.appendChild(o); });
-      j.items.filter(function(i){ return i.sec === s.id; }).forEach(function(i){ var o = el("option", "", i.text + " (this property)"); o.value = i.id; og.appendChild(o); });
+      j.items.filter(function(i){ return i.sec === s.id && !/^\[photo\]/i.test(i.text || ""); }).forEach(function(i){ var o = el("option", "", i.text + " (this property)"); o.value = i.id; og.appendChild(o); });
       tg.appendChild(og);
     });
     e1.appendChild(tg);

@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261115061400"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261115065733"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -265,6 +265,7 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
 /* Photos at end of clean (Craig, 5 Nov): every room photo in one compact section (the old "All photos on one screen" grid). */
 .endnote{margin:0 0 4px}
 .endgrp{font-size:1rem;font-weight:800;margin:18px 0 8px}
+.ph .only{display:block;width:max-content;max-width:100%;margin-top:4px;font-size:.72rem;font-weight:700;color:#0f6b63;background:#e3f4f1;border-radius:8px;padding:1px 6px}
 #endphotos .rooms{margin-bottom:8px}
 #endphotos .roominfo{margin:0 0 8px;font-size:.85rem}
 #endphotos .photos{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
@@ -631,7 +632,7 @@ window.PHH_CHECKLIST = {
   /* Office decisions for this property ("Not at this property"): {ph_oven:"confirmed"|"rejected"}, from /clean. */
   var officeAbsent = {};
   /* Batch 3: example photos {target: {url, note}} and linen for the next guests, from /clean. */
-  var REFS = {}, LINEN = null, OWN_ITEMS = [];
+  var REFS = {}, LINEN = null, OWN_ITEMS = [], OWN_PHOTOS = [];
   var MAX_ISSUES = 5, MAX_ISSUE_PHOTOS = 3; /* maintenance: each issue keeps a fixed slot (1-5) for its photo keys mt{slot}_{1-3} */
   var clean = null;
   var $ = function(id){ return document.getElementById(id); };
@@ -747,6 +748,8 @@ window.PHH_CHECKLIST = {
         }
       }
       single.forEach(function(p){ out.push({ key:p.id, label:p.label, sec:sec.id, group:"", optional:!!p.optional, hint:p.hint || "", absent: (p.absent && officeAbsent[p.id] !== "rejected") ? p.absent : "" }); });
+      var own = (state.extra && state.extra.own) || {};
+      OWN_PHOTOS.forEach(function(o){ if(o.sec === sec.id && own[o.id]) out.push({ key:"ex" + own[o.id], label:o.label, stamp:o.label, sec:sec.id, group:"", optional:false, own:true }); });
     });
     return out;
   }
@@ -982,7 +985,7 @@ window.PHH_CHECKLIST = {
     el.innerHTML = '<div class="sechead"><h2>Photos at end of clean</h2><span class="secount" id="endcount"></span></div>' +
       '<p class="note endnote" style="margin-top:0">Once the cleaning is done, take a photo of each room. Tap a box to open the camera.</p>';
     CL.sections.forEach(function(sec){
-      if(sec.id === "entry" || !CL.photos.some(function(p){ return p.sec === sec.id; })) return;
+      if(sec.id === "entry" || !(CL.photos.some(function(p){ return p.sec === sec.id; }) || OWN_PHOTOS.some(function(o){ return o.sec === sec.id; }))) return;
       var h = document.createElement("h3"); h.className = "endgrp"; h.textContent = sec.title; el.appendChild(h);
       if(sec.id === "bedrooms" || sec.id === "bathrooms"){ var ri = document.createElement("div"); ri.className = "rooms"; ri.id = "rooms_" + sec.id; el.appendChild(ri); }
       var pg = document.createElement("div"); pg.className = "photos"; pg.id = "photos_" + sec.id; el.appendChild(pg);
@@ -1003,6 +1006,19 @@ window.PHH_CHECKLIST = {
 
   /* ---------- Anything else (all optional, Sharon 30 Oct): more guests than booked, gas, extra photos, notes. ---------- */
   var MAX_EXTRA = 12; /* 6 -> 12 (6 Nov 2026, Sharon: before and after photos of extra jobs) */
+  /* "This house only" photo boxes (Ian, 15 Nov): each own photo item holds one extra photo slot, captioned with the room. */
+  function ownNums(){ var o = (state.extra && state.extra.own) || {}; return Object.keys(o).map(function(k){ return o[k]; }); }
+  function syncOwnSlots(){
+    var ex = state.extra; ex.captions = ex.captions || {}; var had = ex.own || {}, keep = {};
+    OWN_PHOTOS.forEach(function(o){
+      var n = had[o.id], used = ex.slots || [];
+      if(!n || used.indexOf(n) < 0){ n = 0; for(var i=1;i<=MAX_EXTRA;i++){ if(used.indexOf(i) < 0){ n = i; break; } } if(!n) return; ex.slots = used.concat([n]); }
+      keep[o.id] = n; ex.captions["ex" + n] = o.label;
+    });
+    Object.keys(had).forEach(function(id){ if(keep[id]) return; var n = had[id], k = "ex" + n;
+      if(!hasPhoto({ key:k })){ ex.slots = (ex.slots || []).filter(function(x){ return x !== n; }); delete ex.captions[k]; } });
+    ex.own = keep;
+  }
   function exSlots(){ return (state.extra.slots || []).map(function(n){ return { key:"ex" + n, label:"Extra photo", stamp:"Extra photo", sec:"extra", group:"", optional:true }; }); }
   function anyElseSection(){
     var el = document.createElement("section"); el.className = "sec"; el.id = "anyelse";
@@ -1173,7 +1189,8 @@ window.PHH_CHECKLIST = {
   function renderExtraPhotos(){
     var host0 = $("exphotos"); if(!host0) return; host0.innerHTML = ""; var guHost = $("guphotos"); if(guHost) guHost.innerHTML = "";
     var gu = state.extra.guSlots || [];
-    exSlots().forEach(function(s){
+    var ownN = ownNums();
+    exSlots().filter(function(s){ return ownN.indexOf(Number(s.key.slice(2))) < 0; }).forEach(function(s){
       var host = guHost && gu.indexOf(Number(s.key.slice(2))) >= 0 ? guHost : host0;
       var cell = document.createElement("div"); cell.className = "excell";
       var d = photoTile(s, "Tap to take photo"); cell.appendChild(d);
@@ -1462,6 +1479,7 @@ window.PHH_CHECKLIST = {
   }
   function capText(cap, s){
     cap.innerHTML = ""; cap.appendChild(document.createTextNode(s.label));
+    if(s.own){ var ow = document.createElement("span"); ow.className = "only"; ow.textContent = "This house only"; cap.appendChild(ow); }
     if(s.optional){ var o = document.createElement("span"); o.className = "opt"; o.textContent = "Optional"; cap.appendChild(o); }
     if(s.hint){ var h = document.createElement("span"); h.className = "hint"; h.textContent = s.hint; cap.appendChild(h); }
   }
@@ -1761,7 +1779,7 @@ window.PHH_CHECKLIST = {
 
   $("submit").addEventListener("click", function(){
     var btn = this; btn.disabled = true; btn.textContent = "Completing...";
-    var sl = slots().filter(hasPhoto);
+    var sl = slots().filter(function(s){ return !s.own && hasPhoto(s); });
     var payload = {
       cleaner: cleanerName(),
       checklistVersion: CL.version,
@@ -1820,7 +1838,12 @@ window.PHH_CHECKLIST = {
     var own = Array.isArray(c.extraItems) ? c.extraItems : [], ownKey = own.map(function(x){ return x.id; }).join(",");
     if(ownKey !== OWN_ITEMS.join(",")){
       CL.sections.forEach(function(sec){ sec.items = sec.items.filter(function(i){ return !i.own; }); });
-      own.forEach(function(x){ var sec = CL.sections.filter(function(s){ return s.id === x.sec; })[0]; if(sec) sec.items.push({ id:x.id, text:x.text, own:true }); });
+      var isPh = function(x){ return /^\[photo\]\s*/i.test(String(x.text || "")); };
+      own.filter(function(x){ return !isPh(x); }).forEach(function(x){ var sec = CL.sections.filter(function(s){ return s.id === x.sec; })[0]; if(sec) sec.items.push({ id:x.id, text:x.text, own:true }); });
+      var secIds = CL.sections.map(function(s){ return s.id; });
+      OWN_PHOTOS = own.filter(isPh).map(function(x){ var sc = x.sec === "entry" || secIds.indexOf(x.sec) < 0 ? (secIds.indexOf("all") >= 0 ? "all" : secIds[secIds.length - 1]) : x.sec;
+        return { id:String(x.id), sec:sc, label:String(x.text).replace(/^\[photo\]\s*/i, "").slice(0, 120) }; });
+      syncOwnSlots();
       OWN_ITEMS = own.map(function(x){ return x.id; });
       if($("sections").children.length) render();
     }

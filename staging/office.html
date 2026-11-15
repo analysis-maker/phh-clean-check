@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261115065733"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261115070940"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -2297,6 +2297,25 @@ html,body{overflow-x:clip}
     post("prop-get", { propertyId: PC.pid }).then(function(j){ if(j.propertyId !== PC.pid) return; PC.data = j; pcRender(); $("pcMsg").textContent = ""; })
       .catch(function(e){ $("pcMsg").className = "msg err"; $("pcMsg").textContent = e.message; });
   }
+  /* "This house only" photo boxes (Ian, 15 Nov, staging): rpc qa_pp_office on table qa_property_photos (not read by the live app). */
+  function ppRpc(body){ body.p_code = CODE;
+    return fetch("https://rxhpnowszmetjxbwylil" + ".supabase.co/rest/v1/rpc/qa_pp_office", { method:"POST", headers:{ "content-type":"application/json", "apikey":"sb_publishable_JaFEZTFufkk0hrminCZdXQ_fQFJ0kLb" }, body: JSON.stringify(body) })
+      .then(function(r){ return r.json(); }).then(function(j){ if(!j || j.error) throw new Error((j && j.error) || "Could not save. Try again."); return j; }); }
+  function ppRender(host, secTitle){
+    var box = el("div"); box.appendChild(el("h4", "", "\"This house only\" photo boxes"));
+    var note = el("p", "sub", "Extra rooms this house has. The housekeeper gets a photo box for each one at the end of the clean."); box.appendChild(note);
+    var ul = el("ul", "pcl"); ul.appendChild(el("li", "sub", "Loading...")); box.appendChild(ul); host.appendChild(box);
+    var pid = PC.pid;
+    ppRpc({ p_action:"list", p_property: pid }).then(function(j){ if(PC.pid !== pid) return; ul.innerHTML = "";
+      (j.items || []).forEach(function(it){
+        var li = el("li"); li.appendChild(el("span", "t", (secTitle[it.sec] || it.sec) + ": " + it.label));
+        li.appendChild(el("span", "sub", it.source && /guidebook/.test(it.source) ? "From the guidebook" : (it.by ? "Added by " + it.by : "")));
+        var rm = el("button", "btn ghost small", "Remove"); rm.type = "button";
+        rm.addEventListener("click", function(){ rm.disabled = true; ppRpc({ p_action:"remove", p_id: it.id }).then(function(){ pcSay("Removed."); pcRender(); }).catch(function(e){ rm.disabled = false; pcSay(e.message, true); }); });
+        li.appendChild(rm); ul.appendChild(li); });
+      if(!(j.items || []).length) ul.appendChild(el("li", "sub", "None yet."));
+    }).catch(function(e){ ul.innerHTML = ""; ul.appendChild(el("li", "sub", e.message)); });
+  }
   function pcSay(t, err){ $("pcMsg").className = "msg" + (err ? " err" : ""); $("pcMsg").textContent = t; }
   function pcRender(){
     var j = PC.data, host = $("pcBody"); host.innerHTML = "";
@@ -2314,6 +2333,7 @@ html,body{overflow-x:clip}
       });
       if(!j.items.length) ul.appendChild(el("li", "sub", "None yet."));
       host.appendChild(ul);
+      ppRender(host, secTitle);
       var row = el("div", "row"); var d1 = el("div"); d1.appendChild(el("label", "", "Section"));
       var sec = el("select"); sec.setAttribute("aria-label", "Section"); j.checklist.sections.forEach(function(s){ var o = el("option", "", s.title); o.value = s.id; sec.appendChild(o); }); d1.appendChild(sec);
       var d2 = el("div", "grow"); d2.appendChild(el("label", "", "Item")); var tx = el("input"); tx.type = "text"; tx.maxLength = 300; tx.placeholder = "For example: Wipe the pool fence glass"; tx.setAttribute("aria-label", "New checklist item"); d2.appendChild(tx);
@@ -2324,7 +2344,7 @@ html,body{overflow-x:clip}
       phc.addEventListener("change", function(){ tx.placeholder = phc.checked ? "Room or area, e.g. Second living room" : "For example: Wipe the pool fence glass"; });
       var add = el("button", "btn small", "Add item"); add.type = "button";
       add.addEventListener("click", function(){ var t = tx.value.trim(); if(t.length < 3){ pcSay("Write the checklist item.", true); return; } add.disabled = true;
-        post("prop-item-add", { propertyId: PC.pid, sec: sec.value, text: (phc.checked ? "[photo] " : "") + t }).then(function(){ pcSay("Added. It shows on the next clean at this property."); pcLoad(); }).catch(function(e){ add.disabled = false; pcSay(e.message, true); }); });
+        (phc.checked ? ppRpc({ p_action:"add", p_property: PC.pid, p_name: ($("pcProp").selectedOptions[0] || {}).textContent || "", p_sec: sec.value, p_label: t }) : post("prop-item-add", { propertyId: PC.pid, sec: sec.value, text: t })).then(function(){ pcSay("Added. It shows on the next clean at this property."); pcLoad(); }).catch(function(e){ add.disabled = false; pcSay(e.message, true); }); });
       row.appendChild(d1); row.appendChild(d2); row.appendChild(add); host.appendChild(row);
     }
     host.appendChild(el("h4", "", "Example photos (\"See example\" in the housekeeper app)"));

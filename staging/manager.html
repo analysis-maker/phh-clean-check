@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261116010653">
+<script>
+/* 10 Nov 2026: staging only runs on github.io. On the PHH address the WordPress plugin can't reach the staging functions. */
+(function(){ try{ var h = location.hostname; if(/(^|\.)professionalholidayhomes\.com\.au$/.test(h) && location.pathname.indexOf("/checkcleaning-staging") === 0){
+  var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
+  location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#5bbfb5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CC Staging">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="180x180" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<title>Housekeeping Manager</title>
+<!-- 16 Nov 2026 (Ian: "Housekeeping Manager AI Bro Integration"). STAGING ONLY.
+     One screen for the Housekeeping & Maintenance Manager role, built from Clean Check data (manager-api-staging, read-only).
+     Sign in: manager code (qa_app_config.manager_codes) or an admin staff code. Nothing on this page sends anything to anyone.
+     "Role coverage" is the running plan: what Clean Check already does for each line of the job description. -->
+<style>
+:root{
+  color-scheme:light;
+  --teal:#5bbfb5; --teal-ink:#23807a; --teal-soft:#e6f5f3;
+  --bg:#f4f5f5; --panel:#fff; --ink:#26323a; --muted:#5d6b73; --faint:#8b979e; --line:#e1e5e7; --line-2:#eef1f2;
+  --red:#c2412f; --red-soft:#fdeceA; --amber:#8a5a00; --amber-soft:#fff4d6; --green:#2f7d4f; --green-soft:#e7f5ec; --info:#1f6f9a; --info-soft:#e5f1f8;
+  --font:"Roboto","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:400 14px/1.45 var(--font)}
+.bar{background:var(--teal);color:#fff;display:flex;align-items:center;gap:14px;padding:calc(10px + env(safe-area-inset-top,0px)) 18px 10px;position:sticky;top:0;z-index:5}
+.bar .brand{display:flex;align-items:center;gap:8px;font-weight:700}
+.bar .brand img{width:24px;height:24px;border-radius:5px;background:#fff;padding:1px}
+.bar .section{text-transform:uppercase;letter-spacing:.06em;font-weight:500;font-size:13px;opacity:.95}
+.bar .stg{background:#f08a24;color:#fff;font-size:11px;font-weight:700;border-radius:3px;padding:2px 6px;letter-spacing:.05em}
+.bar .me{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px}
+.bar button,.bar a{background:transparent;border:1px solid rgba(255,255,255,.7);color:#fff;border-radius:4px;padding:4px 10px;font:inherit;cursor:pointer;text-decoration:none}
+main{max-width:1180px;margin:0 auto;padding:16px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:22px 0 8px;font-weight:500}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+.grid{display:grid;gap:12px}
+.g6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:900px){.g6{grid-template-columns:repeat(3,minmax(0,1fr))}.g2{grid-template-columns:1fr}}
+@media (max-width:520px){.g6{grid-template-columns:repeat(2,minmax(0,1fr))}.bar .section{display:none}}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+.tile .k{font-size:12px;color:var(--muted)}
+.tile .v{font-size:26px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.tile .s{font-size:12px;color:var(--faint);margin-top:2px}
+.tile.red .v{color:var(--red)} .tile.amber .v{color:var(--amber)} .tile.green .v{color:var(--green)}
+.acts{list-style:none;margin:0;padding:0}
+.acts li{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line-2)}
+.acts li:first-child{border-top:0}
+.dot{flex:none;width:10px;height:10px;border-radius:50%;margin-top:5px}
+.dot.red{background:var(--red)} .dot.amber{background:#e0a400} .dot.info{background:var(--info)}
+.acts .t{flex:1}
+.acts a{color:var(--teal-ink);font-weight:500;text-decoration:none;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-weight:500;color:var(--muted);text-align:left;font-size:12px;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid var(--line-2);vertical-align:top}
+td.n,th.n{text-align:right}
+.pill{display:inline-block;border-radius:10px;padding:1px 8px;font-size:12px;font-weight:500}
+.p-auto{background:var(--green-soft);color:var(--green)} .p-part{background:var(--amber-soft);color:var(--amber)} .p-person{background:#eceff1;color:#4a565c} .p-build{background:var(--info-soft);color:var(--info)}
+.bad{color:var(--red);font-weight:500} .warn{color:var(--amber);font-weight:500} .good{color:var(--green);font-weight:500}
+.muted{color:var(--muted)} .small{font-size:12px}
+.rv{padding:8px 0;border-top:1px solid var(--line-2)} .rv:first-child{border-top:0}
+.rv .h{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline} .rv .q{color:var(--muted);font-size:13px;margin-top:2px}
+.cov h3{font-size:14px;margin:14px 0 6px} .cov h3:first-child{margin-top:0}
+.cov td:first-child{width:34%} .cov td:nth-child(2){width:110px}
+.meter{height:10px;background:var(--line-2);border-radius:5px;overflow:hidden;display:flex}
+.meter i{display:block;height:100%}
+#signin{max-width:360px;margin:80px auto;background:#fff;border:1px solid var(--line);border-radius:8px;padding:22px}
+#signin input{width:100%;font:inherit;font-size:22px;letter-spacing:.2em;padding:10px;border:1px solid var(--line);border-radius:6px;margin:10px 0}
+#signin button,.btn{background:var(--teal-ink);color:#fff;border:0;border-radius:6px;padding:10px 16px;font:inherit;font-weight:500;cursor:pointer}
+.err{color:var(--red)}
+.chart svg{width:100%;height:auto;display:block}
+.foot{color:var(--faint);font-size:12px;margin:24px 0 8px}
+</style>
+<script>
+/* Self-update (tools/bump_build.py): if this copy is older than the live page, reopen it fresh.
+   Runs on open, whenever the app comes back to the front (iPhone keeps Home Screen apps suspended), and every 10 minutes. */
+(function(){
+  try{
+    var me = document.querySelector('meta[name="phh-build"]'); if(!me || !window.fetch) return;
+    var b = me.getAttribute("content"), busy = false, last = 0;
+    function check(){
+      if(busy || Date.now() - last < 20000) return; busy = true; last = Date.now();
+      var sep = location.search ? "&" : "?";
+      fetch(location.pathname + location.search + sep + "_chk=" + Date.now(), { cache: "no-store", credentials: "same-origin" })
+        .then(function(r){ return r.ok ? r.text() : ""; })
+        .then(function(t){
+          busy = false;
+          var m = /name="phh-build" content="([0-9]+)"/.exec(t || ""); if(!m || m[1] <= b) return;
+          var key = "phh-upd-" + m[1]; try{ if(sessionStorage.getItem(key)) return; sessionStorage.setItem(key, "1"); }catch(x){}
+          var q = (location.search || "").replace(/([?&])_v=[^&]*&?/, "$1").replace(/[?&]$/, "");
+          location.replace(location.pathname + q + (q ? "&" : "?") + "_v=" + m[1] + location.hash);
+        }).catch(function(){ busy = false; });
+    }
+    check();
+    document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible") check(); });
+    window.addEventListener("pageshow", function(e){ if(e.persisted) check(); });
+    window.addEventListener("focus", check);
+    setInterval(function(){ if(document.visibilityState === "visible") check(); }, 600000);
+  }catch(e){}
+})();
+</script>
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><img src="icon-180.png" alt="" width="24" height="24">Clean Check</div>
+  <div class="section">Housekeeping Manager</div>
+  <span class="stg">STAGING</span>
+  <div class="me" id="me" hidden><span id="mename"></span><span id="updated" class="small"></span><button type="button" id="refresh">Refresh</button><button type="button" id="signout">Sign out</button></div>
+</header>
+
+<div id="signin" hidden>
+  <h1 style="font-size:18px;margin:0 0 4px">Housekeeping Manager</h1>
+  <p class="muted" style="margin:0">Enter your manager code.</p>
+  <input id="code" inputmode="numeric" autocomplete="off" aria-label="Manager code">
+  <button type="button" id="go">Open</button>
+  <p id="sierr" class="err" role="alert"></p>
+</div>
+
+<main id="app" hidden>
+  <p id="loading" class="muted">Loading...</p>
+  <div id="body" hidden>
+    <h2>Today's actions</h2>
+    <div class="panel"><ul class="acts" id="acts"></ul></div>
+
+    <h2>At a glance</h2>
+    <div class="grid g6" id="tiles"></div>
+
+    <h2>Cleanliness score vs bonus targets (4.7 and 4.8)</h2>
+    <div class="panel chart"><div id="chart"></div><p class="small muted" id="kpinote" style="margin:8px 0 0"></p></div>
+
+    <div class="grid g2">
+      <div><h2>Who needs coaching (last 3 full months, lowest first)</h2><div class="panel"><table id="coach"></table></div></div>
+      <div><h2>Clean checks done, last 7 days</h2><div class="panel"><table id="comp"></table></div></div>
+    </div>
+
+    <div class="grid g2">
+      <div><h2>Low reviews this week</h2><div class="panel" id="lows"></div></div>
+      <div><h2>Needs attention, not marked handled</h2><div class="panel" id="attn"></div></div>
+    </div>
+
+    <h2>Role coverage: what Clean Check does for each part of the job</h2>
+    <div class="panel cov">
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <div class="meter" style="flex:1;min-width:220px" id="meter"></div>
+        <div class="small" id="meterTxt"></div>
+      </div>
+      <div id="cov"></div>
+    </div>
+    <p class="foot">Staging only. Read-only: nothing on this page sends a message, changes HomHero or contacts a housekeeper. Data from Clean Check (synced from HomHero and the review sites). TEST bookings excluded.</p>
+  </div>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/manager-api-staging";
+  var $ = function(id){ return document.getElementById(id); };
+  var KEY = "phh-manager-code", CODE = "";
+  try{ CODE = localStorage.getItem(KEY) || ""; }catch(e){}
+  function el(t, c, x){ var e = document.createElement(t); if(c) e.className = c; if(x !== undefined && x !== null) e.textContent = x; return e; }
+  function post(route){ return fetch(API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: CODE }) })
+    .then(function(r){ return r.json().then(function(j){ if(!r.ok){ var e = new Error(j.error || ("Error " + r.status)); e.status = r.status; throw e; } return j; }); }); }
+  function signedOut(msg){ $("app").hidden = true; $("me").hidden = true; $("signin").hidden = false; $("sierr").textContent = msg || ""; $("code").focus(); }
+  function signOut(){ try{ localStorage.removeItem(KEY); }catch(e){} CODE = ""; signedOut(""); }
+
+  /* Links into the existing screens. Office tabs need an office staff code on this phone (admins have one). */
+  var LINKS = { attention:"office.html?tab=attention", cover:"office.html?tab=cover", reviews:"office.html?tab=reviews", hk:"office.html?tab=hk",
+    scores:"office.html?tab=scores", cons:"office.html?tab=cons", cleans:"office.html?tab=cleans", warn:"office.html?tab=warn", sched:"office.html?tab=sched",
+    insp:"office.html?tab=insp", spring:"office.html?tab=spring", props:"office.html?tab=props", ai:"office.html?tab=attention", maintenance:"maintenance.html", admin:"admin.html" };
+  function link(tab, text){ var a = el("a", "", text || "Open"); a.href = LINKS[tab] || "office.html"; return a; }
+  function fmtMonth(m){ var d = new Date(m + "-01T12:00:00Z"); return d.toLocaleDateString("en-AU", { month:"short", timeZone:"UTC" }) + " " + m.slice(2,4); }
+  function first(n){ return String(n || "").replace(/^Buzy Bee Cleaning - /, "").trim(); }
+
+  function tile(k, v, s, tone){ var t = el("div", "tile" + (tone ? " " + tone : "")); t.appendChild(el("div", "k", k)); t.appendChild(el("div", "v", v)); if(s) t.appendChild(el("div", "s", s)); return t; }
+
+  function chart(k){
+    var ms = k.months, W = 760, H = 220, L = 34, R = 10, T = 14, B = 30, lo = 4.0, hi = 5.0;
+    var bw = (W - L - R) / ms.length, y = function(v){ return T + (hi - v) / (hi - lo) * (H - T - B); };
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Portfolio average cleanliness score by month against the 4.7 and 4.8 bonus targets" font-family="Roboto, Arial, sans-serif">';
+    [4.0, 4.2, 4.4, 4.6, 4.8, 5.0].forEach(function(v){ s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#eef1f2"/><text x="' + (L - 6) + '" y="' + (y(v) + 4) + '" font-size="11" fill="#8b979e" text-anchor="end">' + v.toFixed(1) + '</text>'; });
+    ms.forEach(function(m, i){
+      var x = L + i * bw + bw * 0.18, w = bw * 0.64;
+      if(m.clean !== null){ var v = Math.max(lo, m.clean), col = m.clean >= 4.8 ? "#2f7d4f" : m.clean >= 4.7 ? "#5bbfb5" : "#9fb3bb";
+        s += '<rect x="' + x + '" y="' + y(v) + '" width="' + w + '" height="' + (H - B - y(v)) + '" fill="' + col + '"' + (m.partial ? ' fill-opacity=".45"' : "") + '><title>' + fmtMonth(m.month) + ": " + m.clean.toFixed(2) + " (" + m.reviews + " reviews)" + (m.partial ? ", month so far" : "") + '</title></rect>';
+        s += '<text x="' + (x + w / 2) + '" y="' + (y(v) - 4) + '" font-size="10.5" fill="#26323a" text-anchor="middle">' + m.clean.toFixed(2) + '</text>'; }
+      s += '<text x="' + (x + w / 2) + '" y="' + (H - 10) + '" font-size="11" fill="#5d6b73" text-anchor="middle">' + fmtMonth(m.month) + '</text>';
+    });
+    [[4.7, "#e0a400", "4.7 bonus"], [4.8, "#c2412f", "4.8 bonus"]].forEach(function(t){ s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(t[0]) + '" y2="' + y(t[0]) + '" stroke="' + t[1] + '" stroke-width="1.5" stroke-dasharray="5 4"/><text x="' + (W - R - 2) + '" y="' + (y(t[0]) - 4) + '" font-size="11" fill="' + t[1] + '" text-anchor="end">' + t[2] + '</text>'; });
+    $("chart").innerHTML = s + "</svg>";
+    var lf = k.lastFull;
+    $("kpinote").textContent = "Average guest cleanliness score across all housekeepers (the measure in the manager's bonus). " +
+      (lf ? "Last full month " + fmtMonth(lf.month) + ": " + lf.clean.toFixed(2) + ". " : "") +
+      "Months at 4.7 or better in the last " + k.fullMonths + ": " + k.monthsAt47 + ". At 4.8 or better: " + k.monthsAt48 + ". The bonus needs 3 months in a row. Pale bar = this month so far.";
+  }
+
+  /* ---------- Role coverage (the plan). Keep in step with the one-page PDF on Drive. ---------- */
+  var COV = [
+    ["Housekeeping operations", [
+      ["Recruit, onboard and induct housekeepers", "part", "Codes made automatically for new HomHero housekeepers; welcome email with guide and video; rollout batches; practice cleans.", "Finding and choosing people, references, on-site induction (Angus).", "admin"],
+      ["Allocations and resourcing", "part", "Schedule and Coming up; back-to-back flags; Cover tab asks chosen housekeepers and Pick changes the cleaner in HomHero.", "First allocation of cleans in HomHero (CST). Next: suggest who to ask for unassigned cleans.", "cover"],
+      ["Track performance (reviews, reporting, KPIs)", "auto", "Reviews synced every 3 h; Scores leaderboard and scorecards; AI photo review on every clean check; clean check rate; this dashboard.", "", "scores"],
+      ["Coaching, feedback and support", "part", "Guest praise sent to the housekeeper's phone; Your clean results; example photos; Ask PHH how-to help.", "The conversation itself. Next: a monthly coaching draft per housekeeper from their reviews and AI notes.", "scores"],
+      ["Performance concerns and improvement plans", "part", "Warnings tab (First, Second, Final) with the HelpScout link; the evidence (photos, times, reviews) is already in Clean Check.", "Deciding and talking to the housekeeper. Next: improvement plan with targets and a review date that tracks itself.", "warn"],
+      ["Procedures and standards followed", "auto", "Craig's checklist with live time-stamped room photos, AI review, late and missed check flags, short visit flags, Needs attention.", "", "attention"],
+      ["Meetings, training and communications", "part", "Admin messages to housekeepers; intranet procedure page; How It Works PDF and video; Ask PHH.", "Running meetings and training days.", "admin"],
+      ["Resolve issues from guests, owners or staff", "part", "Needs attention to Slack with Mark handled; booking notes beside reviews; office notes to CST; owner report links.", "Judgement and replies (CST in HelpScout).", "attention"]
+    ]],
+    ["Maintenance and contractors", [
+      ["Maintenance requests and workflows", "auto", "Housekeeper logs it with photos, it lands in HomHero; maintenance dashboard with priority, repeat faults, owner emails, gas round, BBQ gas orders.", "Angus runs the dashboard.", "maintenance"],
+      ["Jobs followed to completion, quality checked", "part", "Status synced from HomHero; fixed pings; trade job links; Bill to owner.", "Next (parked until Craig is back): trades complete jobs with a photo in Clean Check.", "maintenance"],
+      ["Contractor and supplier relationships", "person", "Job history per trade to support the conversation.", "Relationships stay with a person.", "maintenance"]
+    ]],
+    ["Linen and suppliers", [
+      ["Coordinate linen across the portfolio", "part", "Linen guide on each clean from the booked guest numbers (Craig's standard).", "Next: daily linen forecast per area from upcoming bookings.", "sched"],
+      ["Laundry and linen supplier relationships", "person", "", "Stays with a person.", ""],
+      ["Supplier performance and issues", "build", "Not covered yet.", "Next: a Linen problem button in the app (missing, stained, short) feeding a supplier scorecard.", ""],
+      ["Stock levels", "part", "Consumables ordering, ready for pickup, All there or Something missing, missing items to CST.", "Store stock levels are not tracked yet.", "cons"]
+    ]],
+    ["Reporting and improvement", [
+      ["KPI reporting to the General Manager", "auto", "7pm problems report, daily AI review digest, Scores, this dashboard.", "Next: a weekly GM summary drafted from this page (draft only).", "scores"],
+      ["Find ways to improve systems and processes", "part", "AI digest, repeat faults, staff feedback built in weekly.", "Ian.", ""],
+      ["Put improvements in place, grow the operation", "person", "", "Ian builds; Craig and the GM decide.", ""]
+    ]]
+  ];
+  var LBL = { auto:["Automated","p-auto"], part:["Partly","p-part"], person:["Needs a person","p-person"], build:["To build","p-build"] };
+  function coverage(){
+    var box = $("cov"), n = { auto:0, part:0, person:0, build:0 }, tot = 0;
+    COV.forEach(function(g){
+      box.appendChild(el("h3", "", g[0]));
+      var t = el("table"); var hr = el("tr"); ["Responsibility", "Status", "What Clean Check does", "Still a person / next build"].forEach(function(h){ hr.appendChild(el("th", "", h)); }); t.appendChild(hr);
+      g[1].forEach(function(r){
+        n[r[1]]++; tot++;
+        var tr = el("tr"), a = el("td"); a.appendChild(document.createTextNode(r[0]));
+        if(r[4]){ a.appendChild(document.createTextNode(" ")); var l = link(r[4], "Open"); l.className = "small"; l.style.color = "var(--teal-ink)"; a.appendChild(l); }
+        tr.appendChild(a);
+        var b = el("td"); b.appendChild(el("span", "pill " + LBL[r[1]][1], LBL[r[1]][0])); tr.appendChild(b);
+        tr.appendChild(el("td", "", r[2])); tr.appendChild(el("td", "muted", r[3])); t.appendChild(tr);
+      });
+      box.appendChild(t);
+    });
+    var m = $("meter"); [["auto","#2f7d4f"],["part","#e0a400"],["build","#1f6f9a"],["person","#b8c2c7"]].forEach(function(p){ var i = el("i"); i.style.width = (n[p[0]] / tot * 100) + "%"; i.style.background = p[1]; m.appendChild(i); });
+    var cov = Math.round((n.auto + n.part * 0.5) / tot * 100);
+    $("meterTxt").textContent = n.auto + " automated, " + n.part + " partly, " + n.build + " to build, " + n.person + " need a person (of " + tot + "). About " + cov + "% of the role covered.";
+  }
+
+  function render(d){
+    $("mename").textContent = d.name; $("updated").textContent = "Updated " + new Date(d.generatedAt).toLocaleTimeString("en-AU", { timeZone:"Australia/Sydney", hour:"numeric", minute:"2-digit" });
+    var acts = $("acts"); acts.innerHTML = "";
+    if(!d.actions.length) acts.appendChild(el("li", "", "Nothing needs you right now."));
+    d.actions.forEach(function(a){ var li = el("li"); li.appendChild(el("span", "dot " + a.level)); li.appendChild(el("span", "t", a.text)); li.appendChild(link(a.tab)); acts.appendChild(li); });
+
+    var k = d.kpi, cur = k.months[k.months.length - 1], tl = $("tiles"); tl.innerHTML = "";
+    tl.appendChild(tile("Cleanliness, this month", cur.clean !== null ? cur.clean.toFixed(2) : "-", cur.reviews + " reviews so far", cur.clean === null ? "" : cur.clean >= 4.7 ? "green" : cur.clean >= 4.5 ? "amber" : "red"));
+    tl.appendChild(tile("Bonus target 4.7", k.streak47 + " of 3", "months in a row at 4.7+", k.streak47 >= 3 ? "green" : "red"));
+    tl.appendChild(tile("Clean checks, 7 days", d.compliance.pct !== null ? d.compliance.pct + "%" : "-", d.compliance.checked + " of " + d.compliance.cleans + " pilot cleans", d.compliance.pct >= 90 ? "green" : d.compliance.pct >= 70 ? "amber" : "red"));
+    tl.appendChild(tile("Low reviews, 7 days", String(d.reviews.low), d.reviews.count + " reviews, cleanliness " + (d.reviews.cleanAvg !== null ? d.reviews.cleanAvg.toFixed(2) : "-"), d.reviews.low ? "amber" : "green"));
+    tl.appendChild(tile("Maintenance open", String(d.maint.open), d.maint.urgent + " urgent, " + d.maint.withTrades + " with trades", d.maint.urgent ? "red" : ""));
+    tl.appendChild(tile("Housekeepers in Clean Check", String(d.onboarding.inPilot), d.onboarding.housekeepersWithCodes + " have codes, " + d.warnings.active + " active warnings", ""));
+
+    chart(k);
+
+    var ct = $("coach"); ct.innerHTML = "<tr><th>Housekeeper</th><th class=n>Reviews</th><th class=n>Cleanliness</th><th class=n>5 star</th><th class=n>This month</th></tr>";
+    d.coaching.forEach(function(c){ var tr = el("tr"); tr.appendChild(el("td", "", c.name));
+      tr.appendChild(el("td", "n", String(c.reviews))); tr.appendChild(el("td", "n " + (c.clean < 4.5 ? "bad" : c.clean < 4.7 ? "warn" : "good"), c.clean.toFixed(2)));
+      tr.appendChild(el("td", "n", c.fiveStar + "%")); tr.appendChild(el("td", "n", c.thisMonth !== null ? c.thisMonth.toFixed(2) + " (" + c.thisMonthReviews + ")" : "-")); ct.appendChild(tr); });
+    if(!d.coaching.length) ct.appendChild(el("tr")).appendChild(el("td", "muted", "Not enough reviews yet."));
+
+    var cp = $("comp"); cp.innerHTML = "<tr><th>Housekeeper</th><th class=n>Cleans</th><th class=n>Checked</th><th class=n>Rate</th></tr>";
+    d.compliance.rows.forEach(function(c){ var tr = el("tr"); tr.appendChild(el("td", "", first(c.name)));
+      tr.appendChild(el("td", "n", String(c.cleans))); tr.appendChild(el("td", "n", String(c.checked)));
+      tr.appendChild(el("td", "n " + (c.pct < 70 ? "bad" : c.pct < 90 ? "warn" : "good"), c.pct + "%")); cp.appendChild(tr); });
+
+    var lw = $("lows"); lw.innerHTML = "";
+    if(!d.reviews.lows.length) lw.appendChild(el("p", "muted", "No low reviews this week."));
+    d.reviews.lows.forEach(function(r){ var x = el("div", "rv"), h = el("div", "h");
+      h.appendChild(el("strong", "", r.property)); h.appendChild(el("span", r.clean !== null && r.clean < 4 ? "bad" : "warn", "Cleanliness " + (r.clean !== null ? r.clean : "-") + ", " + r.stars + " stars"));
+      h.appendChild(el("span", "small muted", new Date(r.at).toLocaleDateString("en-AU", { timeZone:"Australia/Sydney", day:"numeric", month:"short" }) + (r.booking ? " | " + r.booking : "")));
+      x.appendChild(h); if(r.text) x.appendChild(el("div", "q", r.text)); lw.appendChild(x); });
+    if(d.reviews.lows.length){ var lr = el("p", "small", ""); lr.appendChild(link("reviews", "All reviews")); lw.appendChild(lr); }
+
+    var at = $("attn"); at.innerHTML = "";
+    if(!d.attention.items.length) at.appendChild(el("p", "muted", "All handled."));
+    d.attention.items.forEach(function(a){ var x = el("div", "rv"), h = el("div", "h"); h.appendChild(el("strong", "", a.title || a.kind));
+      h.appendChild(el("span", "small muted", new Date(a.at).toLocaleString("en-AU", { timeZone:"Australia/Sydney", day:"numeric", month:"short", hour:"numeric", minute:"2-digit" }))); x.appendChild(h); at.appendChild(x); });
+    if(d.attention.open > d.attention.items.length) at.appendChild(el("p", "small muted", "+ " + (d.attention.open - d.attention.items.length) + " more"));
+    $("loading").hidden = true; $("body").hidden = false;
+  }
+
+  function load(){
+    $("loading").hidden = false; $("loading").textContent = "Loading...";
+    post("summary").then(render).catch(function(e){ if(e.status === 403) return signOut(); $("loading").textContent = e.message; });
+  }
+  function start(){ $("signin").hidden = true; $("app").hidden = false; $("me").hidden = false; load(); }
+
+  $("go").addEventListener("click", function(){
+    var v = $("code").value.trim(); if(!v) return; CODE = v; $("go").disabled = true; $("sierr").textContent = "";
+    post("login").then(function(){ try{ localStorage.setItem(KEY, CODE); }catch(e){} start(); })
+      .catch(function(e){ CODE = ""; $("sierr").textContent = e.message; }).then(function(){ $("go").disabled = false; });
+  });
+  $("code").addEventListener("keydown", function(e){ if(e.key === "Enter") $("go").click(); });
+  $("signout").addEventListener("click", signOut);
+  $("refresh").addEventListener("click", load);
+  coverage();
+  if(CODE) start(); else signedOut("");
+  document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible" && CODE) load(); });
+})();
+</script>
+</body></html>

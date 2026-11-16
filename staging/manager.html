@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261116012628">
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261116015557">
 <script>
 /* 10 Nov 2026: staging only runs on github.io. On the PHH address the WordPress plugin can't reach the staging functions. */
 (function(){ try{ var h = location.hostname; if(/(^|\.)professionalholidayhomes\.com\.au$/.test(h) && location.pathname.indexOf("/checkcleaning-staging") === 0){
@@ -22,7 +22,7 @@
 <title>Housekeeping Manager</title>
 <!-- 16 Nov 2026 (Ian: "Housekeeping Manager AI Bro Integration"). STAGING ONLY.
      One screen for the Housekeeping & Maintenance Manager role, built from Clean Check data (manager-api-staging).
-     Sign in: manager code (qa_app_config.manager_codes) or an admin staff code.
+     Sign in: Ian's private code only (qa_app_config.manager_codes). Eyes only: never an office code, never on the codes sheet or in docs.
      v2 (builds 1-7): Linen (forecast, problems, supplier scorecard), Coaching drafts, Improvement plans, Resourcing,
      Recruitment, GM weekly draft. Nothing on this page sends anything to anyone: drafts are copied by the manager.
      "Role coverage" is the running plan; keep it in step with the one-page PDF on Drive. -->
@@ -145,15 +145,20 @@ textarea.draft{width:100%;min-height:300px;font:13.5px/1.5 var(--font);padding:1
   <button role="tab" data-t="resourcing" aria-selected="false">Resourcing<span class="n" id="n_res" hidden></span></button>
   <button role="tab" data-t="coach" aria-selected="false">Coaching</button>
   <button role="tab" data-t="plans" aria-selected="false">Improvement plans<span class="n" id="n_plans" hidden></span></button>
+  <button role="tab" data-t="triage" aria-selected="false">Complaints</button>
+  <button role="tab" data-t="trades" aria-selected="false">Trades</button>
   <button role="tab" data-t="linen" aria-selected="false">Linen<span class="n" id="n_linen" hidden></span></button>
+  <button role="tab" data-t="stock" aria-selected="false">Stock</button>
+  <button role="tab" data-t="hkcomms" aria-selected="false">Housekeeper comms</button>
   <button role="tab" data-t="recruits" aria-selected="false">Recruitment</button>
   <button role="tab" data-t="gm" aria-selected="false">GM report</button>
+  <button role="tab" data-t="wrong" aria-selected="false">What's going wrong</button>
   <button role="tab" data-t="role" aria-selected="false">Role coverage</button>
 </nav>
 
 <div id="signin" hidden>
   <h1 style="font-size:18px;margin:0 0 4px">Housekeeping Manager</h1>
-  <p class="muted" style="margin:0">Enter your manager code.</p>
+  <p class="muted" style="margin:0">Enter your code.</p>
   <input id="code" inputmode="numeric" autocomplete="off" aria-label="Manager code">
   <button type="button" class="btn" id="go">Open</button>
   <p id="sierr" class="err" role="alert"></p>
@@ -229,11 +234,51 @@ textarea.draft{width:100%;min-height:300px;font:13.5px/1.5 var(--font);padding:1
     </div>
     <h2>Linen problems from housekeepers</h2>
     <div class="panel" id="ln_iss"></div>
+    <h2>Laundry drafts</h2>
+    <div class="row" style="margin-bottom:8px"><button type="button" class="btn ghost" id="ld_go">Write tomorrow's orders and monthly reports</button><span class="small muted" id="ld_msg"></span></div>
+    <div id="ld_out"></div>
+  </section>
+
+  <!-- ===== 12. Complaint triage ===== -->
+  <section data-p="triage" hidden>
+    <p class="note">Low reviews from the last 30 days (cleanliness under 4 or under 3.5 stars), each matched to the clean before the stay: who cleaned, whether there was a clean check, what the AI saw, and the booking notes. Then a reply draft for the review site. Check and edit before posting; nothing is posted from here.</p>
+    <div id="tr_out" class="muted">Loading...</div>
+  </section>
+
+  <!-- ===== 8. Trades ===== -->
+  <section data-p="trades" hidden>
+    <p class="note">Jobs logged through Clean Check. A trade "Mark job done" with photos lands here for a quick quality check (OK or Redo). This does not change HomHero: closing the HomHero job from a trade link is parked for Craig.</p>
+    <h2>Trade jobs marked done, to check</h2><div id="tq_out" class="muted">Loading...</div>
+    <h2>Open over 48 hours</h2><div class="panel scroll"><table id="tq_aged"></table></div>
+    <div class="grid g2">
+      <div><h2>Trade scorecard</h2><div class="panel scroll"><table id="tq_sc"></table></div></div>
+      <div><h2>Repeat jobs (same property, 60 days)</h2><div class="panel" id="tq_rep"></div></div>
+    </div>
+  </section>
+
+  <!-- ===== 11. Stock ===== -->
+  <section data-p="stock" hidden>
+    <p class="note" id="st_note"></p>
+    <h2>Reorder list</h2><div class="panel" id="st_reorder"></div>
+    <h2>Store stock</h2><div class="panel scroll"><table id="st_tbl"></table></div>
+  </section>
+
+  <!-- ===== 13. Housekeeper comms ===== -->
+  <section data-p="hkcomms" hidden>
+    <p class="note">Last month's update for all housekeepers and three short refreshers, built from Clean Check. Positive and low-key, no scores. Paste them into <a class="go" href="admin.html">Admin &gt; Messages</a> to send through the app. Nothing is sent from here.</p>
+    <h2>Monthly update</h2>
+    <textarea class="draft" id="hu_draft" aria-label="Monthly housekeeper update"></textarea>
+    <div class="row" style="margin-top:8px"><button type="button" class="btn" id="hu_copy">Copy</button><span class="small muted" id="hu_msg"></span></div>
+    <h2>Refreshers</h2><div id="hu_tips"></div>
   </section>
 
   <!-- ===== 7. Recruitment ===== -->
   <section data-p="recruits" hidden>
     <p class="note">Track each new housekeeper from first contact to first solo clean. When their name matches a Clean Check code you'll see "Has a code" and "Signed in" by itself. Codes are still made in <a class="go" href="admin.html">Admin</a>; welcome emails go out only when you say so.</p>
+    <h2>Job ad and apply form</h2>
+    <div class="panel"><p class="small" style="margin:0 0 8px">People who apply through the <a class="go" href="apply.html" target="_blank" rel="noopener">apply form</a> land here as "Applied". The ad below is a draft for Seek, Facebook groups or local boards.</p>
+      <textarea class="draft" id="ad_draft" style="min-height:220px" aria-label="Job ad draft"></textarea>
+      <div class="row" style="margin-top:8px"><button type="button" class="btn" id="ad_copy">Copy</button><span class="small muted" id="ad_msg"></span></div></div>
     <h2>Add a person</h2>
     <div class="panel"><div class="form">
       <label>Name<input id="rc_name" maxlength="120"></label><label>Phone<input id="rc_phone" maxlength="40"></label><label>Email<input id="rc_email" maxlength="160" type="email"></label>
@@ -248,6 +293,13 @@ textarea.draft{width:100%;min-height:300px;font:13.5px/1.5 var(--font);padding:1
     <p class="note">This week's summary for the General Manager, written from the dashboard. Check it, edit it, copy it into an email or Slack yourself. Nothing is sent from here.</p>
     <div class="row" style="margin-bottom:8px"><button type="button" class="btn" id="gm_go">Write this week's draft</button><button type="button" class="btn ghost" id="gm_copy" disabled>Copy</button><span class="small muted" id="gm_msg"></span></div>
     <textarea class="draft" id="gm_draft" aria-label="GM summary draft" style="min-height:460px"></textarea>
+  </section>
+
+  <!-- ===== 15. What's going wrong ===== -->
+  <section data-p="wrong" hidden>
+    <p class="note">The last 30 days against the 30 before, across reviews, AI photo notes, clean checks, maintenance and linen, with what to do about it.</p>
+    <textarea class="draft" id="wr_text" style="min-height:360px" aria-label="What's going wrong summary"></textarea>
+    <div class="row" style="margin-top:8px"><button type="button" class="btn" id="wr_copy">Copy</button><span class="small muted" id="wr_msg"></span></div>
   </section>
 
   <!-- ===== Role coverage ===== -->
@@ -507,32 +559,131 @@ textarea.draft{width:100%;min-height:300px;font:13.5px/1.5 var(--font);padding:1
     post("gm").then(function(d){ $("gm_draft").value = d.draft; m.textContent = d.note; $("gm_copy").disabled = false; }).catch(function(e){ m.textContent = e.message; }).then(function(){ $("gm_go").disabled = false; }); });
   $("gm_copy").addEventListener("click", function(){ copy($("gm_draft").value, $("gm_msg")); });
 
+  /* ================= 12. Complaint triage ================= */
+  LOADERS.triage = function(){
+    var box = $("tr_out"); box.textContent = "Loading..."; box.className = "muted";
+    post("triage").then(function(d){
+      box.innerHTML = ""; box.className = "";
+      if(!d.items.length) box.appendChild(el("div", "panel muted", "No low reviews in the last 30 days."));
+      d.items.forEach(function(r){
+        var card = el("div", "card"), top = el("div", "top");
+        top.appendChild(el("strong", "", r.property)); top.appendChild(el("span", r.clean !== null && r.clean < 4 ? "bad" : "warn", "Cleanliness " + (r.clean !== null ? r.clean : "-") + ", " + r.stars + " stars"));
+        top.appendChild(el("span", "small muted", dshort(r.at) + " | booking " + r.booking)); card.appendChild(top);
+        if(r.text) card.appendChild(el("p", "q", r.text));
+        if(r.privateNote) card.appendChild(el("p", "small", "Private note: " + r.privateNote));
+        var cb = r.cleanBefore, c = r.check;
+        var facts = cb ? "Clean before the stay: " + dshort(cb.date) + " by " + first(cb.hk) + " (" + cb.res + ")" + (c ? ". Clean check: " + (c.photos || 0) + " photos" + (c.minutesPhotosToDone !== null ? ", " + c.minutesPhotosToDone + " min from first photo to done" : "") + (c.ai ? ". AI: " + (c.ai.verdict === "to_standard" ? "to standard" : "check") + (c.ai.flags.length ? " (" + c.ai.flags.join("; ") + ")" : "") : "") : ". No clean check.") : "No clean found for the stay before this booking.";
+        card.appendChild(el("p", "small", facts));
+        if(r.bookingNotes && (Array.isArray(r.bookingNotes) ? r.bookingNotes.length : true)) card.appendChild(el("p", "small muted", "Booking notes: " + (Array.isArray(r.bookingNotes) ? r.bookingNotes.map(function(n){ return typeof n === "string" ? n : (n.note || n.text || JSON.stringify(n)); }).join(" | ") : JSON.stringify(r.bookingNotes)).slice(0, 400)));
+        card.appendChild(el("p", "small " + (/likely a cleaning/.test(r.verdict) ? "bad" : "warn"), r.verdict));
+        var ta = el("textarea", "draft"); ta.style.minHeight = "90px"; ta.value = r.reply; ta.setAttribute("aria-label", "Reply draft"); card.appendChild(ta);
+        var row = el("div", "row"), b = el("button", "btn ghost", "Copy reply"), m = el("span", "small muted"); b.type = "button"; b.addEventListener("click", function(){ copy(ta.value, m); }); row.appendChild(b); row.appendChild(m);
+        if(cb){ var a = el("a", "go small", "Open the clean in office"); a.href = "office.html?tab=cleans&open=" + encodeURIComponent(cb.res); row.appendChild(a); }
+        if(cb){ var cbn = el("button", "go small", "Coaching draft for " + first(cb.hk)); cbn.type = "button"; cbn.addEventListener("click", function(){ show("coach"); coachFor(cb.hk); }); row.appendChild(cbn); }
+        card.appendChild(row); box.appendChild(card);
+      });
+    }).catch(fail(box));
+  };
+
+  /* ================= 8. Trades ================= */
+  LOADERS.trades = function(){
+    var box = $("tq_out"); box.textContent = "Loading..."; box.className = "muted";
+    post("trades").then(function(d){
+      box.innerHTML = ""; box.className = "";
+      if(!d.toCheck.length) box.appendChild(el("div", "panel muted", "No trade has marked a job done through a trade link yet."));
+      d.toCheck.forEach(function(t){
+        var card = el("div", "card"), top = el("div", "top"); top.appendChild(el("strong", "", t.property)); top.appendChild(el("span", "small muted", "Done " + dshort(t.doneAt) + (t.doneBy ? " by " + t.doneBy : "")));
+        if(t.qc) top.appendChild(el("span", "pill " + (t.qc.verdict === "ok" ? "p-auto" : "p-part"), (t.qc.verdict === "ok" ? "Checked OK" : "Redo") + " (" + t.qc.by + ")")); card.appendChild(top);
+        card.appendChild(el("p", "small", t.issue)); if(t.note) card.appendChild(el("p", "q", "Trade note: " + t.note));
+        if(t.photos.length){ var ph = el("div", "row"); t.photos.forEach(function(u){ var a = el("a"); a.href = u; a.target = "_blank"; a.rel = "noopener"; var im = el("img"); im.src = u; im.alt = "Trade photo"; im.style.cssText = "width:110px;height:110px;object-fit:cover;border-radius:6px;border:1px solid var(--line)"; a.appendChild(im); ph.appendChild(a); }); card.appendChild(ph); }
+        else card.appendChild(el("p", "small warn", "No photos"));
+        var row = el("div", "row"); row.style.marginTop = "8px"; var note = el("input"); note.placeholder = "Note (optional)"; note.maxLength = 500; note.style.cssText = "flex:1;min-width:160px;padding:7px 8px;border:1px solid var(--line);border-radius:5px;font:inherit";
+        var m = el("span", "small");
+        [["ok", "OK"], ["redo", "Redo"]].forEach(function(v){ var b = el("button", "btn " + (v[0] === "ok" ? "" : "ghost"), v[1]); b.type = "button"; b.addEventListener("click", function(){ b.disabled = true; post("trade-qc", { linkId: t.id, verdict: v[0], note: note.value }).then(LOADERS.trades).catch(function(e){ b.disabled = false; m.textContent = e.message; }); }); row.appendChild(b); });
+        row.appendChild(note); row.appendChild(m); card.appendChild(row); box.appendChild(card);
+      });
+      var ag = $("tq_aged"); ag.innerHTML = "<tr><th>Property</th><th>Job</th><th>Trade</th><th>Priority</th><th class=n>Days open</th></tr>";
+      if(!d.aged.length){ var e0 = el("tr"), t0 = el("td", "muted", "Nothing open over 48 hours."); t0.colSpan = 5; e0.appendChild(t0); ag.appendChild(e0); }
+      d.aged.forEach(function(j){ var tr = el("tr"); tr.appendChild(el("td", "", j.property)); tr.appendChild(el("td", "small", j.message)); tr.appendChild(el("td", "", j.trade)); tr.appendChild(el("td", j.priority === "urgent" ? "bad" : "", j.priority || "")); tr.appendChild(el("td", "n " + (j.daysOpen >= 7 ? "bad" : "warn"), String(j.daysOpen))); ag.appendChild(tr); });
+      var sc = $("tq_sc"); sc.innerHTML = "<tr><th>Trade</th><th class=n>Jobs</th><th class=n>Done</th><th class=n>Open</th><th class=n>Open 48h+</th><th class=n>Median days to finish</th></tr>";
+      d.scorecard.forEach(function(x){ var tr = el("tr"); tr.appendChild(el("td", "", x.trade)); [x.jobs, x.done, x.open, x.agedOpen].forEach(function(v){ tr.appendChild(el("td", "n", String(v))); }); tr.appendChild(el("td", "n", x.medianDaysToFinish !== null ? String(x.medianDaysToFinish) : "-")); sc.appendChild(tr); });
+      var rp = $("tq_rep"); rp.innerHTML = ""; if(!d.repeats.length) rp.appendChild(el("p", "muted", "No repeats."));
+      d.repeats.forEach(function(r){ var x = el("div", "rv"), h = el("div", "h"); h.appendChild(el("strong", "", r.property)); h.appendChild(el("span", "warn", r.jobs + " jobs")); x.appendChild(h); x.appendChild(el("div", "q", r.items.join(" | "))); rp.appendChild(x); });
+    }).catch(fail(box));
+  };
+
+  /* ================= 11. Stock ================= */
+  LOADERS.stock = function(){
+    var t = $("st_tbl"); t.innerHTML = "<tr><td class=muted>Loading...</td></tr>";
+    post("stock").then(function(d){
+      $("st_note").textContent = d.note + " Bags in the last 30 days: " + d.bags30 + ".";
+      var ro = $("st_reorder"); ro.innerHTML = "";
+      if(!d.reorderList.length) ro.appendChild(el("p", "muted", "Nothing to reorder yet. Enter on-hand counts below and the list builds itself."));
+      else { var lt = el("table"); lt.innerHTML = "<tr><th>Item</th><th class=n>Order</th><th class=n>Cost</th></tr>"; d.reorderList.forEach(function(r){ var tr = el("tr"); tr.appendChild(el("td", "", r.item)); tr.appendChild(el("td", "n", String(r.reorder))); tr.appendChild(el("td", "n", r.price !== null ? "$" + (r.price * r.reorder).toFixed(2) : "-")); lt.appendChild(tr); }); ro.appendChild(lt); ro.appendChild(el("p", "small", "Estimated cost: $" + d.reorderCost.toFixed(2))); }
+      t.innerHTML = "<tr><th>Item</th><th class=n>Used, 30 days</th><th class=n>Per week</th><th class=n>On hand</th><th class=n>Par</th><th class=n>Days left</th><th></th></tr>";
+      d.rows.forEach(function(r){ var tr = el("tr"); tr.appendChild(el("td", r.low ? "bad" : "", r.item)); tr.appendChild(el("td", "n", String(r.used30))); tr.appendChild(el("td", "n", String(r.perWeek)));
+        var on = el("input"); on.type = "number"; on.min = "0"; on.value = r.onHand !== null ? r.onHand : ""; on.style.cssText = "width:70px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;font:inherit;text-align:right";
+        var par = el("input"); par.type = "number"; par.min = "0"; par.value = r.par !== null ? r.par : ""; par.placeholder = String(r.target); par.style.cssText = on.style.cssText;
+        var a = el("td", "n"); a.appendChild(on); tr.appendChild(a); var b = el("td", "n"); b.appendChild(par); tr.appendChild(b);
+        tr.appendChild(el("td", "n " + (r.low ? "bad" : ""), r.daysLeft !== null ? String(r.daysLeft) : "-"));
+        var sv = el("button", "go small", "Save"); sv.type = "button"; var c = el("td"); c.appendChild(sv); tr.appendChild(c);
+        sv.addEventListener("click", function(){ sv.disabled = true; sv.textContent = "Saving"; post("stock-save", { item: r.item, onHand: on.value, par: par.value }).then(function(){ sv.textContent = "Saved"; }).catch(function(e){ sv.disabled = false; sv.textContent = e.message; }); });
+        t.appendChild(tr); });
+    }).catch(fail(t));
+  };
+
+  /* ================= 13. Housekeeper comms ================= */
+  LOADERS.hkcomms = function(){
+    $("hu_msg").textContent = "Writing...";
+    post("hk-update").then(function(d){ $("hu_draft").value = d.draft; $("hu_msg").textContent = d.note;
+      var b = $("hu_tips"); b.innerHTML = ""; d.tips.forEach(function(t){ var c = el("div", "card"); c.appendChild(el("strong", "", t.theme.charAt(0).toUpperCase() + t.theme.slice(1))); var ta = el("textarea", "draft"); ta.style.minHeight = "70px"; ta.value = t.text; c.appendChild(ta); var r = el("div", "row"), cb = el("button", "btn ghost", "Copy"), m = el("span", "small muted"); cb.type = "button"; cb.addEventListener("click", function(){ copy(ta.value, m); }); r.appendChild(cb); r.appendChild(m); c.appendChild(r); b.appendChild(c); });
+    }).catch(fail($("hu_msg")));
+  };
+  $("hu_copy").addEventListener("click", function(){ copy($("hu_draft").value, $("hu_msg")); });
+
+  /* ================= 15. What's going wrong ================= */
+  LOADERS.wrong = function(){ $("wr_msg").textContent = "Working it out..."; post("wrong").then(function(d){ $("wr_text").value = d.text; $("wr_msg").textContent = ""; }).catch(fail($("wr_msg"))); };
+  $("wr_copy").addEventListener("click", function(){ copy($("wr_text").value, $("wr_msg")); });
+
+  /* ================= 9 + 10. Laundry drafts, 14. Job ad ================= */
+  $("ld_go").addEventListener("click", function(){ var m = $("ld_msg"), box = $("ld_out"); m.textContent = "Writing..."; box.innerHTML = "";
+    post("laundry").then(function(d){ m.textContent = d.note;
+      function card(title, text){ var c = el("div", "card"); c.appendChild(el("strong", "", title)); var ta = el("textarea", "draft"); ta.style.minHeight = "200px"; ta.value = text; c.appendChild(ta); var r = el("div", "row"), cb = el("button", "btn ghost", "Copy"), mm = el("span", "small muted"); cb.type = "button"; cb.addEventListener("click", function(){ copy(ta.value, mm); }); r.appendChild(cb); r.appendChild(mm); c.appendChild(r); box.appendChild(c); }
+      if(!d.orders.length) box.appendChild(el("p", "muted", "No cleans tomorrow."));
+      d.orders.forEach(function(o){ card("Order for " + dshort(d.date) + ": " + o.supplier, o.draft); });
+      d.reports.forEach(function(r){ card("Monthly report: " + r.supplier, r.draft); });
+      if(!d.reports.length) box.appendChild(el("p", "small muted", "Monthly laundry reports appear once a laundry is set for an area and problems are reported."));
+    }).catch(function(e){ m.textContent = e.message; }); });
+  var adLoaded = false, recLoader = LOADERS.recruits;
+  LOADERS.recruits = function(){ recLoader(); if(adLoaded) return; adLoaded = true; post("job-ad").then(function(d){ $("ad_draft").value = d.ad; $("ad_msg").textContent = d.note; }).catch(function(e){ $("ad_msg").textContent = e.message; }); };
+  $("ad_copy").addEventListener("click", function(){ copy($("ad_draft").value, $("ad_msg")); });
+
   /* ================= Role coverage (the plan). Keep in step with the one-page PDF on Drive. ================= */
   var COV = [
     ["Housekeeping operations", [
-      ["Recruit, onboard and induct housekeepers", "part", "Recruitment tab tracks each person from applied to first solo clean and spots their Clean Check code and first sign-in. Codes made automatically for new HomHero housekeepers; welcome email with guide and video; rollout batches; practice cleans.", "Finding and choosing people, phone chats, on-site induction (Angus).", "m:recruits"],
+      ["Recruit, onboard and induct housekeepers", "most", "Job ad draft and a public apply form that lands in the Recruitment tab; tracker from applied to first solo clean that spots the Clean Check code and first sign-in; codes made automatically for new HomHero housekeepers; welcome email with guide and video.", "Choosing people, phone chats, on-site induction (Angus).", "m:recruits"],
       ["Allocations and resourcing", "most", "Resourcing tab flags cleans with no housekeeper and heavy days, and suggests who could help (history at the house, area, load, score). Cover tab asks chosen housekeepers; Pick changes the cleaner in HomHero.", "Deciding who to ask. First allocation stays in HomHero (CST).", "m:resourcing"],
       ["Track performance (reviews, reporting, KPIs)", "auto", "Reviews synced every 3 h; Scores; AI photo review on every clean check; clean check rate; this dashboard.", "", "scores"],
-      ["Coaching, feedback and support", "most", "Coaching tab writes a monthly draft per housekeeper from their reviews, AI notes and clean checks, with an office-only summary. Guest praise to phones; Your clean results; example photos; Ask PHH.", "Read, edit and send the draft; the conversation itself.", "m:coach"],
+      ["Coaching, feedback and support", "most", "Coaching tab writes a monthly draft per housekeeper from their reviews, AI notes and clean checks (no scores in the draft), with an office-only summary. Guest praise to phones; Your clean results; example photos; Ask PHH.", "Read, edit and send the draft; the conversation itself.", "m:coach"],
       ["Performance concerns and improvement plans", "most", "Improvement plans with targets and a review date; progress tracks itself from Clean Check. Warnings tab (First, Second, Final) with the HelpScout link.", "Deciding on a plan or warning and talking to the housekeeper.", "m:plans"],
       ["Procedures and standards followed", "auto", "Craig's checklist with live time-stamped photos, AI review, late and missed check flags, short visit flags, Needs attention.", "", "attention"],
-      ["Meetings, training and communications", "part", "Admin messages to housekeepers; intranet procedure page; How It Works PDF and video; Ask PHH.", "Running meetings and training days.", "admin"],
-      ["Resolve issues from guests, owners or staff", "part", "Needs attention to Slack with Mark handled; booking notes beside reviews; office notes to CST; owner report links.", "Judgement and replies (CST in HelpScout).", "attention"]
+      ["Meetings, training and communications", "most", "Housekeeper comms tab writes the monthly update and three refreshers from what's going wrong, to paste into Admin Messages (in-app, positive, no scores); intranet procedure page; How It Works PDF and video; Ask PHH.", "Running meetings and training days; pressing send.", "m:hkcomms"],
+      ["Resolve issues from guests, owners or staff", "most", "Complaints tab matches every low review to the clean before the stay (who, clean check, AI, booking notes), says if it's likely a cleaning issue, and drafts the review reply. Needs attention to Slack with Mark handled.", "Judgement, posting the reply, owner conversations (CST in HelpScout).", "m:triage"]
     ]],
     ["Maintenance and contractors", [
       ["Maintenance requests and workflows", "auto", "Housekeeper logs it with photos, it lands in HomHero; maintenance dashboard with priority, repeat faults, owner emails, gas round, BBQ gas orders.", "Angus runs the dashboard.", "maintenance"],
-      ["Jobs followed to completion, quality checked", "part", "Status synced from HomHero; fixed pings; trade job links; Bill to owner.", "Parked until Craig is back: trades complete jobs with a photo in Clean Check.", "maintenance"],
-      ["Contractor and supplier relationships", "person", "Job history per trade to support the conversation.", "Relationships stay with a person.", "maintenance"]
+      ["Jobs followed to completion, quality checked", "most", "Trades tab: jobs open over 48 hours, repeat jobs, and every trade \"Mark job done\" with photos for an OK or Redo quality check. Status synced from HomHero; fixed pings; Bill to owner.", "Parked for Craig: a trade's done closing the HomHero job.", "m:trades"],
+      ["Contractor and supplier relationships", "part", "Trade scorecard (jobs, done, open, 48h+, median days to finish) gives the facts for the conversation.", "The relationships themselves.", "m:trades"]
     ]],
     ["Linen and suppliers", [
-      ["Coordinate linen across the portfolio", "most", "Linen tab: day-by-day forecast per area for the next 7 days (bed sets, towels, mats, tea towels) from booked guests and Craig's linen standard. Linen guide on each clean.", "Placing the order with the laundry.", "m:linen"],
-      ["Laundry and linen supplier relationships", "person", "The supplier scorecard gives the facts for the conversation.", "Stays with a person.", "m:linen"],
+      ["Coordinate linen across the portfolio", "most", "Linen tab: day-by-day forecast per area for the next 7 days from booked guests and Craig's linen standard, and tomorrow's order drafted per laundry.", "Sending the order (could be automatic once you approve).", "m:linen"],
+      ["Laundry and linen supplier relationships", "part", "Supplier scorecard and a monthly report draft per laundry.", "The relationships themselves.", "m:linen"],
       ["Supplier performance and issues", "most", "\"Linen not right?\" on every clean (missing, not enough, stained, torn, wrong size, damp); scorecard per laundry per 100 cleans; Mark handled.", "Raising it with the laundry.", "m:linen"],
-      ["Stock levels", "part", "Consumables ordering, ready for pickup, All there or Something missing, missing items to CST.", "Store stock levels are not tracked yet.", "cons"]
+      ["Stock levels", "most", "Stock tab: usage per item from consumables bags, on-hand counts, par levels, days left and a costed reorder list.", "Counting the store and placing the order.", "m:stock"]
     ]],
     ["Reporting and improvement", [
       ["KPI reporting to the General Manager", "auto", "GM report tab writes the weekly summary from live data; 7pm problems report; daily AI digest; Scores; this dashboard.", "Copy and send the draft.", "m:gm"],
-      ["Find ways to improve systems and processes", "part", "AI digest, repeat faults, staff feedback built in weekly.", "Ian.", ""],
+      ["Find ways to improve systems and processes", "most", "What's going wrong tab: last 30 days against the 30 before (review themes, repeat-problem houses, AI notes, clean checks, maintenance, linen) with suggested actions.", "Deciding what to change (Ian).", "m:wrong"],
       ["Put improvements in place, grow the operation", "person", "", "Ian builds; Craig and the GM decide.", ""]
     ]]
   ];

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261116070606"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261116074443"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -201,8 +201,8 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-off
       if(!j.ready){ $("msg").textContent = "Your feedback is not ready yet. Check back a bit later."; return; }
       var s = Number(j.score) || 0;
       $("big").innerHTML = s + "<small> / 5</small>";
-      for(var i = 1; i <= 5; i++){ var d = document.createElement("i"); if(i <= s) d.className = "on"; $("dots").appendChild(d); }
-      $("word").textContent = WORDS[s] || "";
+      for(var i = 1; i <= 5; i++){ var d = document.createElement("i"); if(i <= s) d.className = "on"; else if(i - 0.5 === s) d.className = "half"; $("dots").appendChild(d); } /* half points from the AI (16 Nov) */
+      $("word").textContent = WORDS[Math.floor(s)] || "";
       var ul = $("tips");
       (j.tips || []).forEach(function(t){ var li = document.createElement("li"); li.textContent = t; ul.appendChild(li); });
       if(!(j.tips || []).length){ $("tipsh").textContent = "Nothing to fix"; var li = document.createElement("li"); li.textContent = "Everything looked good. Keep it up."; ul.appendChild(li); }

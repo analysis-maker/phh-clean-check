@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261116020629"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261116074443"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1205,7 +1205,7 @@ html,body{overflow-x:clip}
     if(!r.submitted){ td.appendChild(el("span", "sub", "")); return td; }
     if(!r.ai){ td.appendChild(el("span", "sub", "Reviewing")); return td; }
     if(r.ai.status !== "done"){ td.appendChild(el("span", "sub", "Not reviewed")); return td; }
-    var s = el("span", "score"); var d = el("i", "dot s" + r.ai.score); s.appendChild(d); s.appendChild(document.createTextNode(r.ai.score + "/5")); td.appendChild(s);
+    var s = el("span", "score"); var d = el("i", "dot s" + Math.floor(r.ai.score)); s.appendChild(d); s.appendChild(document.createTextNode(r.ai.score + "/5")); td.appendChild(s);
     if(r.ai.checked) td.appendChild(el("span", "sub", r.ai.checked.agree ? " ✓ checked" : " ✗ disputed"));
     return td;
   }

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261116010653">
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261116010957">
 <script>
 /* 10 Nov 2026: staging only runs on github.io. On the PHH address the WordPress plugin can't reach the staging functions. */
 (function(){ try{ var h = location.hostname; if(/(^|\.)professionalholidayhomes\.com\.au$/.test(h) && location.pathname.indexOf("/checkcleaning-staging") === 0){
@@ -187,7 +187,7 @@ td.n,th.n{text-align:right}
   function tile(k, v, s, tone){ var t = el("div", "tile" + (tone ? " " + tone : "")); t.appendChild(el("div", "k", k)); t.appendChild(el("div", "v", v)); if(s) t.appendChild(el("div", "s", s)); return t; }
 
   function chart(k){
-    var ms = k.months, W = 760, H = 220, L = 34, R = 10, T = 14, B = 30, lo = 4.0, hi = 5.0;
+    var ms = k.months.filter(function(m, i, a){ return m.clean !== null || a.slice(0, i).some(function(x){ return x.clean !== null; }); }), W = 760, H = 220, L = 34, R = 10, T = 14, B = 30, lo = 4.0, hi = 5.0;
     var bw = (W - L - R) / ms.length, y = function(v){ return T + (hi - v) / (hi - lo) * (H - T - B); };
     var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Portfolio average cleanliness score by month against the 4.7 and 4.8 bonus targets" font-family="Roboto, Arial, sans-serif">';
     [4.0, 4.2, 4.4, 4.6, 4.8, 5.0].forEach(function(v){ s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#eef1f2"/><text x="' + (L - 6) + '" y="' + (y(v) + 4) + '" font-size="11" fill="#8b979e" text-anchor="end">' + v.toFixed(1) + '</text>'; });

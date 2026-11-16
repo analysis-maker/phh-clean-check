@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261116020335">
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261116020629">
 <script>
 /* 10 Nov 2026: staging only runs on github.io. On the PHH address the WordPress plugin can't reach the staging functions. */
 (function(){ try{ var h = location.hostname; if(/(^|\.)professionalholidayhomes\.com\.au$/.test(h) && location.pathname.indexOf("/checkcleaning-staging") === 0){
@@ -579,13 +579,22 @@ textarea.draft{width:100%;min-height:300px;font:13.5px/1.5 var(--font);padding:1
         if(r.text) card.appendChild(el("p", "q", r.text));
         if(r.privateNote) card.appendChild(el("p", "small", "Private note: " + r.privateNote));
         var cb = r.cleanBefore, c = r.check;
-        var facts = cb ? "Clean before the stay: " + dshort(cb.date) + " by " + first(cb.hk) + " (" + cb.res + ")" + (c ? ". Clean check: " + (c.photos || 0) + " photos" + (c.minutesPhotosToDone !== null ? ", " + c.minutesPhotosToDone + " min from first photo to done" : "") + (c.ai ? ". AI: " + (c.ai.verdict === "to_standard" ? "to standard" : "check") + (c.ai.flags.length ? " (" + c.ai.flags.join("; ") + ")" : "") : "") : ". No clean check.") : "No clean found for the stay before this booking.";
+        var facts = cb ? "Clean before the stay: " + dshort(cb.date) + " by " + first(cb.hk) + " (" + cb.res + ")" + (c ? ". Clean check: " + (c.photos || 0) + " photos" + (c.minutesPhotosToDone !== null ? ", " + c.minutesPhotosToDone + " min from first photo to done" : "") + (c.ai ? ". AI: " + (c.ai.verdict === "to_standard" ? "to standard" : "check") + (c.ai.flags.length ? " (" + c.ai.flags.join("; ") + ")" : "") : "") : ". No clean check.") : "The clean before this stay is not linked in Clean Check.";
         card.appendChild(el("p", "small", facts));
-        if(r.bookingNotes && (Array.isArray(r.bookingNotes) ? r.bookingNotes.length : true)) card.appendChild(el("p", "small muted", "Booking notes: " + (Array.isArray(r.bookingNotes) ? r.bookingNotes.map(function(n){ return typeof n === "string" ? n : (n.note || n.text || JSON.stringify(n)); }).join(" | ") : JSON.stringify(r.bookingNotes)).slice(0, 400)));
+        var bn = r.bookingNotes, bnTxt = "";
+        if(bn && typeof bn === "object" && !Array.isArray(bn)) bnTxt = Object.keys(bn).filter(function(k){ return bn[k]; }).map(function(k){ return k.charAt(0).toUpperCase() + k.slice(1) + ": " + String(bn[k]).replace(/https?:\/\/\S+/g, "").trim(); }).join(" | ");
+        else if(Array.isArray(bn)) bnTxt = bn.map(function(n){ return typeof n === "string" ? n : (n.note || n.text || ""); }).filter(Boolean).join(" | ");
+        if(bnTxt) card.appendChild(el("p", "small muted", "Booking notes: " + bnTxt.slice(0, 400)));
+        /* Fallback when the clean before the stay isn't linked: the housekeeping note carries the Clean Check line and its View link. */
+        var hkNote = bn && typeof bn === "object" && !Array.isArray(bn) ? String(bn.housekeeping || "") : "";
+        var viewUrl = (hkNote.match(/https?:\/\/\S*view\.html\?id=[\w-]+/) || [])[0];
+        if(!cb && /PHH Clean Check done/.test(hkNote) && !r.nonClean) r.verdict = "Clean check was done before this stay (see booking notes): open the photos before deciding.";
+        if(!cb && /PHH Clean Check done/.test(hkNote) && r.nonClean) r.verdict += " A clean check was done before this stay.";
         card.appendChild(el("p", "small " + (r.nonClean ? "muted" : /likely a cleaning/.test(r.verdict) ? "bad" : "warn"), r.verdict));
         var ta = el("textarea", "draft"); ta.style.minHeight = "90px"; ta.value = r.reply; ta.setAttribute("aria-label", "Reply draft"); card.appendChild(ta);
         var row = el("div", "row"), b = el("button", "btn ghost", "Copy reply"), m = el("span", "small muted"); b.type = "button"; b.addEventListener("click", function(){ copy(ta.value, m); }); row.appendChild(b); row.appendChild(m);
         if(cb){ var a = el("a", "go small", "Open the clean in office"); a.href = "office.html?tab=cleans&open=" + encodeURIComponent(cb.res); row.appendChild(a); }
+        if(viewUrl){ var va = el("a", "go small", "Clean check photos"); va.href = viewUrl.replace(/^https:\/\/analysis-maker\.github\.io\/phh-clean-check\//, "../"); va.target = "_blank"; va.rel = "noopener"; row.appendChild(va); }
         if(cb && !r.nonClean){ var cbn = el("button", "go small", "Coaching draft for " + first(cb.hk)); cbn.type = "button"; cbn.addEventListener("click", function(){ show("coach"); coachFor(cb.hk); }); row.appendChild(cbn); }
         card.appendChild(row); box.appendChild(card);
       });

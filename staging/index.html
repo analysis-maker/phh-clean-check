@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261116020629"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261116070237"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -669,6 +669,19 @@ window.PHH_CHECKLIST = {
   function saveEntry(e){ var o = outbox(); if(o[e.res]){ o[e.res] = e; setOutbox(o); } }
   function entryPhotos(e){ var ph = (e.payload.photos || []).slice(); (e.payload.maintenance || []).forEach(function(m){ ph = ph.concat(m.photos || []); }); if(e.payload.extra && e.payload.extra.photos) ph = ph.concat(e.payload.extra.photos); return ph; }
   function unsentCount(e){ return entryPhotos(e).filter(function(p){ return !p.path; }).length; }
+  /* No signal at the property (16 Nov 2026, Ying: Sommarhuset, This is Livin', Kangaroo Valley). Weak signal can leave a request
+     hanging, so the cleans list and the clean's details give up after 12 s and use the copy saved on this phone. */
+  function withTimeout(p, ms){ return new Promise(function(ok, no){ var tm = setTimeout(function(){ no(new Error("No signal")); }, ms); p.then(function(v){ clearTimeout(tm); ok(v); }, function(e){ clearTimeout(tm); no(e); }); }); }
+  var LIST_KEY = "phh-cc-list";
+  function savedList(code){ try{ var c = JSON.parse(localStorage.getItem(LIST_KEY) || "null"); if(c && (!code || c.code === code) && c.day === new Intl.DateTimeFormat("en-CA", { timeZone:"Australia/Sydney" }).format(new Date())) return c.j; }catch(x){} return null; }
+  /* Save each clean's details while there is signal, so a clean opens at a property with no signal at all. */
+  function prefetchCleans(list){
+    (list || []).filter(function(c){ return c && c.res && !c.submitted; }).slice(0, 12).forEach(function(c, i){
+      setTimeout(function(){
+        withTimeout(apiAt(String(c.res), "", "/clean", {}), 15000).then(function(cj){ try{ localStorage.setItem("phh-clean-v12-" + c.res + "-clean", JSON.stringify(cj)); }catch(x){} }).catch(function(){});
+      }, i * 500);
+    });
+  }
   function apiAt(res, t, path, body){
     return fetch(API + path, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(Object.assign({ res:res, t:t }, body || {})) })
       .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if(!r.ok){ var er = new Error(j.error || ("Error " + r.status)); er.server = true; throw er; } return j; }); });
@@ -1139,7 +1152,7 @@ window.PHH_CHECKLIST = {
         var day = function(s){ return s ? new Date(s).toLocaleDateString("en-AU", { timeZone:"Australia/Sydney", weekday:"short", day:"numeric", month:"short" }) : ""; };
         ul.innerHTML = items.map(function(it){
           var href = it.type === "praise" ? "praise.html?t=" + encodeURIComponent(it.t || "") : "result.html?id=" + encodeURIComponent(it.id || "");
-          var what = it.type === "praise" ? "Guest gave 5 out of 5 for cleanliness" : "Clean check" + (it.score ? " " + esc(it.score) + "/5" : "");
+          var what = it.type === "praise" ? "Guest gave 5 out of 5 for cleanliness" : "Clean check" + (it.score ? " " + esc(it.shown || it.score) + "/5" : ""); /* half points (16 Nov): shown = what the housekeeper sees */
           return '<li><a href="' + href + '" style="color:inherit;text-decoration:none;display:block"><div class="rt">' + esc(it.property || "Your clean") + '</div>' +
             '<div class="note" style="margin:2px 0 0">' + esc(day(it.type === "praise" ? it.at : (it.date ? it.date + "T12:00:00+11:00" : it.at))) + '</div>' +
             '<span class="rs' + (it.type === "praise" || Number(it.score) >= 4 ? " ok" : "") + '">' + what + '</span></a></li>';
@@ -2242,8 +2255,9 @@ window.PHH_CHECKLIST = {
       if(!/^\d{4,8}$/.test(code)) return staffLogin(code);
       $("codebox").hidden = true;
       msg("Loading your cleans...");
-      fetch(API + "/today", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
-        .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); })
+      withTimeout(fetch(API + "/today", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) }), 12000)
+        .then(function(r){ return r.json().then(function(j){ if(!r.ok){ var er = new Error(j.error || ("Error " + r.status)); er.server = true; throw er; } if(!j.office){ try{ localStorage.setItem(LIST_KEY, JSON.stringify({ code: code, day: todayYmd(), j: j })); }catch(x){} } return j; }); })
+        .catch(function(e){ if(!e.server){ var cj = savedList(code); if(cj) return Object.assign({}, cj, { offline: true }); } throw e; })
         .then(function(j){
           try{ localStorage.setItem(KEY, code); }catch(e){}
           signedIn = true; $("callphh").hidden = false; window.phhAskOk = !j.office; if(window.phhAskPlace) window.phhAskPlace();
@@ -2275,8 +2289,15 @@ window.PHH_CHECKLIST = {
           }
           if(!all.length){ $("picklist").hidden = true; msg("No cleans for you today. If this looks wrong, call the PHH office."); return; }
           show(all);
+          if(j.offline) msg("No signal right now, so these are the cleans saved on this phone. Clean checks still work and send by themselves when you're back in signal.");
+          else prefetchCleans(all);
         })
-        .catch(function(e){ if(/not right/i.test(e.message)) return staffLogin(code); reset(e.message, true); });
+        .catch(function(e){
+          if(e.server && /not right/i.test(e.message)) return staffLogin(code);
+          if(!e.server){ /* no signal: keep the saved code, try again when signal comes back */
+            $("codebox").hidden = true; msg("No signal right now, so your cleans can't load yet. They will load by themselves when you have signal or Wi-Fi.", true);
+            window.addEventListener("online", function(){ loadList(code); }, { once: true }); return; }
+          reset(e.message, true); });
     }
     $("codego").addEventListener("click", function(){ var v = $("code").value.trim(); if(v) loadList(v); });
     /* Forgot your code: sends name and mobile to the office (admin dashboard and Ian/Marson's phones). */
@@ -2484,7 +2505,22 @@ window.PHH_CHECKLIST = {
     render(); /* show the checklist straight away; property name and room counts fill in when they arrive */
     restorePhotos(); sendOutbox();
     /* The clean's details are kept on the phone too, so the check reopens with no signal at the property. */
-    api("/clean", {}).then(function(c){ try{ localStorage.setItem(key + "-clean", JSON.stringify(c)); }catch(x){} start(c); }).catch(function(e){ var cc = null; try{ cc = JSON.parse(localStorage.getItem(key + "-clean") || "null"); }catch(x){} if(cc && !e.server){ start(cc); return; } $("prop").textContent = "Clean check not available"; $("sections").innerHTML = '<p class="err"></p>'; $("sections").firstChild.textContent = e.message + " If this looks wrong, call the PHH office."; $("foot").hidden = true; document.querySelector(".prog").hidden = true; $("namebox").hidden = true; });
+    var started = false;
+    withTimeout(api("/clean", {}), 12000).then(function(c){ try{ localStorage.setItem(key + "-clean", JSON.stringify(c)); }catch(x){} started = true; start(c); }).catch(function(e){ var cc = null; try{ cc = JSON.parse(localStorage.getItem(key + "-clean") || "null"); }catch(x){}
+      if(!cc && !e.server){
+        /* Never opened here before and no signal: open it with what this phone knows (cleans list, the housekeeper's name). */
+        var me = ""; try{ me = localStorage.getItem("phh-cleaner-name") || ""; }catch(x){}
+        var sl = savedList(""), lc = sl && (sl.cleans || []).filter(function(c){ return String(c.res) === String(RES); })[0];
+        cc = { res: RES, property: (lc && lc.property) || "This clean", cleanDate: "today", cleaner: me, cleaners: me ? [me] : [] };
+      }
+      if(cc && !e.server){
+        started = true; start(cc);
+        var nb = document.createElement("p"); nb.className = "note"; nb.id = "nosignal";
+        nb.textContent = "No signal here. Tick and take photos as normal, then tap Complete. It sends to PHH by itself when you're back in signal.";
+        if(!$("nosignal")) $("sections").parentNode.insertBefore(nb, $("sections"));
+        /* If the details arrive late, keep them for next time. */
+        api("/clean", {}).then(function(c){ try{ localStorage.setItem(key + "-clean", JSON.stringify(c)); }catch(x){} var n = $("nosignal"); if(n) n.remove(); }).catch(function(){});
+        return; } $("prop").textContent = "Clean check not available"; $("sections").innerHTML = '<p class="err"></p>'; $("sections").firstChild.textContent = e.message + " If this looks wrong, call the PHH office."; $("foot").hidden = true; document.querySelector(".prog").hidden = true; $("namebox").hidden = true; });
   } else {
     $("demobanner").hidden = false;
     render();

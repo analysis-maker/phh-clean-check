@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261116010957">
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261116012628">
 <script>
 /* 10 Nov 2026: staging only runs on github.io. On the PHH address the WordPress plugin can't reach the staging functions. */
 (function(){ try{ var h = location.hostname; if(/(^|\.)professionalholidayhomes\.com\.au$/.test(h) && location.pathname.indexOf("/checkcleaning-staging") === 0){
@@ -21,15 +21,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <title>Housekeeping Manager</title>
 <!-- 16 Nov 2026 (Ian: "Housekeeping Manager AI Bro Integration"). STAGING ONLY.
-     One screen for the Housekeeping & Maintenance Manager role, built from Clean Check data (manager-api-staging, read-only).
-     Sign in: manager code (qa_app_config.manager_codes) or an admin staff code. Nothing on this page sends anything to anyone.
-     "Role coverage" is the running plan: what Clean Check already does for each line of the job description. -->
+     One screen for the Housekeeping & Maintenance Manager role, built from Clean Check data (manager-api-staging).
+     Sign in: manager code (qa_app_config.manager_codes) or an admin staff code.
+     v2 (builds 1-7): Linen (forecast, problems, supplier scorecard), Coaching drafts, Improvement plans, Resourcing,
+     Recruitment, GM weekly draft. Nothing on this page sends anything to anyone: drafts are copied by the manager.
+     "Role coverage" is the running plan; keep it in step with the one-page PDF on Drive. -->
 <style>
 :root{
   color-scheme:light;
   --teal:#5bbfb5; --teal-ink:#23807a; --teal-soft:#e6f5f3;
   --bg:#f4f5f5; --panel:#fff; --ink:#26323a; --muted:#5d6b73; --faint:#8b979e; --line:#e1e5e7; --line-2:#eef1f2;
-  --red:#c2412f; --red-soft:#fdeceA; --amber:#8a5a00; --amber-soft:#fff4d6; --green:#2f7d4f; --green-soft:#e7f5ec; --info:#1f6f9a; --info-soft:#e5f1f8;
+  --red:#c2412f; --amber:#8a5a00; --amber-soft:#fff4d6; --green:#2f7d4f; --green-soft:#e7f5ec; --info:#1f6f9a; --info-soft:#e5f1f8;
   --font:"Roboto","Helvetica Neue",Arial,sans-serif;
 }
 *{box-sizing:border-box}
@@ -42,9 +44,14 @@ body{background:var(--bg);color:var(--ink);font:400 14px/1.45 var(--font)}
 .bar .section{text-transform:uppercase;letter-spacing:.06em;font-weight:500;font-size:13px;opacity:.95}
 .bar .stg{background:#f08a24;color:#fff;font-size:11px;font-weight:700;border-radius:3px;padding:2px 6px;letter-spacing:.05em}
 .bar .me{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px}
-.bar button,.bar a{background:transparent;border:1px solid rgba(255,255,255,.7);color:#fff;border-radius:4px;padding:4px 10px;font:inherit;cursor:pointer;text-decoration:none}
+.bar button{background:transparent;border:1px solid rgba(255,255,255,.7);color:#fff;border-radius:4px;padding:4px 10px;font:inherit;cursor:pointer}
+nav.tabs{background:#fff;border-bottom:1px solid var(--line);display:flex;gap:2px;overflow-x:auto;padding:0 12px;position:sticky;top:46px;z-index:4}
+nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:11px 12px 9px;font:inherit;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--teal-ink);border-bottom-color:var(--teal)}
+nav.tabs .n{background:var(--red);color:#fff;border-radius:9px;font-size:11px;padding:0 6px;margin-left:5px}
 main{max-width:1180px;margin:0 auto;padding:16px}
 h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:22px 0 8px;font-weight:500}
+h2:first-child{margin-top:4px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
 .grid{display:grid;gap:12px}
 .g6{grid-template-columns:repeat(6,minmax(0,1fr))}
@@ -62,27 +69,40 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 .dot{flex:none;width:10px;height:10px;border-radius:50%;margin-top:5px}
 .dot.red{background:var(--red)} .dot.amber{background:#e0a400} .dot.info{background:var(--info)}
 .acts .t{flex:1}
-.acts a{color:var(--teal-ink);font-weight:500;text-decoration:none;white-space:nowrap}
+a.go,button.go{color:var(--teal-ink);font-weight:500;text-decoration:none;white-space:nowrap;background:none;border:0;font:inherit;cursor:pointer;padding:0}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 th{font-weight:500;color:var(--muted);text-align:left;font-size:12px;padding:6px 8px;border-bottom:1px solid var(--line)}
 td{padding:7px 8px;border-bottom:1px solid var(--line-2);vertical-align:top}
 td.n,th.n{text-align:right}
-.pill{display:inline-block;border-radius:10px;padding:1px 8px;font-size:12px;font-weight:500}
-.p-auto{background:var(--green-soft);color:var(--green)} .p-part{background:var(--amber-soft);color:var(--amber)} .p-person{background:#eceff1;color:#4a565c} .p-build{background:var(--info-soft);color:var(--info)}
+.scroll{overflow-x:auto}
+.pill{display:inline-block;border-radius:10px;padding:1px 8px;font-size:12px;font-weight:500;white-space:nowrap}
+.p-auto{background:var(--green-soft);color:var(--green)} .p-most{background:#e3f2ef;color:#1f6b63} .p-part{background:var(--amber-soft);color:var(--amber)} .p-person{background:#eceff1;color:#4a565c} .p-build{background:var(--info-soft);color:var(--info)}
 .bad{color:var(--red);font-weight:500} .warn{color:var(--amber);font-weight:500} .good{color:var(--green);font-weight:500}
 .muted{color:var(--muted)} .small{font-size:12px}
 .rv{padding:8px 0;border-top:1px solid var(--line-2)} .rv:first-child{border-top:0}
 .rv .h{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline} .rv .q{color:var(--muted);font-size:13px;margin-top:2px}
 .cov h3{font-size:14px;margin:14px 0 6px} .cov h3:first-child{margin-top:0}
-.cov td:first-child{width:34%} .cov td:nth-child(2){width:110px}
+.cov td:first-child{width:30%} .cov td:nth-child(2){width:120px}
 .meter{height:10px;background:var(--line-2);border-radius:5px;overflow:hidden;display:flex}
 .meter i{display:block;height:100%}
 #signin{max-width:360px;margin:80px auto;background:#fff;border:1px solid var(--line);border-radius:8px;padding:22px}
 #signin input{width:100%;font:inherit;font-size:22px;letter-spacing:.2em;padding:10px;border:1px solid var(--line);border-radius:6px;margin:10px 0}
-#signin button,.btn{background:var(--teal-ink);color:#fff;border:0;border-radius:6px;padding:10px 16px;font:inherit;font-weight:500;cursor:pointer}
+.btn{background:var(--teal-ink);color:#fff;border:0;border-radius:6px;padding:8px 14px;font:inherit;font-weight:500;cursor:pointer}
+.btn.ghost{background:#fff;color:var(--teal-ink);border:1px solid var(--teal-ink)}
+.btn:disabled{opacity:.5;cursor:default}
 .err{color:var(--red)}
 .chart svg{width:100%;height:auto;display:block}
 .foot{color:var(--faint);font-size:12px;margin:24px 0 8px}
+.form{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.form label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+.form input,.form select,.form textarea,select.sm{font:inherit;color:var(--ink);padding:7px 8px;border:1px solid var(--line);border-radius:5px;background:#fff}
+textarea.draft{width:100%;min-height:300px;font:13.5px/1.5 var(--font);padding:12px;border:1px solid var(--line);border-radius:6px;color:var(--ink)}
+.note{background:var(--info-soft);color:#174f6e;border-radius:6px;padding:8px 12px;font-size:13px;margin:0 0 12px}
+.chk{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px}
+.chk label{display:flex;gap:5px;align-items:center;font-size:13px;color:var(--ink)}
+.card{border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-bottom:10px;background:#fff}
+.card .top{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 </style>
 <script>
 /* Self-update (tools/bump_build.py): if this copy is older than the live page, reopen it fresh.
@@ -120,47 +140,125 @@ td.n,th.n{text-align:right}
   <span class="stg">STAGING</span>
   <div class="me" id="me" hidden><span id="mename"></span><span id="updated" class="small"></span><button type="button" id="refresh">Refresh</button><button type="button" id="signout">Sign out</button></div>
 </header>
+<nav class="tabs" id="tabs" role="tablist" hidden>
+  <button role="tab" data-t="overview" aria-selected="true">Overview</button>
+  <button role="tab" data-t="resourcing" aria-selected="false">Resourcing<span class="n" id="n_res" hidden></span></button>
+  <button role="tab" data-t="coach" aria-selected="false">Coaching</button>
+  <button role="tab" data-t="plans" aria-selected="false">Improvement plans<span class="n" id="n_plans" hidden></span></button>
+  <button role="tab" data-t="linen" aria-selected="false">Linen<span class="n" id="n_linen" hidden></span></button>
+  <button role="tab" data-t="recruits" aria-selected="false">Recruitment</button>
+  <button role="tab" data-t="gm" aria-selected="false">GM report</button>
+  <button role="tab" data-t="role" aria-selected="false">Role coverage</button>
+</nav>
 
 <div id="signin" hidden>
   <h1 style="font-size:18px;margin:0 0 4px">Housekeeping Manager</h1>
   <p class="muted" style="margin:0">Enter your manager code.</p>
   <input id="code" inputmode="numeric" autocomplete="off" aria-label="Manager code">
-  <button type="button" id="go">Open</button>
+  <button type="button" class="btn" id="go">Open</button>
   <p id="sierr" class="err" role="alert"></p>
 </div>
 
 <main id="app" hidden>
-  <p id="loading" class="muted">Loading...</p>
-  <div id="body" hidden>
-    <h2>Today's actions</h2>
-    <div class="panel"><ul class="acts" id="acts"></ul></div>
-
-    <h2>At a glance</h2>
-    <div class="grid g6" id="tiles"></div>
-
-    <h2>Cleanliness score vs bonus targets (4.7 and 4.8)</h2>
-    <div class="panel chart"><div id="chart"></div><p class="small muted" id="kpinote" style="margin:8px 0 0"></p></div>
-
-    <div class="grid g2">
-      <div><h2>Who needs coaching (last 3 full months, lowest first)</h2><div class="panel"><table id="coach"></table></div></div>
-      <div><h2>Clean checks done, last 7 days</h2><div class="panel"><table id="comp"></table></div></div>
-    </div>
-
-    <div class="grid g2">
-      <div><h2>Low reviews this week</h2><div class="panel" id="lows"></div></div>
-      <div><h2>Needs attention, not marked handled</h2><div class="panel" id="attn"></div></div>
-    </div>
-
-    <h2>Role coverage: what Clean Check does for each part of the job</h2>
-    <div class="panel cov">
-      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-        <div class="meter" style="flex:1;min-width:220px" id="meter"></div>
-        <div class="small" id="meterTxt"></div>
+  <!-- ===== Overview ===== -->
+  <section data-p="overview">
+    <p id="loading" class="muted">Loading...</p>
+    <div id="body" hidden>
+      <h2>Today's actions</h2>
+      <div class="panel"><ul class="acts" id="acts"></ul></div>
+      <h2>At a glance</h2>
+      <div class="grid g6" id="tiles"></div>
+      <h2>Cleanliness score vs bonus targets (4.7 and 4.8)</h2>
+      <div class="panel chart"><div id="chart"></div><p class="small muted" id="kpinote" style="margin:8px 0 0"></p></div>
+      <div class="grid g2">
+        <div><h2>Who needs coaching (last 3 full months, lowest first)</h2><div class="panel"><table id="coach"></table></div></div>
+        <div><h2>Clean checks done, last 7 days</h2><div class="panel"><table id="comp"></table></div></div>
       </div>
-      <div id="cov"></div>
+      <div class="grid g2">
+        <div><h2>Low reviews this week</h2><div class="panel" id="lows"></div></div>
+        <div><h2>Needs attention, not marked handled</h2><div class="panel" id="attn"></div></div>
+      </div>
     </div>
-    <p class="foot">Staging only. Read-only: nothing on this page sends a message, changes HomHero or contacts a housekeeper. Data from Clean Check (synced from HomHero and the review sites). TEST bookings excluded.</p>
-  </div>
+  </section>
+
+  <!-- ===== 6. Resourcing ===== -->
+  <section data-p="resourcing" hidden>
+    <p class="note">Next 7 days. Cleans with no housekeeper, and heavy days (5+ cleans or 3+ back to back for one housekeeper), with who could help: people who've cleaned that house, who work the area, how busy they are that day and their guest cleanliness score. Suggestions only. To ask someone, use the office <a class="go" href="office.html?tab=cover">Cover tab</a>.</p>
+    <div id="res_out" class="muted">Loading...</div>
+  </section>
+
+  <!-- ===== 3. Coaching ===== -->
+  <section data-p="coach" hidden>
+    <p class="note">A monthly coaching draft per housekeeper from their guest reviews, AI photo notes and clean checks. Positive and low-key. Edit it, copy it, send it yourself. Nothing is sent from here. The office section underneath is for you only.</p>
+    <div class="panel"><div class="row"><select class="sm" id="co_hk" aria-label="Housekeeper"></select><button type="button" class="btn" id="co_go">Draft</button><span class="small muted" id="co_msg"></span></div></div>
+    <div id="co_out" hidden>
+      <h2>Draft to the housekeeper</h2>
+      <textarea class="draft" id="co_draft" aria-label="Coaching draft"></textarea>
+      <div class="row" style="margin-top:8px"><button type="button" class="btn" id="co_copy">Copy</button><span class="small muted" id="co_cmsg"></span></div>
+      <h2>For you (office only)</h2>
+      <div class="panel" id="co_office"></div>
+    </div>
+  </section>
+
+  <!-- ===== 4. Improvement plans ===== -->
+  <section data-p="plans" hidden>
+    <p class="note">A plan sets a target and a review date. Progress works itself out from Clean Check: clean check rate and guest cleanliness since the plan started. Nothing is sent to the housekeeper. Formal warnings stay in the office <a class="go" href="office.html?tab=warn">Warnings tab</a> with the HelpScout link.</p>
+    <h2>New plan</h2>
+    <div class="panel"><div class="form">
+      <label>Housekeeper<select id="pl_hk"></select></label>
+      <label>Linked warning<select id="pl_warn"><option value="">None</option></select></label>
+      <label>Starts<input type="date" id="pl_start"></label>
+      <label>Review on<input type="date" id="pl_review"></label>
+      <label>Clean check rate target %<input type="number" id="pl_chk" min="0" max="100" value="90" style="width:90px"></label>
+      <label>Cleanliness target<input type="number" id="pl_cl" min="1" max="5" step="0.1" value="4.6" style="width:90px"></label>
+      <label style="flex:1;min-width:220px">Focus (what you agreed)<input id="pl_focus" maxlength="500" placeholder="e.g. clean check on every clean, bathrooms"></label>
+      <button type="button" class="btn" id="pl_add">Add plan</button>
+    </div><p class="small" id="pl_msg"></p></div>
+    <h2>Plans</h2>
+    <div id="pl_out" class="muted">Loading...</div>
+  </section>
+
+  <!-- ===== 1 + 2. Linen ===== -->
+  <section data-p="linen" hidden>
+    <h2>Linen forecast, next 7 days</h2>
+    <p class="note" id="ln_std"></p>
+    <div class="panel scroll"><table id="ln_fc"></table></div>
+    <div class="grid g2">
+      <div><h2>Supplier scorecard, last 60 days</h2><div class="panel scroll"><table id="ln_sc"></table><p class="small muted" style="margin:8px 0 0">Problems per 100 cleans. Housekeepers report them with "Linen not right?" on the clean (staging app). Areas without a supplier show as "Area: ...".</p></div></div>
+      <div><h2>Which laundry supplies each area</h2><div class="panel"><div class="form"><label>Area<select id="ln_area"></select></label><label>Laundry<input id="ln_sup" maxlength="80" placeholder="Laundry name"></label><button type="button" class="btn" id="ln_save">Save</button></div><p class="small" id="ln_smsg"></p><table id="ln_map" style="margin-top:8px"></table></div></div>
+    </div>
+    <h2>Linen problems from housekeepers</h2>
+    <div class="panel" id="ln_iss"></div>
+  </section>
+
+  <!-- ===== 7. Recruitment ===== -->
+  <section data-p="recruits" hidden>
+    <p class="note">Track each new housekeeper from first contact to first solo clean. When their name matches a Clean Check code you'll see "Has a code" and "Signed in" by itself. Codes are still made in <a class="go" href="admin.html">Admin</a>; welcome emails go out only when you say so.</p>
+    <h2>Add a person</h2>
+    <div class="panel"><div class="form">
+      <label>Name<input id="rc_name" maxlength="120"></label><label>Phone<input id="rc_phone" maxlength="40"></label><label>Email<input id="rc_email" maxlength="160" type="email"></label>
+      <label>Area<input id="rc_area" maxlength="80" placeholder="e.g. Culburra Beach"></label><label>Where from<input id="rc_src" maxlength="80" placeholder="e.g. Seek, referral"></label>
+      <button type="button" class="btn" id="rc_add">Add</button></div><p class="small" id="rc_msg"></p></div>
+    <h2>In progress</h2>
+    <div id="rc_out" class="muted">Loading...</div>
+  </section>
+
+  <!-- ===== 5. GM report ===== -->
+  <section data-p="gm" hidden>
+    <p class="note">This week's summary for the General Manager, written from the dashboard. Check it, edit it, copy it into an email or Slack yourself. Nothing is sent from here.</p>
+    <div class="row" style="margin-bottom:8px"><button type="button" class="btn" id="gm_go">Write this week's draft</button><button type="button" class="btn ghost" id="gm_copy" disabled>Copy</button><span class="small muted" id="gm_msg"></span></div>
+    <textarea class="draft" id="gm_draft" aria-label="GM summary draft" style="min-height:460px"></textarea>
+  </section>
+
+  <!-- ===== Role coverage ===== -->
+  <section data-p="role" hidden>
+    <div class="panel cov">
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><div class="meter" style="flex:1;min-width:220px" id="meter"></div><div class="small" id="meterTxt"></div></div>
+      <div id="cov"></div>
+      <p class="small muted">Scoring: Automated 1, Mostly automated 0.75 (the system does the work, a person approves or sends), Partly 0.5, Needs a person 0.</p>
+    </div>
+  </section>
+  <p class="foot">Staging only. Nothing on this page sends a message, changes HomHero or contacts a housekeeper. Data from Clean Check (synced from HomHero and the review sites). Cancelled bookings and TEST bookings excluded.</p>
 </main>
 
 <script>
@@ -171,21 +269,36 @@ td.n,th.n{text-align:right}
   var KEY = "phh-manager-code", CODE = "";
   try{ CODE = localStorage.getItem(KEY) || ""; }catch(e){}
   function el(t, c, x){ var e = document.createElement(t); if(c) e.className = c; if(x !== undefined && x !== null) e.textContent = x; return e; }
-  function post(route){ return fetch(API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: CODE }) })
+  function post(route, body){ body = body || {}; body.code = CODE; return fetch(API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
     .then(function(r){ return r.json().then(function(j){ if(!r.ok){ var e = new Error(j.error || ("Error " + r.status)); e.status = r.status; throw e; } return j; }); }); }
-  function signedOut(msg){ $("app").hidden = true; $("me").hidden = true; $("signin").hidden = false; $("sierr").textContent = msg || ""; $("code").focus(); }
+  function signedOut(msg){ $("app").hidden = true; $("tabs").hidden = true; $("me").hidden = true; $("signin").hidden = false; $("sierr").textContent = msg || ""; $("code").focus(); }
   function signOut(){ try{ localStorage.removeItem(KEY); }catch(e){} CODE = ""; signedOut(""); }
-
-  /* Links into the existing screens. Office tabs need an office staff code on this phone (admins have one). */
-  var LINKS = { attention:"office.html?tab=attention", cover:"office.html?tab=cover", reviews:"office.html?tab=reviews", hk:"office.html?tab=hk",
-    scores:"office.html?tab=scores", cons:"office.html?tab=cons", cleans:"office.html?tab=cleans", warn:"office.html?tab=warn", sched:"office.html?tab=sched",
-    insp:"office.html?tab=insp", spring:"office.html?tab=spring", props:"office.html?tab=props", ai:"office.html?tab=attention", maintenance:"maintenance.html", admin:"admin.html" };
-  function link(tab, text){ var a = el("a", "", text || "Open"); a.href = LINKS[tab] || "office.html"; return a; }
+  function fail(box){ return function(e){ if(e.status === 403) return signOut(); box.textContent = e.message; box.className = "err"; }; }
+  var TZ = "Australia/Sydney";
+  function dshort(d){ return new Date(String(d).length === 10 ? d + "T12:00:00Z" : d).toLocaleDateString("en-AU", { timeZone: String(d).length === 10 ? "UTC" : TZ, weekday:"short", day:"numeric", month:"short" }); }
   function fmtMonth(m){ var d = new Date(m + "-01T12:00:00Z"); return d.toLocaleDateString("en-AU", { month:"short", timeZone:"UTC" }) + " " + m.slice(2,4); }
   function first(n){ return String(n || "").replace(/^Buzy Bee Cleaning - /, "").trim(); }
+  function copy(text, out){ (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function(){ out.textContent = "Copied."; }).catch(function(){ out.textContent = "Select the text and copy it."; }); }
 
+  /* Tabs. "m:<tab>" links switch tab here; others open the existing screens (office tabs need an office code on this device). */
+  var LINKS = { attention:"office.html?tab=attention", cover:"office.html?tab=cover", reviews:"office.html?tab=reviews", hk:"office.html?tab=hk",
+    scores:"office.html?tab=scores", cons:"office.html?tab=cons", cleans:"office.html?tab=cleans", warn:"office.html?tab=warn", sched:"office.html?tab=sched", maintenance:"maintenance.html", admin:"admin.html" };
+  var loaded = {}, LOADERS = {};
+  function show(t){
+    document.querySelectorAll("nav.tabs button").forEach(function(b){ b.setAttribute("aria-selected", String(b.getAttribute("data-t") === t)); });
+    document.querySelectorAll("main section[data-p]").forEach(function(s){ s.hidden = s.getAttribute("data-p") !== t; });
+    try{ history.replaceState(null, "", "#" + t); }catch(e){}
+    if(!loaded[t] && LOADERS[t]){ loaded[t] = true; LOADERS[t](); }
+  }
+  document.querySelectorAll("nav.tabs button").forEach(function(b){ b.addEventListener("click", function(){ show(b.getAttribute("data-t")); }); });
+  function link(tab, text){
+    if(String(tab).indexOf("m:") === 0){ var b = el("button", "go", text || "Open"); b.type = "button"; b.addEventListener("click", function(){ show(tab.slice(2)); window.scrollTo(0, 0); }); return b; }
+    var a = el("a", "go", text || "Open"); a.href = LINKS[tab] || "office.html"; return a;
+  }
   function tile(k, v, s, tone){ var t = el("div", "tile" + (tone ? " " + tone : "")); t.appendChild(el("div", "k", k)); t.appendChild(el("div", "v", v)); if(s) t.appendChild(el("div", "s", s)); return t; }
+  function badge(id, n){ var b = $(id); b.hidden = !n; b.textContent = n || ""; }
 
+  /* ================= Overview ================= */
   function chart(k){
     var ms = k.months.filter(function(m, i, a){ return m.clean !== null || a.slice(0, i).some(function(x){ return x.clean !== null; }); }), W = 760, H = 220, L = 34, R = 10, T = 14, B = 30, lo = 4.0, hi = 5.0;
     var bw = (W - L - R) / ms.length, y = function(v){ return T + (hi - v) / (hi - lo) * (H - T - B); };
@@ -201,67 +314,14 @@ td.n,th.n{text-align:right}
     [[4.7, "#e0a400", "4.7 bonus"], [4.8, "#c2412f", "4.8 bonus"]].forEach(function(t){ s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(t[0]) + '" y2="' + y(t[0]) + '" stroke="' + t[1] + '" stroke-width="1.5" stroke-dasharray="5 4"/><text x="' + (W - R - 2) + '" y="' + (y(t[0]) - 4) + '" font-size="11" fill="' + t[1] + '" text-anchor="end">' + t[2] + '</text>'; });
     $("chart").innerHTML = s + "</svg>";
     var lf = k.lastFull;
-    $("kpinote").textContent = "Average guest cleanliness score across all housekeepers (the measure in the manager's bonus). " +
-      (lf ? "Last full month " + fmtMonth(lf.month) + ": " + lf.clean.toFixed(2) + ". " : "") +
+    $("kpinote").textContent = "Average guest cleanliness score across all housekeepers (the measure in the manager's bonus). " + (lf ? "Last full month " + fmtMonth(lf.month) + ": " + lf.clean.toFixed(2) + ". " : "") +
       "Months at 4.7 or better in the last " + k.fullMonths + ": " + k.monthsAt47 + ". At 4.8 or better: " + k.monthsAt48 + ". The bonus needs 3 months in a row. Pale bar = this month so far.";
   }
-
-  /* ---------- Role coverage (the plan). Keep in step with the one-page PDF on Drive. ---------- */
-  var COV = [
-    ["Housekeeping operations", [
-      ["Recruit, onboard and induct housekeepers", "part", "Codes made automatically for new HomHero housekeepers; welcome email with guide and video; rollout batches; practice cleans.", "Finding and choosing people, references, on-site induction (Angus).", "admin"],
-      ["Allocations and resourcing", "part", "Schedule and Coming up; back-to-back flags; Cover tab asks chosen housekeepers and Pick changes the cleaner in HomHero.", "First allocation of cleans in HomHero (CST). Next: suggest who to ask for unassigned cleans.", "cover"],
-      ["Track performance (reviews, reporting, KPIs)", "auto", "Reviews synced every 3 h; Scores leaderboard and scorecards; AI photo review on every clean check; clean check rate; this dashboard.", "", "scores"],
-      ["Coaching, feedback and support", "part", "Guest praise sent to the housekeeper's phone; Your clean results; example photos; Ask PHH how-to help.", "The conversation itself. Next: a monthly coaching draft per housekeeper from their reviews and AI notes.", "scores"],
-      ["Performance concerns and improvement plans", "part", "Warnings tab (First, Second, Final) with the HelpScout link; the evidence (photos, times, reviews) is already in Clean Check.", "Deciding and talking to the housekeeper. Next: improvement plan with targets and a review date that tracks itself.", "warn"],
-      ["Procedures and standards followed", "auto", "Craig's checklist with live time-stamped room photos, AI review, late and missed check flags, short visit flags, Needs attention.", "", "attention"],
-      ["Meetings, training and communications", "part", "Admin messages to housekeepers; intranet procedure page; How It Works PDF and video; Ask PHH.", "Running meetings and training days.", "admin"],
-      ["Resolve issues from guests, owners or staff", "part", "Needs attention to Slack with Mark handled; booking notes beside reviews; office notes to CST; owner report links.", "Judgement and replies (CST in HelpScout).", "attention"]
-    ]],
-    ["Maintenance and contractors", [
-      ["Maintenance requests and workflows", "auto", "Housekeeper logs it with photos, it lands in HomHero; maintenance dashboard with priority, repeat faults, owner emails, gas round, BBQ gas orders.", "Angus runs the dashboard.", "maintenance"],
-      ["Jobs followed to completion, quality checked", "part", "Status synced from HomHero; fixed pings; trade job links; Bill to owner.", "Next (parked until Craig is back): trades complete jobs with a photo in Clean Check.", "maintenance"],
-      ["Contractor and supplier relationships", "person", "Job history per trade to support the conversation.", "Relationships stay with a person.", "maintenance"]
-    ]],
-    ["Linen and suppliers", [
-      ["Coordinate linen across the portfolio", "part", "Linen guide on each clean from the booked guest numbers (Craig's standard).", "Next: daily linen forecast per area from upcoming bookings.", "sched"],
-      ["Laundry and linen supplier relationships", "person", "", "Stays with a person.", ""],
-      ["Supplier performance and issues", "build", "Not covered yet.", "Next: a Linen problem button in the app (missing, stained, short) feeding a supplier scorecard.", ""],
-      ["Stock levels", "part", "Consumables ordering, ready for pickup, All there or Something missing, missing items to CST.", "Store stock levels are not tracked yet.", "cons"]
-    ]],
-    ["Reporting and improvement", [
-      ["KPI reporting to the General Manager", "auto", "7pm problems report, daily AI review digest, Scores, this dashboard.", "Next: a weekly GM summary drafted from this page (draft only).", "scores"],
-      ["Find ways to improve systems and processes", "part", "AI digest, repeat faults, staff feedback built in weekly.", "Ian.", ""],
-      ["Put improvements in place, grow the operation", "person", "", "Ian builds; Craig and the GM decide.", ""]
-    ]]
-  ];
-  var LBL = { auto:["Automated","p-auto"], part:["Partly","p-part"], person:["Needs a person","p-person"], build:["To build","p-build"] };
-  function coverage(){
-    var box = $("cov"), n = { auto:0, part:0, person:0, build:0 }, tot = 0;
-    COV.forEach(function(g){
-      box.appendChild(el("h3", "", g[0]));
-      var t = el("table"); var hr = el("tr"); ["Responsibility", "Status", "What Clean Check does", "Still a person / next build"].forEach(function(h){ hr.appendChild(el("th", "", h)); }); t.appendChild(hr);
-      g[1].forEach(function(r){
-        n[r[1]]++; tot++;
-        var tr = el("tr"), a = el("td"); a.appendChild(document.createTextNode(r[0]));
-        if(r[4]){ a.appendChild(document.createTextNode(" ")); var l = link(r[4], "Open"); l.className = "small"; l.style.color = "var(--teal-ink)"; a.appendChild(l); }
-        tr.appendChild(a);
-        var b = el("td"); b.appendChild(el("span", "pill " + LBL[r[1]][1], LBL[r[1]][0])); tr.appendChild(b);
-        tr.appendChild(el("td", "", r[2])); tr.appendChild(el("td", "muted", r[3])); t.appendChild(tr);
-      });
-      box.appendChild(t);
-    });
-    var m = $("meter"); [["auto","#2f7d4f"],["part","#e0a400"],["build","#1f6f9a"],["person","#b8c2c7"]].forEach(function(p){ var i = el("i"); i.style.width = (n[p[0]] / tot * 100) + "%"; i.style.background = p[1]; m.appendChild(i); });
-    var cov = Math.round((n.auto + n.part * 0.5) / tot * 100);
-    $("meterTxt").textContent = n.auto + " automated, " + n.part + " partly, " + n.build + " to build, " + n.person + " need a person (of " + tot + "). About " + cov + "% of the role covered.";
-  }
-
-  function render(d){
-    $("mename").textContent = d.name; $("updated").textContent = "Updated " + new Date(d.generatedAt).toLocaleTimeString("en-AU", { timeZone:"Australia/Sydney", hour:"numeric", minute:"2-digit" });
+  function renderOverview(d){
+    $("mename").textContent = d.name; $("updated").textContent = "Updated " + new Date(d.generatedAt).toLocaleTimeString("en-AU", { timeZone:TZ, hour:"numeric", minute:"2-digit" });
+    badge("n_res", d.extra.unassigned + d.extra.heavy); badge("n_plans", d.extra.plansDue); badge("n_linen", d.extra.linenOpen);
     var acts = $("acts"); acts.innerHTML = "";
-    if(!d.actions.length) acts.appendChild(el("li", "", "Nothing needs you right now."));
     d.actions.forEach(function(a){ var li = el("li"); li.appendChild(el("span", "dot " + a.level)); li.appendChild(el("span", "t", a.text)); li.appendChild(link(a.tab)); acts.appendChild(li); });
-
     var k = d.kpi, cur = k.months[k.months.length - 1], tl = $("tiles"); tl.innerHTML = "";
     tl.appendChild(tile("Cleanliness, this month", cur.clean !== null ? cur.clean.toFixed(2) : "-", cur.reviews + " reviews so far", cur.clean === null ? "" : cur.clean >= 4.7 ? "green" : cur.clean >= 4.5 ? "amber" : "red"));
     tl.appendChild(tile("Bonus target 4.7", k.streak47 + " of 3", "months in a row at 4.7+", k.streak47 >= 3 ? "green" : "red"));
@@ -269,42 +329,235 @@ td.n,th.n{text-align:right}
     tl.appendChild(tile("Low reviews, 7 days", String(d.reviews.low), d.reviews.count + " reviews, cleanliness " + (d.reviews.cleanAvg !== null ? d.reviews.cleanAvg.toFixed(2) : "-"), d.reviews.low ? "amber" : "green"));
     tl.appendChild(tile("Maintenance open", String(d.maint.open), d.maint.urgent + " urgent, " + d.maint.withTrades + " with trades", d.maint.urgent ? "red" : ""));
     tl.appendChild(tile("Housekeepers in Clean Check", String(d.onboarding.inPilot), d.onboarding.housekeepersWithCodes + " have codes, " + d.warnings.active + " active warnings", ""));
-
     chart(k);
-
-    var ct = $("coach"); ct.innerHTML = "<tr><th>Housekeeper</th><th class=n>Reviews</th><th class=n>Cleanliness</th><th class=n>5 star</th><th class=n>This month</th></tr>";
+    var ct = $("coach"); ct.innerHTML = "<tr><th>Housekeeper</th><th class=n>Reviews</th><th class=n>Cleanliness</th><th class=n>5 star</th><th class=n>This month</th><th></th></tr>";
     d.coaching.forEach(function(c){ var tr = el("tr"); tr.appendChild(el("td", "", c.name));
       tr.appendChild(el("td", "n", String(c.reviews))); tr.appendChild(el("td", "n " + (c.clean < 4.5 ? "bad" : c.clean < 4.7 ? "warn" : "good"), c.clean.toFixed(2)));
-      tr.appendChild(el("td", "n", c.fiveStar + "%")); tr.appendChild(el("td", "n", c.thisMonth !== null ? c.thisMonth.toFixed(2) + " (" + c.thisMonthReviews + ")" : "-")); ct.appendChild(tr); });
-    if(!d.coaching.length) ct.appendChild(el("tr")).appendChild(el("td", "muted", "Not enough reviews yet."));
-
+      tr.appendChild(el("td", "n", c.fiveStar + "%")); tr.appendChild(el("td", "n", c.thisMonth !== null ? c.thisMonth.toFixed(2) + " (" + c.thisMonthReviews + ")" : "-"));
+      var td = el("td"), b = el("button", "go small", "Draft"); b.type = "button"; b.addEventListener("click", function(){ show("coach"); coachFor(c.name); }); td.appendChild(b); tr.appendChild(td); ct.appendChild(tr); });
     var cp = $("comp"); cp.innerHTML = "<tr><th>Housekeeper</th><th class=n>Cleans</th><th class=n>Checked</th><th class=n>Rate</th></tr>";
     d.compliance.rows.forEach(function(c){ var tr = el("tr"); tr.appendChild(el("td", "", first(c.name)));
       tr.appendChild(el("td", "n", String(c.cleans))); tr.appendChild(el("td", "n", String(c.checked)));
       tr.appendChild(el("td", "n " + (c.pct < 70 ? "bad" : c.pct < 90 ? "warn" : "good"), c.pct + "%")); cp.appendChild(tr); });
-
     var lw = $("lows"); lw.innerHTML = "";
     if(!d.reviews.lows.length) lw.appendChild(el("p", "muted", "No low reviews this week."));
     d.reviews.lows.forEach(function(r){ var x = el("div", "rv"), h = el("div", "h");
       h.appendChild(el("strong", "", r.property)); h.appendChild(el("span", r.clean !== null && r.clean < 4 ? "bad" : "warn", "Cleanliness " + (r.clean !== null ? r.clean : "-") + ", " + r.stars + " stars"));
-      h.appendChild(el("span", "small muted", new Date(r.at).toLocaleDateString("en-AU", { timeZone:"Australia/Sydney", day:"numeric", month:"short" }) + (r.booking ? " | " + r.booking : "")));
-      x.appendChild(h); if(r.text) x.appendChild(el("div", "q", r.text)); lw.appendChild(x); });
-    if(d.reviews.lows.length){ var lr = el("p", "small", ""); lr.appendChild(link("reviews", "All reviews")); lw.appendChild(lr); }
-
+      h.appendChild(el("span", "small muted", dshort(r.at) + (r.booking ? " | " + r.booking : ""))); x.appendChild(h); if(r.text) x.appendChild(el("div", "q", r.text)); lw.appendChild(x); });
     var at = $("attn"); at.innerHTML = "";
     if(!d.attention.items.length) at.appendChild(el("p", "muted", "All handled."));
-    d.attention.items.forEach(function(a){ var x = el("div", "rv"), h = el("div", "h"); h.appendChild(el("strong", "", a.title || a.kind));
-      h.appendChild(el("span", "small muted", new Date(a.at).toLocaleString("en-AU", { timeZone:"Australia/Sydney", day:"numeric", month:"short", hour:"numeric", minute:"2-digit" }))); x.appendChild(h); at.appendChild(x); });
+    d.attention.items.forEach(function(a){ var x = el("div", "rv"), h = el("div", "h"); h.appendChild(el("strong", "", a.title || a.kind)); h.appendChild(el("span", "small muted", dshort(a.at))); x.appendChild(h); at.appendChild(x); });
     if(d.attention.open > d.attention.items.length) at.appendChild(el("p", "small muted", "+ " + (d.attention.open - d.attention.items.length) + " more"));
     $("loading").hidden = true; $("body").hidden = false;
+    fillCoachList(d.coaching);
+  }
+  function loadOverview(){ $("loading").hidden = false; $("loading").textContent = "Loading..."; $("loading").className = "muted"; post("summary").then(renderOverview).catch(fail($("loading"))); }
+  LOADERS.overview = loadOverview;
+
+  /* ================= 6. Resourcing ================= */
+  function sugTable(list){
+    if(!list || !list.length) return el("p", "small muted", "No one with history at this house or in this area.");
+    var t = el("table"); t.innerHTML = "<tr><th>Could help</th><th class=n>Cleaned this house</th><th class=n>Cleans in area (90 days)</th><th class=n>Cleans that day</th><th class=n>Cleanliness</th></tr>";
+    list.forEach(function(s){ var tr = el("tr"); tr.appendChild(el("td", "", first(s.name))); tr.appendChild(el("td", "n", String(s.here))); tr.appendChild(el("td", "n", String(s.area)));
+      tr.appendChild(el("td", "n" + (s.thatDay >= 5 ? " bad" : ""), String(s.thatDay))); tr.appendChild(el("td", "n", s.clean !== null ? s.clean.toFixed(2) : "-")); t.appendChild(tr); });
+    return t;
+  }
+  LOADERS.resourcing = function(){
+    var box = $("res_out"); box.textContent = "Loading..."; box.className = "muted";
+    post("resourcing").then(function(d){
+      box.innerHTML = ""; box.className = "";
+      box.appendChild(el("h2", "", "No housekeeper yet (" + d.unassigned.length + ")"));
+      if(!d.unassigned.length) box.appendChild(el("div", "panel muted", "Every clean in the next 7 days has a housekeeper."));
+      d.unassigned.forEach(function(c){ var card = el("div", "card"), top = el("div", "top"); top.appendChild(el("strong", "", c.property)); top.appendChild(el("span", "", dshort(c.date))); top.appendChild(el("span", "small muted", c.area + " | " + c.res + (c.backToBack ? " | back to back" : ""))); card.appendChild(top); card.appendChild(sugTable(c.suggestions)); box.appendChild(card); });
+      box.appendChild(el("h2", "", "Heavy days (" + d.heavy.length + ")"));
+      if(!d.heavy.length) box.appendChild(el("div", "panel muted", "No heavy days in the next 7 days."));
+      d.heavy.sort(function(a, b){ return a.date.localeCompare(b.date); }).forEach(function(h){ var card = el("div", "card"), top = el("div", "top");
+        top.appendChild(el("strong", "", first(h.hk))); top.appendChild(el("span", "", dshort(h.date))); top.appendChild(el("span", h.cleans >= 6 || h.backToBack >= 3 ? "bad" : "warn", h.cleans + " cleans, " + h.backToBack + " back to back")); card.appendChild(top);
+        card.appendChild(el("p", "small muted", h.properties.join(", ")));
+        if(h.moveable){ card.appendChild(el("p", "small", "If one moves, " + h.moveable.property + " (" + h.moveable.res + ") is the easiest. Who could take it:")); card.appendChild(sugTable(h.moveable.suggestions)); }
+        box.appendChild(card); });
+    }).catch(fail(box));
+  };
+
+  /* ================= 3. Coaching ================= */
+  function fillCoachList(list){
+    var s = $("co_hk"), cur = s.value; if(s.options.length > 1) return;
+    s.innerHTML = ""; var o0 = el("option", "", "Pick a housekeeper"); o0.value = ""; s.appendChild(o0);
+    (list || []).forEach(function(c){ var o = el("option", "", c.name + " (" + c.clean.toFixed(2) + ")"); o.value = c.name; s.appendChild(o); });
+    if(cur) s.value = cur;
+  }
+  LOADERS.coach = function(){ if($("co_hk").options.length > 1) return; post("coach").then(function(d){ fillCoachList(d.list); }).catch(fail($("co_msg"))); };
+  function coachFor(hk){
+    if(!hk) return; var s = $("co_hk"); if(![].some.call(s.options, function(o){ return o.value === hk; })){ var o = el("option", "", hk); o.value = hk; s.appendChild(o); } s.value = hk;
+    $("co_msg").textContent = "Writing the draft..."; $("co_out").hidden = true;
+    post("coach", { hk: hk }).then(function(d){
+      $("co_msg").textContent = ""; $("co_out").hidden = false; $("co_draft").value = d.draft; $("co_cmsg").textContent = d.note;
+      var o = d.office, b = $("co_office"); b.innerHTML = "";
+      var t = el("table"); t.innerHTML = "<tr><th>Period</th><th class=n>Reviews</th><th class=n>Cleanliness</th><th class=n>5 star</th><th class=n>This month</th><th class=n>Clean checks, 30 days</th><th class=n>AI checks to standard</th></tr>";
+      var tr = el("tr"); [o.period, String(o.reviews), o.clean !== null ? o.clean.toFixed(2) : "-", o.fiveStar !== null ? o.fiveStar + "%" : "-", o.thisMonth !== null ? o.thisMonth.toFixed(2) + " (" + o.thisMonthReviews + ")" : "-",
+        o.checks ? o.checks.checked + " of " + o.checks.cleans : "Not in Clean Check yet", o.ai.checks ? o.ai.toStandard + " of " + o.ai.checks : "-"].forEach(function(v, i){ tr.appendChild(el("td", i ? "n" : "", v)); }); t.appendChild(tr); b.appendChild(t);
+      if(o.ai.topFlags.length) b.appendChild(el("p", "small", "Most common AI photo notes: " + o.ai.topFlags.map(function(f){ return f[0] + " (" + f[1] + ")"; }).join(", ")));
+      if(o.themes.length) b.appendChild(el("p", "small", "Themes in low reviews: " + o.themes.map(function(f){ return f[0] + " (" + f[1] + ")"; }).join(", ")));
+      if(o.lows.length){ b.appendChild(el("p", "small muted", "Low reviews (cleanliness under 4):")); o.lows.forEach(function(r){ var x = el("div", "rv"), h = el("div", "h"); h.appendChild(el("strong", "", r.property)); h.appendChild(el("span", "bad", "Cleanliness " + r.clean + ", " + r.stars + " stars")); h.appendChild(el("span", "small muted", dshort(r.at))); x.appendChild(h); if(r.text) x.appendChild(el("div", "q", r.text)); b.appendChild(x); }); }
+      b.appendChild(el("p", "small muted", "Before you send: check the low reviews against the booking notes in the office Reviews tab, so nothing lands on the housekeeper unfairly."));
+    }).catch(fail($("co_msg")));
+  }
+  $("co_go").addEventListener("click", function(){ coachFor($("co_hk").value); });
+  $("co_copy").addEventListener("click", function(){ copy($("co_draft").value, $("co_cmsg")); });
+
+  /* ================= 4. Improvement plans ================= */
+  function iso(d){ return d.toISOString().slice(0, 10); }
+  LOADERS.plans = function(){
+    var box = $("pl_out"); box.textContent = "Loading..."; box.className = "muted";
+    post("plans").then(function(d){
+      var s = $("pl_hk"); if(s.options.length < 2){ s.innerHTML = ""; var o0 = el("option", "", "Pick"); o0.value = ""; s.appendChild(o0); d.housekeepers.forEach(function(h){ var o = el("option", "", h.name); o.value = h.id; s.appendChild(o); }); }
+      var w = $("pl_warn"); w.innerHTML = '<option value="">None</option>'; d.warnings.forEach(function(x){ var o = el("option", "", x.cleaner_name + ": " + ["", "First", "Second", "Final"][x.level] + " (" + x.given_on + ")"); o.value = x.id; w.appendChild(o); });
+      if(!$("pl_start").value){ var t = new Date(); $("pl_start").value = iso(t); t.setDate(t.getDate() + 28); $("pl_review").value = iso(t); }
+      box.innerHTML = ""; box.className = "";
+      if(!d.plans.length) box.appendChild(el("div", "panel muted", "No plans yet."));
+      d.plans.forEach(function(p){
+        var g = p.progress, card = el("div", "card"), top = el("div", "top");
+        top.appendChild(el("strong", "", p.cleaner_name)); top.appendChild(el("span", "small muted", p.starts + " to " + p.review_on));
+        top.appendChild(el("span", "pill " + (p.status !== "open" ? "p-person" : g.track === "On track" ? "p-auto" : g.track === "Behind" ? "p-part" : "p-build"), p.status !== "open" ? "Closed: " + p.status : g.track));
+        if(p.status === "open") top.appendChild(el("span", "small " + (g.daysLeft < 0 ? "bad" : "muted"), g.daysLeft < 0 ? "Review overdue" : g.daysLeft === 0 ? "Review today" : g.daysLeft + " days to review"));
+        card.appendChild(top);
+        if(p.focus) card.appendChild(el("p", "small", "Focus: " + p.focus));
+        var t = el("table"); t.innerHTML = "<tr><th>Target</th><th class=n>Goal</th><th class=n>Since the plan started</th></tr>";
+        if(p.target_check_pct !== null){ var r1 = el("tr"); r1.appendChild(el("td", "", "Clean check rate")); r1.appendChild(el("td", "n", p.target_check_pct + "%")); r1.appendChild(el("td", "n " + (g.checks.pct === null ? "" : g.checks.pct >= p.target_check_pct ? "good" : "bad"), g.checks.pct === null ? "No cleans yet" : g.checks.pct + "% (" + g.checks.checked + " of " + g.checks.cleans + ")")); t.appendChild(r1); }
+        if(p.target_clean !== null){ var r2 = el("tr"); r2.appendChild(el("td", "", "Guest cleanliness")); r2.appendChild(el("td", "n", Number(p.target_clean).toFixed(1))); r2.appendChild(el("td", "n " + (g.clean === null ? "" : g.clean >= Number(p.target_clean) ? "good" : "bad"), g.clean === null ? "No reviews yet" : g.clean.toFixed(2) + " (" + g.cleanReviews + " reviews)")); t.appendChild(r2); }
+        card.appendChild(t);
+        if(p.status === "open"){
+          var row = el("div", "row"); row.style.marginTop = "8px";
+          var sel = el("select", "sm"); [["", "Close or extend..."], ["met", "Met"], ["not met", "Not met"], ["withdrawn", "Withdrawn"], ["extended", "Extend 2 weeks"]].forEach(function(o){ var x = el("option", "", o[1]); x.value = o[0]; sel.appendChild(x); });
+          var note = el("input"); note.placeholder = "Outcome note"; note.maxLength = 500; note.style.cssText = "flex:1;min-width:180px;padding:7px 8px;border:1px solid var(--line);border-radius:5px;font:inherit";
+          var b = el("button", "btn ghost", "Save"); b.type = "button"; var m = el("span", "small");
+          b.addEventListener("click", function(){ if(!sel.value) return; b.disabled = true; var rv = new Date(p.review_on + "T12:00:00Z"); rv.setUTCDate(rv.getUTCDate() + 14);
+            post("plan-close", { id: p.id, status: sel.value, outcome: note.value, reviewOn: iso(rv) }).then(function(){ LOADERS.plans(); }).catch(function(e){ b.disabled = false; m.textContent = e.message; m.className = "small err"; }); });
+          row.appendChild(sel); row.appendChild(note); row.appendChild(b); row.appendChild(m); card.appendChild(row);
+        } else if(p.outcome) card.appendChild(el("p", "small muted", "Outcome: " + p.outcome));
+        box.appendChild(card);
+      });
+    }).catch(fail(box));
+  };
+  $("pl_add").addEventListener("click", function(){
+    var s = $("pl_hk"), m = $("pl_msg"); m.className = "small"; m.textContent = "Saving...";
+    post("plan-add", { cleanerId: s.value, cleanerName: s.value ? s.selectedOptions[0].textContent : "", warningId: $("pl_warn").value || null, starts: $("pl_start").value, reviewOn: $("pl_review").value, targetCheck: $("pl_chk").value, targetClean: $("pl_cl").value, focus: $("pl_focus").value })
+      .then(function(){ m.textContent = "Added."; $("pl_focus").value = ""; LOADERS.plans(); }).catch(function(e){ m.textContent = e.message; m.className = "small err"; });
+  });
+
+  /* ================= 1 + 2. Linen ================= */
+  LOADERS.linen = function(){
+    var fc = $("ln_fc"); fc.innerHTML = "<tr><td class=muted>Loading...</td></tr>";
+    post("linen", { days: 7 }).then(function(d){
+      $("ln_std").textContent = d.standard + " Uses the guest numbers booked for each clean.";
+      fc.innerHTML = "<tr><th>Day</th><th>Area</th><th>Laundry</th><th class=n>Cleans</th><th class=n>Bed sets</th><th class=n>Bath towels</th><th class=n>Hand towels</th><th class=n>Bath mats</th><th class=n>Tea towels</th></tr>";
+      var lastD = "";
+      d.forecast.forEach(function(r){ var tr = el("tr"); tr.appendChild(el("td", "", r.date !== lastD ? dshort(r.date) : "")); lastD = r.date; tr.appendChild(el("td", "", r.area)); tr.appendChild(el("td", r.supplier ? "" : "muted", r.supplier || "Not set"));
+        ["cleans","bedSets","bathTowels","handTowels","bathMats","teaTowels"].forEach(function(k){ tr.appendChild(el("td", "n", String(r[k]))); }); fc.appendChild(tr); });
+      var tt = el("tr"); tt.appendChild(el("td", "", "")); tt.appendChild(el("td", "", "Next 7 days")); tt.appendChild(el("td", "", "")); ["cleans","bedSets","bathTowels","handTowels","bathMats","teaTowels"].forEach(function(k){ var td = el("td", "n", String(d.totals[k])); td.style.fontWeight = "700"; tt.appendChild(td); }); fc.appendChild(tt);
+      var sc = $("ln_sc"); sc.innerHTML = "<tr><th>Laundry</th><th class=n>Cleans</th><th class=n>Problems</th><th class=n>Per 100 cleans</th><th>Most common</th></tr>";
+      if(!d.scorecard.length){ var e0 = el("tr"); var td0 = el("td", "muted", "No linen problems reported yet."); td0.colSpan = 5; e0.appendChild(td0); sc.appendChild(e0); }
+      d.scorecard.forEach(function(x){ var tr = el("tr"), top = Object.keys(x.kinds).sort(function(a, b){ return x.kinds[b] - x.kinds[a]; }).slice(0, 2).join(", ");
+        tr.appendChild(el("td", "", x.supplier)); tr.appendChild(el("td", "n", String(x.cleans))); tr.appendChild(el("td", "n", x.issues + (x.open ? " (" + x.open + " open)" : ""))); tr.appendChild(el("td", "n", x.per100 !== null ? x.per100.toFixed(1) : "-")); tr.appendChild(el("td", "small", top.replace(/_/g, " "))); sc.appendChild(tr); });
+      var a = $("ln_area"); a.innerHTML = ""; d.areas.forEach(function(x){ var o = el("option", "", x); o.value = x; a.appendChild(o); });
+      var mp = $("ln_map"); mp.innerHTML = d.suppliers.length ? "<tr><th>Area</th><th>Laundry</th></tr>" : "";
+      d.suppliers.forEach(function(s){ var tr = el("tr"); tr.appendChild(el("td", "", s.area)); tr.appendChild(el("td", "", s.supplier)); mp.appendChild(tr); });
+      var is = $("ln_iss"); is.innerHTML = "";
+      if(!d.issues.length) is.appendChild(el("p", "muted", "None yet. Housekeepers tap \"Linen not right?\" under Anything else on a clean."));
+      d.issues.forEach(function(i){ var x = el("div", "rv"), h = el("div", "h"); h.appendChild(el("strong", "", i.property)); h.appendChild(el("span", "warn", i.kinds.join(", "))); h.appendChild(el("span", "small muted", dshort(i.at) + " | " + i.area + " | " + first(i.hk)));
+        var b = el("button", "go small", i.handled ? "Handled by " + (i.handledBy || "") + " (undo)" : "Mark handled"); b.type = "button";
+        b.addEventListener("click", function(){ b.disabled = true; post("linen-handled", { id: i.id, undo: i.handled }).then(LOADERS.linen).catch(function(){ b.disabled = false; }); });
+        h.appendChild(b); x.appendChild(h); if(i.note) x.appendChild(el("div", "q", i.note)); is.appendChild(x); });
+    }).catch(fail(fc));
+  };
+  $("ln_save").addEventListener("click", function(){ var m = $("ln_smsg"); m.textContent = "Saving..."; post("linen-supplier", { area: $("ln_area").value, supplier: $("ln_sup").value }).then(function(){ m.textContent = "Saved."; $("ln_sup").value = ""; LOADERS.linen(); }).catch(function(e){ m.textContent = e.message; }); });
+
+  /* ================= 7. Recruitment ================= */
+  LOADERS.recruits = function(){
+    var box = $("rc_out"); box.textContent = "Loading..."; box.className = "muted";
+    post("recruits").then(function(d){
+      box.innerHTML = ""; box.className = "";
+      if(!d.recruits.length) box.appendChild(el("div", "panel muted", "No one yet. Add people as they apply."));
+      d.recruits.forEach(function(r){
+        var card = el("div", "card"), top = el("div", "top");
+        top.appendChild(el("strong", "", r.name)); top.appendChild(el("span", "small muted", [r.area, r.phone, r.email, r.source].filter(Boolean).join(" | ")));
+        if(r.clean_check) top.appendChild(el("span", "pill " + (r.clean_check.signedIn ? "p-auto" : "p-part"), r.clean_check.signedIn ? "Signed in to Clean Check" : "Has a code, not signed in"));
+        top.appendChild(el("span", "small muted", "Updated " + dshort(r.updated_at) + (r.updated_by ? " by " + r.updated_by : ""))); card.appendChild(top);
+        var row = el("div", "row"); row.style.marginTop = "6px";
+        var st = el("select", "sm"); d.stages.forEach(function(s){ var o = el("option", "", s.charAt(0).toUpperCase() + s.slice(1)); o.value = s; st.appendChild(o); }); st.value = r.stage;
+        row.appendChild(el("span", "small", "Stage")); row.appendChild(st); card.appendChild(row);
+        var ck = el("div", "chk"), ch = Object.assign({}, r.checklist || {});
+        d.checks.forEach(function(c){ var l = el("label"), i = el("input"); i.type = "checkbox"; i.checked = !!ch[c]; i.addEventListener("change", function(){ if(i.checked) ch[c] = new Date().toISOString().slice(0, 10); else delete ch[c]; dirty(); }); l.appendChild(i); l.appendChild(document.createTextNode(c + (ch[c] ? " (" + ch[c].slice(5) + ")" : ""))); ck.appendChild(l); });
+        card.appendChild(ck);
+        var notes = el("textarea"); notes.value = r.notes || ""; notes.maxLength = 2000; notes.placeholder = "Notes (references, trial clean, availability)"; notes.style.cssText = "width:100%;margin-top:8px;min-height:54px;padding:7px 8px;border:1px solid var(--line);border-radius:5px;font:inherit"; card.appendChild(notes);
+        var sv = el("button", "btn ghost", "Save"); sv.type = "button"; sv.disabled = true; var m = el("span", "small"); var r2 = el("div", "row"); r2.style.marginTop = "6px"; r2.appendChild(sv); r2.appendChild(m); card.appendChild(r2);
+        function dirty(){ sv.disabled = false; m.textContent = ""; }
+        st.addEventListener("change", dirty); notes.addEventListener("input", dirty);
+        sv.addEventListener("click", function(){ sv.disabled = true; m.textContent = "Saving..."; post("recruit-save", { id: r.id, stage: st.value, checklist: ch, notes: notes.value }).then(function(){ m.textContent = "Saved."; }).catch(function(e){ sv.disabled = false; m.textContent = e.message; }); });
+        box.appendChild(card);
+      });
+    }).catch(fail(box));
+  };
+  $("rc_add").addEventListener("click", function(){ var m = $("rc_msg"); m.textContent = "Saving...";
+    post("recruit-save", { name: $("rc_name").value, phone: $("rc_phone").value, email: $("rc_email").value, area: $("rc_area").value, source: $("rc_src").value, stage: "applied" })
+      .then(function(){ m.textContent = "Added."; ["rc_name","rc_phone","rc_email","rc_area","rc_src"].forEach(function(i){ $(i).value = ""; }); LOADERS.recruits(); }).catch(function(e){ m.textContent = e.message; }); });
+
+  /* ================= 5. GM report ================= */
+  $("gm_go").addEventListener("click", function(){ var m = $("gm_msg"); m.textContent = "Writing..."; $("gm_go").disabled = true;
+    post("gm").then(function(d){ $("gm_draft").value = d.draft; m.textContent = d.note; $("gm_copy").disabled = false; }).catch(function(e){ m.textContent = e.message; }).then(function(){ $("gm_go").disabled = false; }); });
+  $("gm_copy").addEventListener("click", function(){ copy($("gm_draft").value, $("gm_msg")); });
+
+  /* ================= Role coverage (the plan). Keep in step with the one-page PDF on Drive. ================= */
+  var COV = [
+    ["Housekeeping operations", [
+      ["Recruit, onboard and induct housekeepers", "part", "Recruitment tab tracks each person from applied to first solo clean and spots their Clean Check code and first sign-in. Codes made automatically for new HomHero housekeepers; welcome email with guide and video; rollout batches; practice cleans.", "Finding and choosing people, phone chats, on-site induction (Angus).", "m:recruits"],
+      ["Allocations and resourcing", "most", "Resourcing tab flags cleans with no housekeeper and heavy days, and suggests who could help (history at the house, area, load, score). Cover tab asks chosen housekeepers; Pick changes the cleaner in HomHero.", "Deciding who to ask. First allocation stays in HomHero (CST).", "m:resourcing"],
+      ["Track performance (reviews, reporting, KPIs)", "auto", "Reviews synced every 3 h; Scores; AI photo review on every clean check; clean check rate; this dashboard.", "", "scores"],
+      ["Coaching, feedback and support", "most", "Coaching tab writes a monthly draft per housekeeper from their reviews, AI notes and clean checks, with an office-only summary. Guest praise to phones; Your clean results; example photos; Ask PHH.", "Read, edit and send the draft; the conversation itself.", "m:coach"],
+      ["Performance concerns and improvement plans", "most", "Improvement plans with targets and a review date; progress tracks itself from Clean Check. Warnings tab (First, Second, Final) with the HelpScout link.", "Deciding on a plan or warning and talking to the housekeeper.", "m:plans"],
+      ["Procedures and standards followed", "auto", "Craig's checklist with live time-stamped photos, AI review, late and missed check flags, short visit flags, Needs attention.", "", "attention"],
+      ["Meetings, training and communications", "part", "Admin messages to housekeepers; intranet procedure page; How It Works PDF and video; Ask PHH.", "Running meetings and training days.", "admin"],
+      ["Resolve issues from guests, owners or staff", "part", "Needs attention to Slack with Mark handled; booking notes beside reviews; office notes to CST; owner report links.", "Judgement and replies (CST in HelpScout).", "attention"]
+    ]],
+    ["Maintenance and contractors", [
+      ["Maintenance requests and workflows", "auto", "Housekeeper logs it with photos, it lands in HomHero; maintenance dashboard with priority, repeat faults, owner emails, gas round, BBQ gas orders.", "Angus runs the dashboard.", "maintenance"],
+      ["Jobs followed to completion, quality checked", "part", "Status synced from HomHero; fixed pings; trade job links; Bill to owner.", "Parked until Craig is back: trades complete jobs with a photo in Clean Check.", "maintenance"],
+      ["Contractor and supplier relationships", "person", "Job history per trade to support the conversation.", "Relationships stay with a person.", "maintenance"]
+    ]],
+    ["Linen and suppliers", [
+      ["Coordinate linen across the portfolio", "most", "Linen tab: day-by-day forecast per area for the next 7 days (bed sets, towels, mats, tea towels) from booked guests and Craig's linen standard. Linen guide on each clean.", "Placing the order with the laundry.", "m:linen"],
+      ["Laundry and linen supplier relationships", "person", "The supplier scorecard gives the facts for the conversation.", "Stays with a person.", "m:linen"],
+      ["Supplier performance and issues", "most", "\"Linen not right?\" on every clean (missing, not enough, stained, torn, wrong size, damp); scorecard per laundry per 100 cleans; Mark handled.", "Raising it with the laundry.", "m:linen"],
+      ["Stock levels", "part", "Consumables ordering, ready for pickup, All there or Something missing, missing items to CST.", "Store stock levels are not tracked yet.", "cons"]
+    ]],
+    ["Reporting and improvement", [
+      ["KPI reporting to the General Manager", "auto", "GM report tab writes the weekly summary from live data; 7pm problems report; daily AI digest; Scores; this dashboard.", "Copy and send the draft.", "m:gm"],
+      ["Find ways to improve systems and processes", "part", "AI digest, repeat faults, staff feedback built in weekly.", "Ian.", ""],
+      ["Put improvements in place, grow the operation", "person", "", "Ian builds; Craig and the GM decide.", ""]
+    ]]
+  ];
+  var LBL = { auto:["Automated","p-auto",1], most:["Mostly automated","p-most",0.75], part:["Partly","p-part",0.5], person:["Needs a person","p-person",0], build:["To build","p-build",0] };
+  function coverage(){
+    var box = $("cov"), n = { auto:0, most:0, part:0, person:0, build:0 }, tot = 0, sc = 0;
+    COV.forEach(function(g){
+      box.appendChild(el("h3", "", g[0]));
+      var t = el("table"); var hr = el("tr"); ["Responsibility", "Status", "What Clean Check does", "Still a person"].forEach(function(h){ hr.appendChild(el("th", "", h)); }); t.appendChild(hr);
+      g[1].forEach(function(r){
+        n[r[1]]++; tot++; sc += LBL[r[1]][2];
+        var tr = el("tr"), a = el("td"); a.appendChild(document.createTextNode(r[0] + " "));
+        if(r[4]){ var l = link(r[4], "Open"); l.className += " small"; a.appendChild(l); }
+        tr.appendChild(a);
+        var b = el("td"); b.appendChild(el("span", "pill " + LBL[r[1]][1], LBL[r[1]][0])); tr.appendChild(b);
+        tr.appendChild(el("td", "", r[2])); tr.appendChild(el("td", "muted", r[3])); t.appendChild(tr);
+      });
+      box.appendChild(t);
+    });
+    var m = $("meter"); [["auto","#2f7d4f"],["most","#5bbfb5"],["part","#e0a400"],["build","#1f6f9a"],["person","#b8c2c7"]].forEach(function(p){ var i = el("i"); i.style.width = (n[p[0]] / tot * 100) + "%"; i.style.background = p[1]; m.appendChild(i); });
+    $("meterTxt").textContent = n.auto + " automated, " + n.most + " mostly, " + n.part + " partly, " + n.person + " need a person (of " + tot + "). About " + Math.round(sc / tot * 100) + "% of the role covered.";
   }
 
-  function load(){
-    $("loading").hidden = false; $("loading").textContent = "Loading...";
-    post("summary").then(render).catch(function(e){ if(e.status === 403) return signOut(); $("loading").textContent = e.message; });
-  }
-  function start(){ $("signin").hidden = true; $("app").hidden = false; $("me").hidden = false; load(); }
-
+  function start(){ $("signin").hidden = true; $("app").hidden = false; $("tabs").hidden = false; $("me").hidden = false; loaded = { overview: true }; loadOverview();
+    var h = (location.hash || "").slice(1); show(LOADERS[h] || h === "role" || h === "gm" ? h : "overview"); }
   $("go").addEventListener("click", function(){
     var v = $("code").value.trim(); if(!v) return; CODE = v; $("go").disabled = true; $("sierr").textContent = "";
     post("login").then(function(){ try{ localStorage.setItem(KEY, CODE); }catch(e){} start(); })
@@ -312,10 +565,9 @@ td.n,th.n{text-align:right}
   });
   $("code").addEventListener("keydown", function(e){ if(e.key === "Enter") $("go").click(); });
   $("signout").addEventListener("click", signOut);
-  $("refresh").addEventListener("click", load);
+  $("refresh").addEventListener("click", function(){ var sel = document.querySelector('nav.tabs button[aria-selected="true"]'), cur = sel ? sel.getAttribute("data-t") : "overview"; loadOverview(); if(LOADERS[cur] && cur !== "overview") LOADERS[cur](); });
   coverage();
   if(CODE) start(); else signedOut("");
-  document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible" && CODE) load(); });
 })();
 </script>
 </body></html>

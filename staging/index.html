@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261116010957"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261116012628"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -1043,11 +1043,28 @@ window.PHH_CHECKLIST = {
     el.innerHTML = '<div class="sechead"><h2>Anything else?</h2><span class="secount">Optional</span></div>' +
       '<p class="note" style="margin-top:0">Only if something needs the office to know. All of this is optional. More guests than booked is at the start, under Entry.</p>' +
       '<div class="anyq"><p class="lbl2">Gas needed?</p><div class="gasrow"><button type="button" class="segbtn" id="gas_bbq">BBQ gas</button><button type="button" class="segbtn" id="gas_house">House gas</button></div></div>' +
+      '<div class="anyq" id="linenq"><p class="lbl2">Linen not right?</p><p class="note" style="margin-top:0">Tap what you found and we\'ll sort it with the laundry.</p><div class="gasrow" style="flex-wrap:wrap"><button type="button" class="segbtn" data-ln="missing">Missing</button><button type="button" class="segbtn" data-ln="short">Not enough</button><button type="button" class="segbtn" data-ln="stained">Stained</button><button type="button" class="segbtn" data-ln="torn">Torn</button><button type="button" class="segbtn" data-ln="wrong_size">Wrong size</button><button type="button" class="segbtn" data-ln="damp">Damp or smelly</button></div>' +
+      '<textarea id="ln_note" maxlength="300" placeholder="Which items, e.g. 2 queen sheets, 1 bath towel" style="margin-top:8px"></textarea><button type="button" class="segbtn addissue" id="ln_send" disabled>Send to the office</button><p class="note" id="ln_msg" aria-live="polite"></p></div>' +
       '<div class="anyq"><p class="lbl2">Extra photos</p><p class="note" style="margin-top:0">For example the BBQ before you cleaned it, stained towels or extra beds used. Add a few words to each.</p><div class="photos" id="exphotos"></div>' +
       '<button type="button" class="segbtn addissue" id="exadd">+ Add an extra photo</button></div>' +
       '<div class="anyq"><p class="lbl2"><label for="ex_note">Note to the office</label></p><textarea id="ex_note" maxlength="1000" placeholder="Anything the office should know, e.g. the coffee machine type, something missing"></textarea></div>' +
       '<div class="anyq"><p class="lbl2"><label for="ex_next">Note for the next clean here</label></p><textarea id="ex_next" maxlength="500" placeholder="For example: windows due, check the mould absorbers"></textarea><p class="note">Shown at the top of the next clean at this property.</p></div>';
     ["bbq","house"].forEach(function(g){ el.querySelector("#gas_" + g).addEventListener("click", function(){ state.extra.gas[g] = !state.extra.gas[g]; save(); updExtra(); }); });
+    /* 16 Nov 2026 (staging, Housekeeping Manager build 2): Linen not right? Goes to manager-api-staging/linen-report (supplier scorecard). No notification. */
+    (function(){
+      var picked = {}, sendB = el.querySelector("#ln_send"), msgP = el.querySelector("#ln_msg");
+      function upd(){ el.querySelectorAll("[data-ln]").forEach(function(b){ b.setAttribute("aria-pressed", String(!!picked[b.getAttribute("data-ln")])); b.classList.toggle("on", !!picked[b.getAttribute("data-ln")]); }); sendB.disabled = !Object.keys(picked).some(function(k){ return picked[k]; }); }
+      el.querySelectorAll("[data-ln]").forEach(function(b){ b.addEventListener("click", function(){ var k = b.getAttribute("data-ln"); picked[k] = !picked[k]; msgP.textContent = ""; upd(); }); });
+      sendB.addEventListener("click", function(){
+        var kinds = Object.keys(picked).filter(function(k){ return picked[k]; }); if(!kinds.length) return;
+        sendB.disabled = true; msgP.textContent = "Sending...";
+        fetch("https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/manager-api-staging/linen-report", { method:"POST", headers:{ "content-type":"application/json" },
+          body: JSON.stringify({ code: threadCode(), res: RES, kinds: kinds, note: (el.querySelector("#ln_note").value || "").trim() }) })
+          .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || "That didn't send."); return j; }); })
+          .then(function(){ picked = {}; el.querySelector("#ln_note").value = ""; upd(); msgP.textContent = "Thanks, the office has it."; })
+          .catch(function(e){ sendB.disabled = false; msgP.textContent = e.message + " You can also add it to the note to the office."; });
+      });
+    })();
     el.querySelector("#exadd").addEventListener("click", function(){
       var used = state.extra.slots || [], n = 0; for(var i=1;i<=MAX_EXTRA;i++){ if(used.indexOf(i) < 0){ n = i; break; } }
       if(!n) return; state.extra.slots = used.concat([n]); save(); renderExtraPhotos(); updExtra();

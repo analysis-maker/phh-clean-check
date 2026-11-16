@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261116015557">
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261116020335">
 <script>
 /* 10 Nov 2026: staging only runs on github.io. On the PHH address the WordPress plugin can't reach the staging functions. */
 (function(){ try{ var h = location.hostname; if(/(^|\.)professionalholidayhomes\.com\.au$/.test(h) && location.pathname.indexOf("/checkcleaning-staging") === 0){
@@ -565,7 +565,14 @@ textarea.draft{width:100%;min-height:300px;font:13.5px/1.5 var(--font);padding:1
     post("triage").then(function(d){
       box.innerHTML = ""; box.className = "";
       if(!d.items.length) box.appendChild(el("div", "panel muted", "No low reviews in the last 30 days."));
+      /* Not a cleaning problem (access, check-in, phone, wifi, noise, parking, also in Spanish): route to CST, never to the housekeeper. */
+      var NONCLEAN = /\b(access|check.?in|lock ?box|key ?safe|keys?|code|phone|call(ed)?|answer|respond|wifi|wi-fi|internet|noise|noisy|parking|neighbou?r|acceder|llav|llam|contest|tel[eé]fono|habitaci[oó]n)\b/i;
       d.items.forEach(function(r){
+        if(!r.themes.length && NONCLEAN.test(r.text + " " + (r.privateNote || ""))){
+          r.verdict = "Looks like an access, check-in or communication problem, not cleaning: route to CST, not the housekeeper.";
+          r.reply = "Thank you for staying with us and for taking the time to share this feedback. We're sorry your arrival didn't go the way it should have, and that you couldn't reach us when you needed to. We're looking at what went wrong so it doesn't happen again. We'd love the chance to welcome you back and show you the stay you should have had.";
+          r.nonClean = true;
+        }
         var card = el("div", "card"), top = el("div", "top");
         top.appendChild(el("strong", "", r.property)); top.appendChild(el("span", r.clean !== null && r.clean < 4 ? "bad" : "warn", "Cleanliness " + (r.clean !== null ? r.clean : "-") + ", " + r.stars + " stars"));
         top.appendChild(el("span", "small muted", dshort(r.at) + " | booking " + r.booking)); card.appendChild(top);
@@ -575,11 +582,11 @@ textarea.draft{width:100%;min-height:300px;font:13.5px/1.5 var(--font);padding:1
         var facts = cb ? "Clean before the stay: " + dshort(cb.date) + " by " + first(cb.hk) + " (" + cb.res + ")" + (c ? ". Clean check: " + (c.photos || 0) + " photos" + (c.minutesPhotosToDone !== null ? ", " + c.minutesPhotosToDone + " min from first photo to done" : "") + (c.ai ? ". AI: " + (c.ai.verdict === "to_standard" ? "to standard" : "check") + (c.ai.flags.length ? " (" + c.ai.flags.join("; ") + ")" : "") : "") : ". No clean check.") : "No clean found for the stay before this booking.";
         card.appendChild(el("p", "small", facts));
         if(r.bookingNotes && (Array.isArray(r.bookingNotes) ? r.bookingNotes.length : true)) card.appendChild(el("p", "small muted", "Booking notes: " + (Array.isArray(r.bookingNotes) ? r.bookingNotes.map(function(n){ return typeof n === "string" ? n : (n.note || n.text || JSON.stringify(n)); }).join(" | ") : JSON.stringify(r.bookingNotes)).slice(0, 400)));
-        card.appendChild(el("p", "small " + (/likely a cleaning/.test(r.verdict) ? "bad" : "warn"), r.verdict));
+        card.appendChild(el("p", "small " + (r.nonClean ? "muted" : /likely a cleaning/.test(r.verdict) ? "bad" : "warn"), r.verdict));
         var ta = el("textarea", "draft"); ta.style.minHeight = "90px"; ta.value = r.reply; ta.setAttribute("aria-label", "Reply draft"); card.appendChild(ta);
         var row = el("div", "row"), b = el("button", "btn ghost", "Copy reply"), m = el("span", "small muted"); b.type = "button"; b.addEventListener("click", function(){ copy(ta.value, m); }); row.appendChild(b); row.appendChild(m);
         if(cb){ var a = el("a", "go small", "Open the clean in office"); a.href = "office.html?tab=cleans&open=" + encodeURIComponent(cb.res); row.appendChild(a); }
-        if(cb){ var cbn = el("button", "go small", "Coaching draft for " + first(cb.hk)); cbn.type = "button"; cbn.addEventListener("click", function(){ show("coach"); coachFor(cb.hk); }); row.appendChild(cbn); }
+        if(cb && !r.nonClean){ var cbn = el("button", "go small", "Coaching draft for " + first(cb.hk)); cbn.type = "button"; cbn.addEventListener("click", function(){ show("coach"); coachFor(cb.hk); }); row.appendChild(cbn); }
         card.appendChild(row); box.appendChild(card);
       });
     }).catch(fail(box));

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261116074443"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261118053441"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -340,6 +340,10 @@ input,textarea,select{font-size:19px}
 /* Back to back on the cleans list (Belinda, 14 Nov): yellow like the old app */
 #picklist .item.b2b .pickrow{background:#fff6d6;border-color:#f1d58a}
 #picklist .sub.b2bt{color:#7a5a00;font-weight:600}
+#picklist li{flex-wrap:wrap}
+.teamrow{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px 14px;font-size:.85rem;color:var(--muted)}
+.teamrow button{border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:var(--surface);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
+.teamrow button[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:#fff}
 </style>
 
 <nav class="nav"><div class="wrap"><img src="logo.png" alt="Professional Holiday Homes" width="183" height="34" fetchpriority="high"><div class="me" id="me" hidden><span id="mename"></span><a href="#" id="signout">Sign out</a></div></div></nav>
@@ -1980,6 +1984,37 @@ window.PHH_CHECKLIST = {
         if(!on && t) t.remove();
       });
     }
+    /* Team jobs (18 Nov 2026, Brooke via Marson; Ian "Go live and stricter"). The lead taps a team member's name under a clean to give
+       them that clean. Once she has given out any of the day's cleans, each member only sees the cleans given to them,
+       never the lead's Coming up calendar, results or supplies, and gets entry codes only for their own cleans. */
+    function teamRpc(code, extra){
+      return fetch("https://rxhpnowszmetjxbwylil" + ".supabase.co/rest/v1/rpc/qa_team_jobs", { method:"POST",
+        headers:{ "content-type":"application/json", "apikey":"sb_publishable_JaFEZTFufkk0hrminCZdXQ_fQFJ0kLb" },
+        body: JSON.stringify(Object.assign({ p_code: code }, extra || {})) }).then(function(r){ if(!r.ok) throw new Error("team"); return r.json(); });
+    }
+    function markTeam(){
+      var t = window.phhTeam; if(!t || t.role !== "lead") return;
+      document.querySelectorAll("#picklist li").forEach(function(li){
+        var b = li.querySelector("button[data-res]"); if(!b) return;
+        var res = b.getAttribute("data-res"), row = li.querySelector(".teamrow");
+        if(!row){ row = document.createElement("div"); row.className = "teamrow"; li.appendChild(row); }
+        row.innerHTML = "<span>Team:</span>";
+        (t.members || []).forEach(function(m){
+          var on = (t.jobs || []).some(function(j){ return String(j.res) === res && j.member === m.id; });
+          var x = document.createElement("button"); x.type = "button"; x.textContent = String(m.name || "").split(" ")[0]; x.setAttribute("aria-pressed", on ? "true" : "false");
+          x.title = on ? "Tap to take this clean off " + m.name : "Tap to give this clean to " + m.name;
+          x.addEventListener("click", function(e){
+            e.stopPropagation(); x.disabled = true;
+            var code = ""; try{ code = localStorage.getItem("phh-cleaner-code") || ""; }catch(z){}
+            teamRpc(code, { p_action:"set", p_res: res, p_member: m.id, p_on: !on }).then(function(r){
+              if(r && r.error){ msg(r.error, true); x.disabled = false; return; }
+              if(r && r.role === "lead"){ window.phhTeam = r; markTeam(); }
+            }).catch(function(){ x.disabled = false; msg("No signal right now. Try again in a moment.", true); });
+          });
+          row.appendChild(x);
+        });
+      });
+    }
     function show(list){
       var ul = $("picklist"); ul.innerHTML = "";
       list.forEach(function(c){
@@ -2004,7 +2039,7 @@ window.PHH_CHECKLIST = {
         li.appendChild(b); ul.appendChild(li);
       });
       ul.hidden = !list.length;
-      markB2B();
+      markB2B(); markTeam();
       msg(list.length ? "" : "No property matches. If your clean is missing, call the PHH office.");
     }
     function reset(t, err){
@@ -2188,22 +2223,37 @@ window.PHH_CHECKLIST = {
         .then(function(r){ return r.json().then(function(j){ if(!r.ok){ var er = new Error(j.error || ("Error " + r.status)); er.server = true; throw er; } if(!j.office){ try{ localStorage.setItem(LIST_KEY, JSON.stringify({ code: code, day: todayYmd(), j: j })); }catch(x){} } return j; }); })
         .catch(function(e){ if(!e.server){ var cj = savedList(code); if(cj) return Object.assign({}, cj, { offline: true }); } throw e; })
         .then(function(j){
+          /* Team member: only the cleans the lead has given them (fails closed: nothing shown if this check can't run). */
+          if(!j || j.office || !j.team || j.offline) return j;
+          return teamRpc(code).then(function(t){ return t; }, function(){ return { role:"member", filter:true, jobs:[], failed:true }; }).then(function(t){
+            if(!t || t.role !== "member" || !t.filter) return Object.assign({}, j, { member: true });
+            var set = {}; (t.jobs || []).forEach(function(r){ set[String(r)] = true; });
+            var j2 = Object.assign({}, j, { member: true, teamFiltered: true, teamFailed: !!t.failed, cleans: (j.cleans || []).filter(function(c){ return set[String(c.res)]; }) });
+            try{ localStorage.setItem(LIST_KEY, JSON.stringify({ code: code, day: todayYmd(), j: j2 })); }catch(x){}
+            return j2;
+          });
+        })
+        .then(function(j){
           try{ localStorage.setItem(KEY, code); }catch(e){}
           signedIn = true; $("callphh").hidden = false; window.phhAskOk = !j.office; if(window.phhAskPlace) window.phhAskPlace();
           office = !!j.office; all = j.cleans || [];
           if(!office) fetch(SPRING_API + "/spring-today", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ code: code }) })
             .then(function(r){ return r.ok ? r.json() : null; }).then(function(sj){ var l = (sj && sj.springCleans) || []; showSpring(l); if(l.length && !all.length) msg(""); }).catch(function(){});
-          if(!office) showComing(code);
-          if(!office) showCover(code);
-          if(!office) showConsumables(code);
-          if(!office) showThreads(code);
+          var member = !office && !!j.team;
+          if(!office && !member) showComing(code);
+          if(!office && !member) showCover(code);
+          if(!office && !member) showConsumables(code);
+          if(!office && !member) showThreads(code);
+          if(member){ window.phhAskOk = false; if(window.phhAskPlace) window.phhAskPlace(); } /* Ask PHH answers about the lead's cleans: not for team members */
           showMe(office ? "PHH office" : String(j.cleaner || "").split(" ")[0]);
           try{ if(office) localStorage.removeItem("phh-cleaner-name"); else localStorage.setItem("phh-cleaner-name", String(j.cleaner || "")); }catch(e){}
           $("pickh1").textContent = office ? "All cleans today" : "Hi " + String(j.cleaner || "").split(" ")[0];
           /* Team member (2 Nov): signed in with their own code, sees the cleans of the housekeeper they clean for. */
           var teamLead = (!office && j.team && j.team.lead) ? String(j.team.lead).replace(/\s*\(.*\)\s*$/, "") : "";
           $("pickmeta").textContent = office ? "Office view. Every clean with a PHH housekeeper." : teamLead ? "Today's cleans for " + teamLead + "'s team. Pick the property you are cleaning." : "Your cleans for today. Pick the property you are cleaning.";
+          if(member && j.teamFiltered) $("pickmeta").textContent = "The cleans " + teamLead + " has given you. Pick the property you are cleaning.";
           $("notme").hidden = false;
+          if(member){ ["resbtn", "supplies"].forEach(function(id){ if($(id)) $(id).hidden = true; }); }
           if($("hktools")){ $("hktools").hidden = office; fillLostProps(all);
             if(!office && /[?&]reports=1/.test(location.search) && $("repbox")){ $("repbox").hidden = false; loadReports(); try{ $("repbox").scrollIntoView({ block:"start" }); }catch(x){} } }
           $("searchbox").hidden = all.length < 6;
@@ -2216,7 +2266,10 @@ window.PHH_CHECKLIST = {
             loadOfficeDay(code, startDay).then(function(){ showDayBar(code); }).catch(function(){ officeDay = ""; $("daybar").hidden = true; $("pickh1").textContent = "All cleans today"; if(all.length) show(all); else msg("No cleans today."); });
             return;
           }
-          if(!all.length){ $("picklist").hidden = true; msg("No cleans for you today. If this looks wrong, call the PHH office."); return; }
+          if(!all.length){ $("picklist").hidden = true;
+            msg(member && j.teamFiltered ? (j.teamFailed ? "Your cleans can't load right now. Try again in a moment." : "No cleans given to you yet. Ask " + teamLead + " to add you to today's cleans in her app.") : "No cleans for you today. If this looks wrong, call the PHH office."); return; }
+          if(!member && !j.offline) teamRpc(code).then(function(t){ if(t && t.role === "lead"){ window.phhTeam = t; markTeam();
+            if(!$("teamhint")){ var h = document.createElement("p"); h.className = "note"; h.id = "teamhint"; h.textContent = "Tap a name under a clean to give it to that team member. Your team only sees the cleans you give them."; $("picklist").parentNode.insertBefore(h, $("picklist")); } } }).catch(function(){});
           show(all);
           if(j.offline) msg("No signal right now, so these are the cleans saved on this phone. Clean checks still work and send by themselves when you're back in signal.");
           else prefetchCleans(all);

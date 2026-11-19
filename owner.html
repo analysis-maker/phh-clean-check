@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261119050552"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261119110315"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -293,5 +293,14 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-off
     });
   };
 })();
+</script>
+<script>
+/* 19 Nov 2026 (Ian): Craig's one code. When it was used on this phone, a Menu button goes back to his three choices. */
+(function(){ try{ var h = JSON.parse(localStorage.getItem("phh-hub") || "null"); if(!h) return;
+  function add(){ if(document.getElementById("hubpill")) return; var b = document.createElement("button"); b.type = "button"; b.id = "hubpill"; b.textContent = "\u2190 " + (h.name ? h.name + "'s menu" : "Menu");
+    b.style.cssText = "position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:60;font:600 14px Raleway,Arial,sans-serif;padding:9px 14px;border-radius:999px;border:1px solid #0e7c8f;background:#fff;color:#0e7c8f;box-shadow:0 2px 8px rgba(0,0,0,.15);cursor:pointer";
+    b.addEventListener("click", function(){ ["phh-staff-code","phh-staff-view","phh-owner-code"].forEach(function(k){ try{ localStorage.removeItem(k); }catch(x){} }); location.replace("./"); });
+    document.body.appendChild(b); }
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", add); else add(); }catch(e){} })();
 </script>
 </body></html>

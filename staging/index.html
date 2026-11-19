@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261119050552"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261119105126"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -135,6 +135,9 @@ li.na .nabtn{color:var(--ink);background:var(--offset)}
 .ftbtn:active{background:#e6f2f1}
 .submit{font:inherit;font-weight:600;font-size:1rem;border:2px solid var(--teal);border-radius:var(--radius-md);padding:14px 24px;background:var(--teal);color:#fff;cursor:pointer;white-space:nowrap}
 .submit:hover:not(:disabled){background:var(--teal-hover);border-color:var(--teal-hover)}
+.hubbtn{text-align:left;white-space:normal;line-height:1.3}
+.hubbtn span{display:block;font-weight:500;font-size:.85rem;opacity:.9;margin-top:2px}
+.hubbar{display:inline-block;margin:0 0 12px;font-weight:600;color:var(--teal);text-decoration:none}
 .submit:disabled{background:var(--offset);border-color:var(--offset);color:var(--faint);cursor:not-allowed}
 .donecard{margin-top:32px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 24px;display:grid;gap:10px}
 .donecard .big{font-family:var(--font);font-size:2rem;font-weight:800;letter-spacing:-.02em;color:var(--teal)}
@@ -393,6 +396,13 @@ input,textarea,select{font-size:19px}
       <button class="submit go" id="fsend" type="button" style="margin-top:10px">Send to the office</button>
       <p class="note" id="fmsg" style="margin-top:8px"></p>
     </div>
+  </div>
+  <div class="who" id="hubbox" hidden>
+    <p class="lbl" id="hubhi" style="margin:0">Hi</p>
+    <button class="submit go hubbtn" id="hubstaff" type="button">Office dashboard<span>Everything the office sees: cleans, AI reviews, maintenance, admin</span></button>
+    <button class="submit go hubbtn" id="hubclean" type="button">Practice clean<span>The housekeeper app, with a practice house to try a clean check</span></button>
+    <button class="submit go hubbtn" id="hubowner" type="button">My properties<span>What an owner sees: Bluewater, Sunbaker Beach House and Hayes Beach House</span></button>
+    <a href="#" class="textlink" id="hubout" style="display:block;margin-top:8px">Sign out</a>
   </div>
   <div class="who" id="searchbox" hidden>
     <label class="lbl" for="q">Find property</label>
@@ -2573,7 +2583,37 @@ window.PHH_CHECKLIST = {
             window.addEventListener("online", function(){ loadList(code); }, { once: true }); return; }
           reset(e.message, true); });
     }
-    $("codego").addEventListener("click", function(){ var v = $("code").value.trim(); if(v) loadList(v); });
+    /* 19 Nov 2026 (Ian): one code for Craig (qa_hub_codes, rpc qa_hub_login) opens a menu of three: the office dashboard,
+       a practice clean in the housekeeper app, and the owner view of his own properties. Each button signs in with the
+       matching existing code; Menu / Sign out in each view comes back here. Any other code carries on as before. */
+    var HUB_KEY = "phh-hub";
+    function hubSaved(){ try{ return JSON.parse(localStorage.getItem(HUB_KEY) || "null"); }catch(e){ return null; } }
+    function hubTry(code){
+      if(!/^\d{4,8}$/.test(code)) return Promise.resolve(null);
+      return withTimeout(fetch("https://rxhpnowszmetjxbwylil" + ".supabase.co/rest/v1/rpc/qa_hub_login", { method:"POST",
+        headers:{ "content-type":"application/json", "apikey":"sb_publishable_JaFEZTFufkk0hrminCZdXQ_fQFJ0kLb" },
+        body: JSON.stringify({ p_code: code }) }), 8000).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+    }
+    function showHub(h){
+      $("codebox").hidden = true; $("searchbox").hidden = true; $("picklist").hidden = true; $("notme").hidden = true;
+      $("pickh1").textContent = "Hi " + (h.name || "there"); $("pickmeta").textContent = "Pick what you'd like to look at."; msg("");
+      $("hubhi").textContent = "Where to?";
+      $("hubstaff").hidden = !h.staff; $("hubclean").hidden = !h.cleaner; $("hubowner").hidden = !h.owner;
+      $("hubbox").hidden = false; if($("hubback")) $("hubback").hidden = true;
+    }
+    function codeEntered(v){
+      $("codego").disabled = true;
+      hubTry(v).then(function(h){
+        $("codego").disabled = false;
+        if(h && (h.staff || h.cleaner || h.owner)){ try{ localStorage.setItem(HUB_KEY, JSON.stringify(h)); }catch(e){} showHub(h); return; }
+        loadList(v);
+      });
+    }
+    $("hubstaff").addEventListener("click", function(){ var h = hubSaved(); if(!h || !h.staff) return; try{ localStorage.setItem("phh-staff-code", h.staff); localStorage.setItem("phh-staff-view", "office"); }catch(e){} location.href = "office.html?v=1108b4"; });
+    $("hubowner").addEventListener("click", function(){ var h = hubSaved(); if(!h || !h.owner) return; try{ localStorage.setItem("phh-owner-code", h.owner); }catch(e){} location.href = "owner.html"; });
+    $("hubclean").addEventListener("click", function(){ var h = hubSaved(); if(!h || !h.cleaner) return; $("hubbox").hidden = true; if($("hubback")) $("hubback").hidden = false; loadList(h.cleaner); });
+    $("hubout").addEventListener("click", function(e){ e.preventDefault(); try{ localStorage.removeItem(HUB_KEY); }catch(x){} $("hubbox").hidden = true; $("code").value = ""; reset(""); });
+    $("codego").addEventListener("click", function(){ var v = $("code").value.trim(); if(v) codeEntered(v); });
     /* Forgot your code: sends name and mobile to the office (admin dashboard and Ian/Marson's phones). */
     $("forgot").addEventListener("click", function(e){ e.preventDefault(); $("forgotbox").hidden = !$("forgotbox").hidden; if(!$("forgotbox").hidden) $("fname").focus(); });
     $("fsend").addEventListener("click", function(){
@@ -2585,7 +2625,7 @@ window.PHH_CHECKLIST = {
         .then(function(){ $("fmsg").textContent = "Thanks " + n.split(" ")[0] + ", the office has it and will send your code shortly."; $("fname").value = ""; $("fphone").value = ""; })
         .catch(function(e){ $("fsend").disabled = false; $("fmsg").textContent = e.message + " You can also call the office."; });
     });
-    $("code").addEventListener("keydown", function(e){ if(e.key === "Enter"){ var v = this.value.trim(); if(v) loadList(v); } });
+    $("code").addEventListener("keydown", function(e){ if(e.key === "Enter"){ var v = this.value.trim(); if(v) codeEntered(v); } });
     $("q").addEventListener("input", function(){ var q = this.value.trim().toLowerCase(); show(all.filter(function(c){ return String(c.property).toLowerCase().indexOf(q) >= 0; })); });
     $("switchcode").addEventListener("click", function(e){ e.preventDefault(); $("code").value = ""; reset(""); });
     var staffSaved = ""; try{ staffSaved = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
@@ -2596,7 +2636,11 @@ window.PHH_CHECKLIST = {
     var ownerSaved = ""; try{ ownerSaved = localStorage.getItem("phh-owner-code") || ""; }catch(e){}
     if(ownerSaved){ location.replace("owner.html"); return; }
     var saved = ""; try{ saved = localStorage.getItem(KEY) || ""; }catch(e){}
-    if(saved) loadList(saved); else { $("codebox").hidden = false; }
+    var hubNow = hubSaved();
+    if(saved) loadList(saved); else if(hubNow) showHub(hubNow); else { $("codebox").hidden = false; }
+    if(hubNow && $("pick")){ var hb = document.createElement("a"); hb.href = "#"; hb.className = "hubbar"; hb.id = "hubback"; hb.hidden = !saved; hb.textContent = "\u2190 " + (hubNow.name ? hubNow.name + "'s menu" : "Menu");
+      hb.addEventListener("click", function(e){ e.preventDefault(); ["phh-cleaner-code","phh-cleaner-name"].forEach(function(k){ try{ localStorage.removeItem(k); }catch(x){} }); try{ localStorage.removeItem(LIST_KEY); }catch(x){} location.replace(location.pathname); });
+      $("pick").insertBefore(hb, $("pick").firstChild); }
   }
 
 

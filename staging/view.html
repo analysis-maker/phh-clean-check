@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261116020629"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261119050552"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -257,7 +257,7 @@ window.PHH_API = window.PHH_API || "";
       $("res").textContent = OWNER ? "" : "Booking " + j.res;
       var n = 0; j.sections.forEach(function(s){ n += s.items.length; });
       chip(n + " checklist items" + (j.naCount && !OWNER ? " (" + j.naCount + " N/A)" : ""));
-      chip(j.photos.length + " photos");
+      chip(j.photos.length + " photos" + (j.photosDue ? " (" + j.photosDue + " still on the way)" : ""));
       if(j.firstPhotoAt && j.submittedAt){
         var mins = Math.round((new Date(j.submittedAt) - new Date(j.firstPhotoAt)) / 60000);
         if(mins >= 0){ var t = mins >= 60 ? Math.floor(mins/60) + " h " + (mins % 60) + " min" : mins + " min";

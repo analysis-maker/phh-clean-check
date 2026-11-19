@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261118063729"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261119050552"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -645,9 +645,9 @@ window.PHH_CHECKLIST = {
   var completing = false;
 
   /* Photos stay on the phone (IndexedDB) until they reach PHH, so weak signal or a closed app never loses one.
-     Each photo sends itself straight away; if it can't, it tries again by itself (signal back, app reopened, every 20 s).
-     Complete is never held up by sending: the finished check waits in an outbox on the phone and sends itself,
-     with the time Complete was tapped (completedAt). The checklist and photos are still done at the property. */
+     Complete is saved on the phone first. The checklist (items, time, notes) is sent straight away, even while some
+     photos are still uploading. Those photos follow and attach to the same check. A hung upload gives up, and the
+     queue keeps trying while the app is open (and again when it is opened). A queued check is never dropped. */
   var OUTBOX = "phh-cc-outbox";
   var dbp = null;
   function idb(){
@@ -677,18 +677,64 @@ window.PHH_CHECKLIST = {
       }, i * 500);
     });
   }
+  function deviceId(){
+    var k = "phh-cc-device", d = "";
+    try{
+      d = localStorage.getItem(k) || "";
+      if(!d){ d = "d" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); localStorage.setItem(k, d); }
+    }catch(e){ d = "phone"; }
+    return d;
+  }
+  function newClient(){
+    try{ if(window.crypto && crypto.randomUUID) return crypto.randomUUID(); }catch(e){}
+    return "c" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+  }
+  /* A request that never answers is aborted. One stuck photo must not freeze the queue. */
+  function fetchTimeout(url, opts, ms){
+    var ctrl = new AbortController(), tm = setTimeout(function(){ try{ ctrl.abort(); }catch(x){} }, ms);
+    return fetch(url, Object.assign({}, opts || {}, { signal: ctrl.signal })).then(function(r){
+      clearTimeout(tm); return r;
+    }, function(e){
+      clearTimeout(tm);
+      if(e && e.name === "AbortError") throw new Error("No signal");
+      throw e;
+    });
+  }
   function apiAt(res, t, path, body){
-    return fetch(API + path, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(Object.assign({ res:res, t:t }, body || {})) })
+    return fetchTimeout(API + path, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(Object.assign({ res:res, t:t }, body || {})) }, 25000)
       .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if(!r.ok){ var er = new Error(j.error || ("Error " + r.status)); er.server = true; throw er; } return j; }); });
   }
-  var onOutbox = null, obBusy = false;
+  var onOutbox = null, obBusy = false, obStarted = 0, obGen = 0;
+  function officePendingUrl(){
+    return (/-v11$/.test(String(API)) ? OFFICE_API + "-v2" : OFFICE_API) + "/phone-pending";
+  }
+  function postPending(body){
+    var code = ""; try{ code = localStorage.getItem("phh-cleaner-code") || ""; }catch(e){}
+    if(!code || !API) return;
+    fetchTimeout(officePendingUrl(), { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(Object.assign({ code: code, device: deviceId(), staging: /\/staging\//.test(location.pathname) }, body)) }, 12000).catch(function(){});
+  }
+  /* Tell the office this phone still has the clean, so a missed-check reminder is not sent for a check finished here.
+     One login code can be on two phones: each phone has its own device id and only reports bookings saved on this phone. */
+  function reportPending(){
+    if(!API) return;
+    var o = outbox();
+    Object.keys(o).forEach(function(res){
+      var e = o[res]; if(!e || e.submittedId) return;
+      postPending({ res: res, completedAt: e.completedAt, photosLeft: unsentCount(e) });
+    });
+    if(typeof LIVE !== "undefined" && LIVE && RES && !o[RES] && !completing){
+      var n = 0; Object.keys(state.photos).forEach(function(k){ var x = state.photos[k]; if(x && !x.path) n++; });
+      postPending({ res: RES, completedAt: null, photosLeft: n });
+    }
+  }
   function fillPath(e, p){
-    if(p.path) return Promise.resolve();
+    if(p.path || p.missing) return Promise.resolve();
     return photoGet(e.res, p.id).then(function(rec){
-      if(!rec){ var er = new Error("A photo is missing on this phone."); er.server = true; throw er; }
+      if(!rec){ p.missing = true; var er = new Error("A photo is missing on this phone."); er.missing = true; throw er; }
       if(rec.path){ p.path = rec.path; return; }
       return apiAt(e.res, e.t, "/upload-url", { photo:p.id }).then(function(j){
-        return fetch(j.signedUrl, { method:"PUT", headers:{ "content-type":"image/jpeg" }, body: rec.blob }).then(function(r){
+        if(!j || !j.signedUrl || !j.path) throw new Error("offline");
+        return fetchTimeout(j.signedUrl, { method:"PUT", headers:{ "content-type":"image/jpeg" }, body: rec.blob }, 90000).then(function(r){
           if(!r.ok) throw new Error("offline");
           rec.path = j.path; p.path = j.path; saveEntry(e);
           return photoPut(rec).catch(function(){});
@@ -696,26 +742,127 @@ window.PHH_CHECKLIST = {
       });
     });
   }
+  function photoList(arr){
+    return (arr || []).map(function(p){
+      var o = { id:p.id, label:p.label || "", stampedAt:p.stampedAt || null, takenAt:p.takenAt || null, oldPhoto:!!p.oldPhoto };
+      if(p.caption) o.caption = p.caption;
+      if(p.loc) o.loc = p.loc;
+      if(p.path) o.path = p.path; else o.pending = true;
+      return o;
+    });
+  }
+  function bodyFor(e, defer){
+    var b = JSON.parse(JSON.stringify(e.payload));
+    b.completedAt = e.completedAt;
+    b.photos = photoList(e.payload.photos);
+    b.maintenance = (e.payload.maintenance || []).map(function(m){
+      return { slot:m.slot, text:m.text, urgent:!!m.urgent, photos: photoList(m.photos) };
+    });
+    if(b.extra) b.extra.photos = photoList(e.payload.extra && e.payload.extra.photos);
+    if(!defer){
+      b.photos = b.photos.filter(function(p){ return p.path; });
+      b.maintenance.forEach(function(m){ m.photos = (m.photos || []).filter(function(p){ return p.path; }); });
+      if(b.extra && b.extra.photos) b.extra.photos = b.extra.photos.filter(function(p){ return p.path; });
+    } else { b.deferPhotos = true; b.client = e.client; }
+    return b;
+  }
+  function deferRejected(err){
+    var m = (err && err.message) || "";
+    return !!(err && err.server && /did not upload|still needed|Not found|Error 404/i.test(m));
+  }
+  function finishLocal(e){
+    var o = outbox(); delete o[e.res]; setOutbox(o);
+    try{ localStorage.removeItem("phh-clean-v12-" + e.res); localStorage.removeItem("phh-clean-v12-" + e.res + "-clean"); }catch(x){}
+    photosDrop(e.res).catch(function(){});
+    postPending({ res: e.res, done: true, completedAt: e.completedAt, photosLeft: 0 });
+  }
+  function markSent(e){
+    entryPhotos(e).forEach(function(p){ if(p.path) p.sent = true; });
+    saveEntry(e);
+  }
+  function stillPending(e){ return entryPhotos(e).some(function(p){ return !p.path; }); }
+  function submitNow(e){
+    if(e.submittedId) return Promise.resolve();
+    var pending = stillPending(e);
+    if(!pending) return apiAt(e.res, e.t, "/submit", bodyFor(e, false)).then(function(){ finishLocal(e); });
+    if(e.deferUnsupported) return Promise.resolve();
+    return apiAt(e.res, e.t, "/submit", bodyFor(e, true)).then(function(j){
+      e.submittedId = j && j.id;
+      e.error = "";
+      markSent(e);
+      if(!stillPending(e)) finishLocal(e);
+    }).catch(function(err){
+      if(deferRejected(err)){ e.deferUnsupported = true; delete e.error; saveEntry(e); return; }
+      throw err;
+    });
+  }
+  function attachFresh(e){
+    if(!e.submittedId || !outbox()[e.res]) return Promise.resolve();
+    function fresh(list){
+      return (list || []).filter(function(p){ return p && p.path && !p.sent; }).map(function(p){
+        var o = { id:p.id, label:p.label || "", stampedAt:p.stampedAt || null, takenAt:p.takenAt || null, oldPhoto:!!p.oldPhoto, path:p.path };
+        if(p.caption) o.caption = p.caption;
+        if(p.loc) o.loc = p.loc;
+        return o;
+      });
+    }
+    var p = e.payload;
+    var photos = fresh(p.photos);
+    var maintenance = (p.maintenance || []).map(function(m){ return { slot: m.slot, photos: fresh(m.photos) }; }).filter(function(m){ return m.photos.length; });
+    var extraPhotos = p.extra ? fresh(p.extra.photos) : [];
+    if(!photos.length && !maintenance.length && !extraPhotos.length){
+      if(!stillPending(e)) finishLocal(e);
+      return Promise.resolve();
+    }
+    return apiAt(e.res, e.t, "/photos-attach", { id: e.submittedId, client: e.client, photos: photos, maintenance: maintenance, extraPhotos: extraPhotos }).then(function(){
+      entryPhotos(e).forEach(function(ph){ if(ph.path) ph.sent = true; });
+      e.error = "";
+      if(!stillPending(e)) finishLocal(e); else saveEntry(e);
+    }).catch(function(err){
+      if(err && err.server && /already finished/i.test(err.message || "")){ finishLocal(e); return; }
+      if(err && err.server && /did not upload/i.test(err.message || "")){
+        entryPhotos(e).forEach(function(ph){ if(ph.path && !ph.sent) ph.path = null; });
+        saveEntry(e); return;
+      }
+      if(deferRejected(err)) return;
+      throw err;
+    });
+  }
   function sendOne(e){
     if(Date.now() - Date.parse(e.completedAt) > 4 * 86400000){ var o0 = outbox(); delete o0[e.res]; setOutbox(o0); return Promise.resolve(); }
-    var chain = Promise.resolve();
-    entryPhotos(e).forEach(function(p){ chain = chain.then(function(){ return fillPath(e, p); }); });
-    return chain.then(function(){
-      return apiAt(e.res, e.t, "/submit", Object.assign({}, e.payload, { completedAt: e.completedAt })).then(function(){
-        var o = outbox(); delete o[e.res]; setOutbox(o);
-        try{ localStorage.removeItem("phh-clean-v12-" + e.res); localStorage.removeItem("phh-clean-v12-" + e.res + "-clean"); }catch(x){}
-        photosDrop(e.res).catch(function(){});
+    if(!e.client){ e.client = newClient(); saveEntry(e); }
+    return submitNow(e).then(function(){
+      if(!outbox()[e.res]) return;
+      var chain = Promise.resolve();
+      entryPhotos(e).forEach(function(p){
+        chain = chain.then(function(){
+          return fillPath(e, p).catch(function(err){
+            if(err && err.missing){ e.photoMissing = true; saveEntry(e); }
+          });
+        });
       });
-    }).catch(function(err){ if(err && err.server){ e.error = err.message; saveEntry(e); } });
+      return chain.then(function(){
+        if(!outbox()[e.res]) return;
+        if(e.submittedId) return attachFresh(e);
+        if(!stillPending(e)) return submitNow(e);
+      });
+    }).catch(function(err){
+      if(err && err.server){ e.error = err.message; saveEntry(e); }
+    });
   }
   function sendOutbox(){
-    if(obBusy) return;
+    reportPending();
+    if(obBusy){
+      if(Date.now() - obStarted < 8 * 60 * 1000) return;
+      obBusy = false; obGen++;
+    }
     var o = outbox(), keys = Object.keys(o); if(!keys.length){ if(onOutbox) onOutbox(); return; }
-    obBusy = true;
+    obBusy = true; obStarted = Date.now();
+    var gen = ++obGen;
     var chain = Promise.resolve();
     keys.forEach(function(res){ chain = chain.then(function(){ return sendOne(o[res]); }); });
-    chain.then(function(){ obBusy = false; if(onOutbox) onOutbox(); });
     if(onOutbox) onOutbox();
+    return chain.then(function(){ if(gen !== obGen) return; obBusy = false; if(onOutbox) onOutbox(); }, function(){ if(gen !== obGen) return; obBusy = false; if(onOutbox) onOutbox(); });
   }
 
   function save(){
@@ -1732,7 +1879,7 @@ window.PHH_CHECKLIST = {
     var x = state.photos[k]; if(!x || x.path || x.sending || !x.blob || completing) return;
     x.sending = true; pending++; update();
     (x.kept || Promise.resolve()).then(function(){ return api("/upload-url", { photo: k }); }).then(function(j){
-      return fetch(j.signedUrl, { method:"PUT", headers:{ "content-type":"image/jpeg" }, body: x.blob }).then(function(r){
+      return fetchTimeout(j.signedUrl, { method:"PUT", headers:{ "content-type":"image/jpeg" }, body: x.blob }, 90000).then(function(r){
         if(!r.ok) throw new Error("offline");
         x.path = j.path; x.waiting = false;
         if(state.photos[k] === x){ save(); markTile(k); }
@@ -1790,7 +1937,7 @@ window.PHH_CHECKLIST = {
     var completedAt = new Date().toISOString();
     if(!LIVE){ setTimeout(function(){ showDone({ property: clean ? clean.property : "", completedAt: completedAt, payload: payload }); }, 400); return; }
     completing = true;
-    var o = outbox(); o[RES] = { res:RES, t:TOKEN, property: clean ? clean.property : "", completedAt: completedAt, payload: payload }; setOutbox(o);
+    var o = outbox(); o[RES] = { res:RES, t:TOKEN, property: clean ? clean.property : "", completedAt: completedAt, client: newClient(), payload: payload }; setOutbox(o);
     save();
     showDone(o[RES]);
     sendOutbox();
@@ -1810,10 +1957,14 @@ window.PHH_CHECKLIST = {
     var e = outbox()[RES];
     if(!e){ el.className = "note"; el.textContent = "Sent to PHH. You can close this page. Thank you."; return; }
     var n = unsentCount(e);
+    var missing = e.photoMissing ? " One photo is not on this phone. Call PHH on (02) 9194 4411 if you need to take it again." : "";
     el.className = "note" + (e.error ? " err" : "");
-    el.textContent = e.error ? "Not sent yet: " + e.error + " If this keeps happening, call the PHH office on (02) 9194 4411."
-      : n ? "Sending " + n + " photo" + (n > 1 ? "s" : "") + " to PHH. You can head to your next clean. If you close the app, open it again when you have signal or Wi-Fi and it will finish by itself."
-      : "Sending to PHH...";
+    if(e.error){ el.textContent = "Not sent yet: " + e.error + " If this keeps happening, call the PHH office on (02) 9194 4411."; return; }
+    if(e.submittedId){
+      el.textContent = (n ? "Clean check sent to PHH. Sending " + n + " photo" + (n > 1 ? "s" : "") + ". You can head to your next clean. If you close the app, open it again when you have signal and the photos will finish." : "Clean check sent to PHH. Finishing the last photos.") + missing;
+      return;
+    }
+    el.textContent = (n ? "Sending the clean check to PHH (" + n + " photo" + (n > 1 ? "s" : "") + " still to go). You can head to your next clean. If you close the app, open it again when you have signal and it will finish." : "Sending to PHH...") + missing;
   }
 
   /* Bay & Beach Motel etc: show the room number first ("2B - Bay & Beach Motel - 1 Bed Suite"), Angus/Belinda 5 Nov. Display only, search and data keep the HomHero name. */
@@ -2462,11 +2613,11 @@ window.PHH_CHECKLIST = {
     var el = $("obnote"); if(!el) return;
     var o = outbox(), ks = Object.keys(o);
     if(!ks.length){ el.hidden = true; return; }
-    var n = 0; ks.forEach(function(k){ n += unsentCount(o[k]); });
+    var n = 0, sent = 0; ks.forEach(function(k){ n += unsentCount(o[k]); if(o[k].submittedId) sent++; });
     var err = ks.filter(function(k){ return o[k].error; })[0];
     el.hidden = false; el.className = "note" + (err ? " err" : "");
     el.textContent = err ? o[err].property + ": not sent yet (" + o[err].error + "). If this keeps happening, call the PHH office on (02) 9194 4411."
-      : (ks.length > 1 ? ks.length + " finished clean checks are" : o[ks[0]].property + " clean check is") + " sending to PHH" + (n ? " (" + n + " photo" + (n > 1 ? "s" : "") + " to go)" : "") + ". Keep the app open on signal or Wi-Fi for a moment.";
+      : (ks.length > 1 ? ks.length + " finished clean checks are" : o[ks[0]].property + " clean check is") + (sent ? " with PHH" : " sending to PHH") + (n ? " (" + n + " photo" + (n > 1 ? "s" : "") + " still sending)" : "") + ". Keep the app open on signal or Wi-Fi for a moment.";
   }
   function kick(){ sendWaiting(); sendOutbox(); }
   window.addEventListener("online", kick);

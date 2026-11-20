@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261119235815"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261120000228"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -2059,6 +2059,13 @@ html,body{overflow-x:clip}
     ".sc-hl span:before{content:\"\";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--teal);margin-right:6px;vertical-align:0}.sc-hl div.w span:before{background:var(--pend)}",
     ".sc-hl span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}.sc-hl b{display:block;font-size:15px;color:var(--ink);margin:2px 0}.sc-hl small{color:var(--muted)}",
     ".sc-said{display:grid;grid-template-columns:1fr 1fr;gap:14px}",
+    ".pr-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}.pr-cols h4{margin:0 0 8px;font-size:14px}",
+    ".pr-n{background:#f2f2f7;border-radius:18px;padding:10px 12px;margin:0 0 6px;box-shadow:0 1px 2px rgba(0,0,0,.06);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
+    ".pr-n .hd{display:flex;align-items:center;gap:8px;font-size:12px;color:#6b6b72;text-transform:uppercase;letter-spacing:.02em}.pr-n .hd img{width:20px;height:20px;border-radius:5px}.pr-n .hd span:last-child{margin-left:auto;text-transform:none}",
+    ".pr-n .tt{font-weight:700;font-size:14px;color:#111;margin:4px 0 2px}.pr-n .bd{font-size:14px;color:#111;line-height:1.35}",
+    ".pr-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted);margin:0 0 14px 4px}",
+    ".pr-open{margin:0 0 14px;padding:8px 10px;border-left:3px solid #e5b84a;background:#fffaf0;font-size:13px}.pr-open div{margin:0 0 6px}.pr-open .st{color:#e5a91a;letter-spacing:1px}",
+    "@media (max-width:760px){.pr-cols{grid-template-columns:1fr}}",
     ".sc-said h4{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}",
     ".sc-q{border:1px solid var(--line-2);border-radius:6px;padding:10px 12px;margin:0 0 8px}",
     ".sc-q .top{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}",
@@ -2248,7 +2255,57 @@ html,body{overflow-x:clip}
     var said = el("div", "sc-panel"); said.id = "scSaid"; said.appendChild(el("h3", "", "What guests said"));
     said.appendChild(el("p", "sc-sub", "Read these before acting on a number: a low score is not always about the clean.")); var sb = el("div"); sb.id = "scSaidBody"; sb.appendChild(el("p", "msg", "Loading reviews...")); said.appendChild(sb); box.appendChild(said);
     if(t.assumed) box.appendChild(el("p", "sc-note", t.assumed + " of " + t.reviews + " reviews are from stays before Clean Check clean records began (23 Sep), so they are put on the property's regular housekeeper."));
-    scSaid(h.name);
+    /* Praise notifications (20 Nov 2026, Ian): what each housekeeper was sent, as it looked on their phone, and whether the
+       guest praise was opened. Read only (rpc qa_praise_office); opening it here never marks it opened. */
+    var pr = el("div", "sc-panel"); pr.appendChild(el("h3", "", "Praise notifications sent"));
+    pr.appendChild(el("p", "sc-sub", "What " + (h.name.split(/\s+[-(]/)[0]) + " saw on their phone, newest first. Guest praise shows if they opened it. Office only."));
+    var pb2 = el("div"); pb2.id = "scPraiseBody"; pb2.appendChild(el("p", "msg", "Loading...")); pr.appendChild(pb2); box.appendChild(pr);
+    scSaid(h.name); scPraise(h.name);
+  }
+  function prPing(items){
+    var L = function(a){ return a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1]; };
+    if(items.length === 1){ var it = items[0]; return it.quote ? "Great job at " + it.property + ": 5 out of 5 for cleanliness, and the guest wrote \"" + it.quote + "\" Thank you." : "Great job at " + it.property + ": your guest gave the cleanliness 5 out of 5. Thank you."; }
+    var props = items.map(function(x){ return x.property; }).filter(function(v, i, a){ return a.indexOf(v) === i; });
+    var where = props.length === 1 ? props[0] : L(props.slice(0, 3)) + (props.length > 3 ? " and more" : "");
+    return "Great job: " + items.length + " guests gave the cleanliness 5 out of 5 at " + where + "." + (items.some(function(x){ return x.quote; }) ? " Tap to see what they said." : "") + " Thank you.";
+  }
+  function prWhen(t){ return t ? new Date(t).toLocaleString("en-AU", { timeZone:TZ, weekday:"short", day:"numeric", month:"short", hour:"numeric", minute:"2-digit" }) : ""; }
+  function prCard(text, at){
+    var n = el("div", "pr-n"), hd = el("div", "hd"), ic = el("img"); ic.src = "icon-180.png"; ic.alt = ""; hd.appendChild(ic); hd.appendChild(el("span", "", "Clean Check")); hd.appendChild(el("span", "", prWhen(at)));
+    n.appendChild(hd); n.appendChild(el("div", "tt", "Professional Holiday Homes")); n.appendChild(el("div", "bd", text)); return n;
+  }
+  function scPraise(name){
+    var bx = function(){ var b = $("scPraiseBody"); return b && SC.hk === name ? b : null; };
+    fetch("https://rxhpnowszmetjxbwylil" + ".supabase.co/rest/v1/rpc/qa_praise_office", { method:"POST",
+      headers:{ "content-type":"application/json", "apikey":"sb_publishable_JaFEZTFufkk0hrminCZdXQ_fQFJ0kLb" }, body: JSON.stringify({ p_code: CODE, p_name: name }) })
+      .then(function(r){ return r.json(); }).then(function(j){
+        var b = bx(); if(!b) return; b.innerHTML = "";
+        if(!j || j.error){ b.appendChild(el("p", "msg err", (j && j.error) || "Could not load.")); return; }
+        var g = j.guest || [], r = j.results || [], cols = el("div", "pr-cols");
+        var c1 = el("div"); c1.appendChild(el("h4", "", "Guest praise (" + g.length + (g.length ? ", " + g.filter(function(x){ return x.openedAt; }).length + " opened" : "") + ")"));
+        if(!g.length) c1.appendChild(el("p", "sc-note", "No guest praise sent yet. It goes out when a guest gives the cleanliness 5 out of 5 and their phone notifications are on."));
+        g.forEach(function(x){
+          c1.appendChild(prCard(prPing(x.items || []), x.sentAt));
+          var m = el("div", "pr-meta");
+          m.appendChild(el("span", "chip " + (x.openedAt ? "ok" : "warn"), x.openedAt ? "Opened " + prWhen(x.openedAt) : "Not opened yet"));
+          m.appendChild(el("span", "", "Sent to " + x.devices + " phone" + (x.devices === 1 ? "" : "s")));
+          var tg = el("a", "", "What they see when they tap it"); tg.href = "#"; m.appendChild(tg); c1.appendChild(m);
+          var op = el("div", "pr-open"); op.hidden = true;
+          (x.items || []).forEach(function(it){ var d = el("div"); d.appendChild(el("span", "st", "\u2605\u2605\u2605\u2605\u2605 ")); d.appendChild(el("b", "", it.property));
+            d.appendChild(document.createTextNode(" (" + (it.source === "bookingcom" ? "Booking.com" : it.source === "airbnb" ? "Airbnb" : (it.source || "guest review")) + ", " + new Date(it.reviewAt).toLocaleDateString("en-AU", { timeZone:TZ, day:"numeric", month:"short" }) + ")"));
+            d.appendChild(el("div", "", it.quote ? "\u201c" + it.quote + "\u201d" : "Full marks for cleanliness. Great job.")); op.appendChild(d); });
+          tg.addEventListener("click", function(e){ e.preventDefault(); op.hidden = !op.hidden; }); c1.appendChild(op);
+        });
+        var c2 = el("div"); c2.appendChild(el("h4", "", "Clean result pings (" + r.length + ")"));
+        if(!r.length) c2.appendChild(el("p", "sc-note", "None yet. These go out when the AI scores a clean check 4 or more."));
+        r.forEach(function(x){
+          var prop = x.property || "Your clean", sc = Number(x.score) || 0;
+          c2.appendChild(prCard(sc >= 5 ? prop + ": your clean check looked great. Thank you!" : prop + ": your clean check looked good. Thanks!", x.sentAt));
+          var m = el("div", "pr-meta"); m.appendChild(el("span", "chip", "Opened: not tracked")); m.appendChild(el("span", "", "Score " + (x.score === null || x.score === undefined ? "?" : x.score) + ", clean " + b4Day(x.cleanDate) + ", sent to " + x.devices + " phone" + (x.devices === 1 ? "" : "s")));
+          c2.appendChild(m);
+        });
+        cols.appendChild(c1); cols.appendChild(c2); b.appendChild(cols);
+      }).catch(function(){ var b = bx(); if(b){ b.innerHTML = ""; b.appendChild(el("p", "msg err", "Could not load. Try again.")); } });
   }
   function scChart(j, h){
     var nar = window.innerWidth < 700, W = nar ? 440 : 1000, H = nar ? 270 : 250, L = 36, R = nar ? 24 : 40, T = 22, B = 42, n = j.months.length, xs = function(i){ return L + i * (W - L - R) / (n - 1); };

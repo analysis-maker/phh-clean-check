@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261119235815"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261120031046"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -267,6 +267,8 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
 #phview .pvretake{background:none;color:#fff}
 #phview .pvkeep{background:#fff;color:#000}
 #camov video{flex:1;min-height:0;width:100%;object-fit:contain;background:#000}
+#camov video::-webkit-media-controls,#camov video::-webkit-media-controls-start-playback-button,#camov video::-webkit-media-controls-overlay-play-button{display:none!important;-webkit-appearance:none}
+#camov .camwait{color:#fff;text-align:center;padding:8px 16px;font-size:.95rem}
 #camov .camtop{color:#fff;font-weight:700;padding:calc(12px + env(safe-area-inset-top)) 16px 10px;font-size:1rem}
 #camov .cambar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:16px 16px calc(20px + env(safe-area-inset-bottom));gap:12px}
 #camov .camcancel{font:inherit;font-weight:700;color:#fff;background:none;border:0;padding:12px 4px;text-align:left;min-height:48px;cursor:pointer}
@@ -1722,7 +1724,7 @@ window.PHH_CHECKLIST = {
   function camEl(){
     var ov = $("camov"); if(ov) return ov;
     ov = document.createElement("div"); ov.id = "camov"; ov.hidden = true; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
-    ov.innerHTML = '<div class="camtop" id="camlabel"></div><video id="camvid" playsinline autoplay muted></video><div class="camerr" id="camerr" hidden></div>' +
+    ov.innerHTML = '<div class="camtop" id="camlabel"></div><video id="camvid" playsinline webkit-playsinline autoplay muted disablepictureinpicture></video><div class="camwait" id="camwait">Starting the camera...</div><div class="camerr" id="camerr" hidden></div>' +
       '<div class="cambar"><button type="button" class="camcancel" id="camcancel">Cancel</button><button type="button" class="shutter" id="camshot" aria-label="Take photo"></button><span></span></div>';
     document.body.appendChild(ov);
     $("camcancel").addEventListener("click", closeCam);
@@ -1734,11 +1736,24 @@ window.PHH_CHECKLIST = {
     var ov = $("camov"); if(ov) ov.hidden = true;
     camTarget = null; document.body.style.overflow = "";
     /* Keep the camera warm for a minute so the next photo opens straight away, then let it go. */
-    clearTimeout(camStopTimer); camStopTimer = setTimeout(stopCam, 60000);
+    /* 20 Nov (Sharon, black photos on iPhone): iPhones get a fresh camera every time, no keeping it warm. */
+    clearTimeout(camStopTimer); if(IS_IOS) stopCam(); else camStopTimer = setTimeout(stopCam, 60000);
+  }
+  var camBlack = 0, camWatch = null;
+  function camLive(st){ try{ return !!st && st.active && st.getVideoTracks().some(function(t){ return t.readyState === "live" && !t.muted; }); }catch(e){ return false; } }
+  /* Shutter only once real frames are showing; no frames after 6 seconds = offer the phone camera. */
+  function camWaitFrames(){
+    var v = $("camvid"), t0 = Date.now(); clearInterval(camWatch);
+    camWatch = setInterval(function(){
+      if($("camov").hidden){ clearInterval(camWatch); return; }
+      if(v.videoWidth > 0 && v.readyState >= 2 && !v.paused){ clearInterval(camWatch); $("camwait").hidden = true; $("camshot").disabled = false; return; }
+      if(v.paused){ var p = v.play(); if(p && p.catch) p.catch(function(){}); }
+      if(Date.now() - t0 > 6000){ clearInterval(camWatch); stopCam(); camFallback("The camera did not start."); }
+    }, 150);
   }
   function camFallback(why){
     var t = camTarget, err = $("camerr");
-    $("camvid").hidden = true; $("camshot").disabled = true;
+    $("camvid").hidden = true; $("camshot").disabled = true; clearInterval(camWatch); var cw = $("camwait"); if(cw) cw.hidden = true;
     err.hidden = false; err.innerHTML = "";
     err.appendChild(document.createTextNode(why));
     var b = document.createElement("button"); b.type = "button"; b.textContent = "Use the phone camera instead";
@@ -1749,16 +1764,18 @@ window.PHH_CHECKLIST = {
     var ov = camEl();
     camTarget = { s:s, tile:tile, input:input };
     $("camlabel").textContent = s.label;
-    $("camerr").hidden = true; $("camvid").hidden = false; $("camshot").disabled = true;
+    $("camerr").hidden = true; $("camvid").hidden = false; $("camshot").disabled = true; $("camwait").hidden = false; $("camwait").textContent = "Starting the camera...";
     ov.hidden = false; document.body.style.overflow = "hidden";
     clearTimeout(camStopTimer);
-    var ready = camStream && camStream.active ? Promise.resolve(camStream) :
+    if(camStream && !camLive(camStream)) stopCam();
+    var ready = camStream ? Promise.resolve(camStream) :
       navigator.mediaDevices.getUserMedia({ audio:false, video:{ facingMode:{ ideal:"environment" }, width:{ ideal:1920 }, height:{ ideal:1440 } } });
     ready.then(function(st){
       camStream = st; var v = $("camvid");
       if(v.srcObject !== st) v.srcObject = st;
+      v.controls = false;
       var p = v.play(); if(p && p.catch) p.catch(function(){});
-      $("camshot").disabled = false;
+      camWaitFrames();
     }).catch(function(e){
       var denied = e && (e.name === "NotAllowedError" || e.name === "SecurityError");
       camFallback(denied ? "The camera is blocked for this app. You can allow it in your browser settings, or use the phone camera." : "The camera did not start.");
@@ -1769,7 +1786,19 @@ window.PHH_CHECKLIST = {
     $("camshot").disabled = true;
     var sc = Math.min(1, 1280 / Math.max(v.videoWidth, v.videoHeight));
     var c = document.createElement("canvas"); c.width = Math.round(v.videoWidth*sc); c.height = Math.round(v.videoHeight*sc);
-    c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+    var cx = c.getContext("2d"); cx.drawImage(v, 0, 0, c.width, c.height);
+    /* Never save a black photo: if the frame is (nearly) all black, restart the camera and ask again. */
+    var dark = false;
+    try{ var d = cx.getImageData(0, 0, c.width, c.height).data, step = Math.max(4, Math.floor(d.length / 4 / 400) * 4), sum = 0, n = 0;
+      for(var i = 0; i < d.length; i += step){ sum += d[i] + d[i+1] + d[i+2]; n++; } dark = n > 0 && sum / (n * 3) < 6; }catch(e){}
+    if(dark){
+      c.width = c.height = 0; camBlack++;
+      stopCam();
+      if(camBlack >= 2){ camBlack = 0; camFallback("The camera is only giving black photos."); return; }
+      openCam(t.s, t.tile, t.input); $("camwait").textContent = "The camera was still starting. Take the photo again.";
+      return;
+    }
+    camBlack = 0;
     c.toBlob(function(blob){
       c.width = c.height = 0;
       closeCam();

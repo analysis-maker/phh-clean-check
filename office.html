@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261119110315"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261120001256"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -761,7 +761,7 @@ html,body{overflow-x:clip}
 
   <!-- Batch 4 (8 Nov 2026, staging): vacancy check (item 7), mid-stay check (item 6), recurring jobs (item 8). Office records only. -->
   <section id="b4SchedView" hidden>
-    <p class="hint b4note">Office lists only. Nothing here books a visit, creates anything in HomHero or tells anyone. Who does these visits and how they are paid is Craig's call. Blocks are still booked by CST in HomHero by hand.</p>
+    <p class="hint b4note">Nothing here creates anything in HomHero or pings anyone. A mid-stay clean given to a housekeeper shows in their app. Who does these visits and how they are paid is Craig's call. Blocks are still booked by CST in HomHero by hand.</p>
     <div class="box2">
       <h3>Vacancy check: empty properties</h3>
       <p class="hint" id="vacHint"></p>
@@ -769,6 +769,16 @@ html,body{overflow-x:clip}
         <thead><tr><th>Status</th><th>Property</th><th>Last checkout</th><th>Days empty</th><th>Next guests</th><th>Last check</th><th></th></tr></thead>
         <tbody id="vacRows"></tbody></table></div>
       <p class="msg" id="vacMsg"></p>
+    </div>
+    <div class="box2" id="msBox">
+      <h3>Mid-stay cleans and inspections</h3>
+      <p class="hint">Add a mid-stay clean or inspection once a long stay is booked, then tick it off when it is done. A clean given to a housekeeper shows in their app from 2 days before it is due, with a Done button. Nothing goes to HomHero and nobody gets a ping.</p>
+      <div class="row"><button class="btn small" type="button" id="msAddBtn">Add mid-stay job</button><label class="ck" style="margin-left:12px"><input type="checkbox" id="msShowDone"> Show done and cancelled (last 60 days)</label></div>
+      <div id="msForm" hidden></div>
+      <div class="tablewrap" id="msWrap" hidden><table>
+        <thead><tr><th>Status</th><th>Due</th><th>Property</th><th>Job</th><th>Housekeeper</th><th>Done</th><th></th></tr></thead>
+        <tbody id="msRows"></tbody></table></div>
+      <p class="msg" id="msMsg"></p>
     </div>
     <div class="box2">
       <h3>Mid-stay check: long stays</h3>
@@ -2640,7 +2650,9 @@ html,body{overflow-x:clip}
       var ac = c("", "", "acts"); ac.removeAttribute("data-l");
       var b = el("button", "btn ghost small", "Check done"); b.type = "button";
       b.addEventListener("click", function(ev){ ev.stopPropagation(); B4.form[key] = !B4.form[key]; midRender(); });
-      ac.appendChild(b); tb.appendChild(tr);
+      var aj = el("button", "btn ghost small", "Add job"); aj.type = "button"; aj.title = "Add a mid-stay clean or inspection for this stay";
+      aj.addEventListener("click", function(ev){ ev.stopPropagation(); msOpenForm({ propertyId: r.propertyId, property: r.property, res: r.res, guest: r.guest, due: r.midpoint }); });
+      ac.appendChild(b); ac.appendChild(aj); tb.appendChild(tr);
       if(B4.form[key]){ var d = el("tr", "d"), td = el("td"); td.colSpan = 6; d.appendChild(td); tb.appendChild(d); checkForm("midstay", r, td, function(){ B4.form[key] = false; midLoad(); }); }
     });
     $("midWrap").hidden = !rows.length;
@@ -2652,6 +2664,104 @@ html,body{overflow-x:clip}
     $("midMsg").className = "msg"; $("midMsg").textContent = "Loading...";
     return post("b4-midstay", { includeTest: TEST }).then(function(j){ B4.mid = j; midRender(); }).catch(function(e){ $("midMsg").className = "msg err"; $("midMsg").textContent = e.message; });
   }
+
+  /* 20 Nov 2026 (Tori + Summer, long stay procedure; Ian "build it"): mid-stay cleans and inspections added by hand, one list.
+     midstay-api (one function for staging and live). A clean given to a housekeeper shows in their app with a Done button. */
+  var MS = { data: null, open: {}, showDone: false };
+  var MS_API = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/midstay-api/";
+  function msPost(route, body){
+    return fetch(MS_API + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(Object.assign({ code: CODE, test: TEST }, body || {})) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
+  function msLoad(){
+    $("msMsg").className = "msg"; $("msMsg").textContent = "Loading...";
+    return msPost("list", { showDone: MS.showDone }).then(function(j){ MS.data = j; msRender(); }).catch(function(e){ $("msMsg").className = "msg err"; $("msMsg").textContent = e.message; });
+  }
+  function msOpenForm(pre){
+    var host = $("msForm"); pre = pre || {}; host.hidden = false; host.innerHTML = "";
+    if(!MS.data){ host.textContent = "Loading..."; msLoad().then(function(){ if(MS.data) msOpenForm(pre); }); return; }
+    var f = el("form", "ckform"); f.setAttribute("autocomplete", "off");
+    var g = el("div", "row");
+    function fld(label, input, grow){ var w = el("div", grow ? "grow" : ""); var l = el("label", "", label); l.appendChild(input); w.appendChild(l); g.appendChild(w); return input; }
+    var ty = el("select"); [["clean","Mid-stay clean"],["inspection","Mid-stay inspection"]].forEach(function(o){ var x = el("option", "", o[1]); x.value = o[0]; ty.appendChild(x); }); fld("Job", ty);
+    var pq = el("input"); pq.type = "text"; pq.setAttribute("list", "msProps"); pq.placeholder = "Start typing the property"; pq.value = pre.property || ""; fld("Property", pq, true);
+    var dl = el("datalist"); dl.id = "msProps"; (MS.data.properties || []).forEach(function(p){ var o = el("option"); o.value = p.name; dl.appendChild(o); }); f.appendChild(dl);
+    var du = el("input"); du.type = "date"; du.value = pre.due || shift(sydToday(), 7); du.min = shift(sydToday(), -30); fld("Due", du);
+    var hk = el("select"); var h0 = el("option", "", "Nobody yet"); h0.value = ""; hk.appendChild(h0); (MS.data.housekeepers || []).forEach(function(h){ var o = el("option", "", h.name); o.value = h.id; hk.appendChild(o); }); fld("Housekeeper (cleans only)", hk);
+    f.appendChild(g);
+    var g2 = el("div", "row"); g = g2;
+    var rs = el("input"); rs.type = "text"; rs.maxLength = 20; rs.placeholder = "Optional"; rs.value = pre.res || ""; fld("Booking number", rs);
+    var gu = el("input"); gu.type = "text"; gu.maxLength = 120; gu.placeholder = "Optional"; gu.value = pre.guest || ""; fld("Guest", gu);
+    var nt = el("input"); nt.type = "text"; nt.maxLength = 1000; nt.placeholder = "For example: change linen and towels, empty bins, check the pool"; fld("Notes for the job", nt, true);
+    f.appendChild(g2);
+    function syncHk(){ hk.disabled = ty.value !== "clean"; if(hk.disabled) hk.value = ""; }
+    ty.addEventListener("change", syncHk); syncHk();
+    var acts = el("div", "row");
+    var sv = el("button", "btn small", "Add job"); sv.type = "submit";
+    var cx = el("button", "btn ghost small", "Close"); cx.type = "button"; cx.addEventListener("click", function(){ host.hidden = true; host.innerHTML = ""; });
+    var m = el("span", "msg"); m.style.margin = "0";
+    acts.appendChild(sv); acts.appendChild(cx); acts.appendChild(m); f.appendChild(acts);
+    f.addEventListener("submit", function(e){
+      e.preventDefault();
+      var name = pq.value.trim(), prop = (MS.data.properties || []).filter(function(p){ return p.name.toLowerCase() === name.toLowerCase(); })[0];
+      if(!prop && pre.propertyId && name === pre.property) prop = { id: pre.propertyId, name: pre.property };
+      if(!prop){ m.className = "msg err"; m.textContent = "Pick a property from the list."; return; }
+      sv.disabled = true; m.className = "msg"; m.textContent = "Saving...";
+      msPost("add", { kind: ty.value, propertyId: prop.id, propertyName: prop.name, due: du.value, cleanerId: hk.value || null, res: rs.value, guest: gu.value, notes: nt.value })
+        .then(function(){ host.hidden = true; host.innerHTML = ""; return msLoad(); })
+        .catch(function(err){ sv.disabled = false; m.className = "msg err"; m.textContent = err.message; });
+    });
+    host.appendChild(f);
+    try{ $("msBox").scrollIntoView({ block: "start", behavior: "smooth" }); }catch(x){}
+    pq.focus();
+  }
+  function msRender(){
+    var tb = $("msRows"); tb.innerHTML = "";
+    var rows = (MS.data && MS.data.jobs) || [], today = sydToday();
+    rows.forEach(function(r){
+      var tr = el("tr", "r");
+      var late = r.status === "booked" && r.due < today, soon = r.status === "booked" && !late && r.due <= shift(today, 2);
+      var label = r.status === "done" ? "Done" : r.status === "cancelled" ? "Cancelled" : late ? "Overdue" : soon ? "Due" : "Booked";
+      var st = el("td", "st"); st.appendChild(el("div", "stc " + (r.status === "done" ? "st-checked" : r.status === "cancelled" ? "st-cleaned" : (late || soon) ? "st-waiting" : "st-cleaned"), label)); tr.appendChild(st);
+      var c = function(lb, v, cls){ var td = el("td", cls || "", v); td.setAttribute("data-l", lb); tr.appendChild(td); return td; };
+      var dc = c("Due", b4Day(r.due), "nowrap"); if(r.status === "booked"){ var dd = b4Days(today, r.due); dc.appendChild(el("span", "sub", dd === 0 ? " (today)" : dd > 0 ? " (in " + dd + " day" + (dd === 1 ? "" : "s") + ")" : " (" + (-dd) + " day" + (dd === -1 ? "" : "s") + " late)")); }
+      var pc = c("Property", "", "col-prop"); pc.appendChild(propLink(r.propertyId, r.property)); if(r.guest || r.res) pc.appendChild(el("div", "sub", [r.guest, r.res ? "Booking " + r.res : ""].filter(Boolean).join(", ")));
+      var jc = c("Job", r.kind === "clean" ? "Mid-stay clean" : "Mid-stay inspection"); if(r.notes) jc.appendChild(el("div", "sub", r.notes)); jc.appendChild(el("div", "sub", "Added by " + r.createdBy));
+      c("Housekeeper", r.kind === "clean" ? (r.cleaner || "Nobody yet") : "Office");
+      c("Done", r.status === "done" ? b4Day(r.doneOn) + ", " + r.doneBy + (r.doneSource === "app" ? " (in the app)" : "") + (r.doneNote ? ": " + r.doneNote : "") + (r.inspectionId ? " (inspection)" : "") : r.status === "cancelled" ? "Cancelled by " + (r.cancelledBy || "office") : "");
+      var ac = c("", "", "acts"); ac.removeAttribute("data-l");
+      if(r.status === "booked"){
+        var b = el("button", "btn ghost small", "Mark done"); b.type = "button";
+        b.addEventListener("click", function(ev){ ev.stopPropagation(); MS.open[r.id] = !MS.open[r.id]; msRender(); }); ac.appendChild(b);
+        if(r.kind === "inspection"){ var si = el("a", "btn ghost small", "Start inspection"); si.href = "inspect.html?property=" + encodeURIComponent(r.propertyId) + (TEST ? "&test=1" : ""); si.target = "_blank"; si.rel = "noopener"; ac.appendChild(si); }
+        var cn = el("button", "btn ghost small", "Cancel"); cn.type = "button";
+        cn.addEventListener("click", function(ev){ ev.stopPropagation(); if(!confirm("Cancel this mid-stay job?")) return; msPost("cancel", { id: r.id }).then(msLoad).catch(function(e){ alert(e.message); }); }); ac.appendChild(cn);
+      } else {
+        var ro = el("button", "btn ghost small", "Reopen"); ro.type = "button";
+        ro.addEventListener("click", function(ev){ ev.stopPropagation(); msPost("reopen", { id: r.id }).then(msLoad).catch(function(e){ alert(e.message); }); }); ac.appendChild(ro);
+      }
+      tb.appendChild(tr);
+      if(MS.open[r.id] && r.status === "booked"){
+        var d = el("tr", "d"), td = el("td"); td.colSpan = 7; d.appendChild(td); tb.appendChild(d);
+        var f = el("form", "ckform"), g = el("div", "row");
+        var w1 = el("div"); var l1 = el("label", "", "Date done"); var dt = el("input"); dt.type = "date"; dt.value = today; dt.max = today; l1.appendChild(dt); w1.appendChild(l1); g.appendChild(w1);
+        var w2 = el("div", "grow"); var l2 = el("label", "", "Note (optional)"); var n = el("input"); n.type = "text"; n.maxLength = 500; n.placeholder = "For example: all fine, guests happy"; l2.appendChild(n); w2.appendChild(l2); g.appendChild(w2);
+        var w3 = el("div"); var l3 = el("label", "", "Inspection (optional)"); var s = el("select"); var o0 = el("option", "", "None"); o0.value = ""; s.appendChild(o0);
+        (B4.insp || []).filter(function(i){ return i.propertyId === r.propertyId && i.status === "submitted"; }).forEach(function(i){ var o = el("option", "", b4Day(i.submittedAt) + ", " + (i.kind === "premium" ? "premium" : "standard")); o.value = i.id; s.appendChild(o); });
+        l3.appendChild(s); w3.appendChild(l3); g.appendChild(w3); f.appendChild(g);
+        var a2 = el("div", "row"), sv = el("button", "btn small", "Save"); sv.type = "submit"; var m = el("span", "msg"); m.style.margin = "0"; a2.appendChild(sv); a2.appendChild(m); f.appendChild(a2);
+        f.addEventListener("submit", function(e){ e.preventDefault(); sv.disabled = true; m.className = "msg"; m.textContent = "Saving...";
+          msPost("done", { id: r.id, doneOn: dt.value, note: n.value, inspectionId: s.value || null }).then(function(){ MS.open[r.id] = false; msLoad(); midLoad(); })
+            .catch(function(err){ sv.disabled = false; m.className = "msg err"; m.textContent = err.message; }); });
+        td.appendChild(f);
+      }
+    });
+    $("msWrap").hidden = !rows.length;
+    $("msMsg").className = "msg";
+    $("msMsg").textContent = rows.length ? "" : (MS.showDone ? "No mid-stay jobs in the last 60 days." : "No open mid-stay jobs. Use Add mid-stay job, or Add job on a long stay below.");
+  }
+  $("msAddBtn").addEventListener("click", function(){ msOpenForm({}); });
+  $("msShowDone").addEventListener("change", function(){ MS.showDone = this.checked; msLoad(); });
 
   /* Item 8: recurring jobs per property (gas bottles, smoke alarms, owner inspection). Intervals in qa_app_config. */
   var JSTATE = { overdue:["Overdue","chip warn"], soon:["Due soon","chip info"], ok:["OK","chip ok"], none:["No record","chip"], na:["Not needed","chip"] };
@@ -2724,7 +2834,7 @@ html,body{overflow-x:clip}
   $("scJob").addEventListener("change", function(){ B4.schedJob = this.value; schedRender(); });
   $("scQ").addEventListener("input", function(){ B4.schedQ = this.value.trim(); schedRender(); });
   $("scDue").addEventListener("change", function(){ B4.schedDue = this.checked; schedRender(); });
-  function schedTab(){ vacLoad(); midLoad(); schedLoad(); if(!B4.insp) post("b4-insp-list", { days: 60, includeTest: TEST }).then(function(j){ B4.insp = j.rows || []; }).catch(function(){}); }
+  function schedTab(){ msLoad(); vacLoad(); midLoad(); schedLoad(); if(!B4.insp) post("b4-insp-list", { days: 60, includeTest: TEST }).then(function(j){ B4.insp = j.rows || []; }).catch(function(){}); }
   var assetsOn = false;
   function assetsInit(){ if(assetsOn || !window.phhAssets) return; assetsOn = true; window.phhAssets($("assetHost"), post, { includeTest: true }); }
 

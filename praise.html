@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261119050552"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261120002719"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -87,8 +87,11 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
+  /* 20 Nov 2026 (Ian): office preview. The office Scores tab shows this page inside a phone frame, exactly as the housekeeper
+     saw it, from data in the address (#preview=...). Nothing is fetched and nothing is marked opened. */
+  var PV = null; try{ var hm = /#preview=([^&]+)/.exec(location.hash); if(hm) PV = JSON.parse(decodeURIComponent(escape(atob(hm[1].replace(/-/g, "+").replace(/_/g, "/"))))); }catch(x){ PV = null; }
   var t = new URLSearchParams(location.search).get("t") || "";
-  if(!/^[0-9a-f]{32}$/.test(t)){ $("sub").innerHTML = '<span class="err">This link is not complete.</span>'; return; }
+  if(!PV && !/^[0-9a-f]{32}$/.test(t)){ $("sub").innerHTML = '<span class="err">This link is not complete.</span>'; return; }
   var el = function(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined) e.textContent = text; return e; };
   var day = function(s){ return new Date(s).toLocaleDateString("en-AU", { weekday:"short", day:"numeric", month:"short", timeZone:"Australia/Sydney" }); };
   var site = function(s){ s = String(s || "").toLowerCase(); return s === "airbnb" ? "Airbnb" : s === "booking" || s === "bookingcom" ? "Booking.com" : s === "vrbo" || s === "stayz" ? "Stayz" : s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; };
@@ -102,8 +105,8 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
     c.appendChild(el("p", "when", "Guest review, " + day(it.reviewAt) + (site(it.source) ? " (" + site(it.source) + ")" : "")));
     return c;
   }
-  fetch(window.PHH_PRAISE_API + "/praise-open", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ t: t }) })
-    .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || "Not available"); return j; }); })
+  (PV ? Promise.resolve(PV) : fetch(window.PHH_PRAISE_API + "/praise-open", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ t: t }) })
+    .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || "Not available"); return j; }); }))
     .then(function(j){
       var items = j.items || [], fresh = items.filter(function(x){ return x.isNew; }), old = items.filter(function(x){ return !x.isNew; });
       var n = fresh.length;

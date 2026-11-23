@@ -36,7 +36,7 @@ const TRIAGE = `You help the housekeeping office of Professional Holiday Homes (
 For each item decide if a person in the office must act ("you") or nothing more is needed ("close").
 
 Items are either:
-- AI: an AI photo review of a finished clean (score 1 to 5, 5 = nothing found) with its flags. A housekeeper already sees tips from it.
+- AI: an AI photo review of a finished clean (score 1 to 5, 5 = nothing found) with its flags. The housekeeper already gets the score and tips.
   "you" ONLY if a flag describes something a guest would clearly notice and that needs someone to go back before the next guests:
   dirty toilet, hair or grime in a shower or bath, food or rubbish left, unmade bed, wet or dirty linen, pests, damage, a safety risk,
   or photos that do not show the property at all (screens, wrong place). Everything else is "close": presentation (cushions, towel
@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
         if (!(score > 2.5) || flags.some((f) => f.severity === "high")) {
           ps.push({ key, kind, action: "you", reason: `AI ${score || "?"}/5${flags.some((f) => f.severity === "high") ? " with a high flag" : ""}. Always checked by a person` });
         } else if (!flags.length) {
-          ps.push({ key, kind, action: "close", reason: `AI ${score}/5, minor notes only. Tips are in the housekeeper's results` });
+          ps.push({ key, kind, action: "close", reason: `AI ${score}/5, minor notes only, nothing for the office to do` });
         } else {
           ps.push({ key, kind, action: "ai", reason: `AI ${score}/5` });
           ask.push({ id: key, text: `AI ${score}/5 at ${c.property}. Summary: ${String(a.summary ?? "").slice(0, 400)}\nFlags:\n` + flags.map((f) => `- [${f.severity}] ${f.label}: ${String(f.note ?? "").slice(0, 200)}`).join("\n") });
@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
       if (!d) { p.action = "you"; p.reason += ". Could not sort it automatically"; }
       else { p.action = d.action; p.reason = (p.kind === "note" ? p.reason + ". " : p.reason + ", ") + d.reason; }
       // An AI flag from a clean whose next guests have already arrived can't be fixed by sending someone back.
-      if (p.kind === "ai" && p.action === "you" && arrived(String(c.res))) { p.action = "close"; p.reason = p.reason.replace(/\.?\s*$/, "") + ". Next guests already arrived, tips are in the housekeeper's results"; }
+      if (p.kind === "ai" && p.action === "you" && arrived(String(c.res))) { p.action = "close"; p.reason = p.reason.replace(/\.?\s*$/, "") + ". Next guests already arrived, too late to send anyone back"; }
     }
     const action = ps.some((p) => p.action === "you") ? "you" : ps.some((p) => p.action === "wait") ? "wait" : "close";
     const pick = ps.filter((p) => p.action === action);

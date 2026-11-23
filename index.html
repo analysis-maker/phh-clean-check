@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261123021608"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="phh-build" content="20261123043358"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -783,6 +783,9 @@ window.PHH_CHECKLIST = {
   function bodyFor(e, defer){
     var b = JSON.parse(JSON.stringify(e.payload));
     b.completedAt = e.completedAt;
+    /* 23 Nov (v14 outage): the server checklist is still v13, so the 2 new v14 items are left out of what's sent
+       (they are still ticked on the phone). Take this out once clean-api has the v14 checklist. */
+    if(Array.isArray(b.items)) b.items = b.items.filter(function(i){ return !(i && (i.id === "out_bbq_grease" || i.id === "exit_blinds")); });
     b.photos = photoList(e.payload.photos);
     b.maintenance = (e.payload.maintenance || []).map(function(m){
       return { slot:m.slot, text:m.text, urgent:!!m.urgent, photos: photoList(m.photos) };

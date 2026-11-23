@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261123014615"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261123021250"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -538,7 +538,7 @@ window.PHH_API = window.PHH_API || "";
 // "bbq: true" = marked N/A automatically when the cleaner says the property has no BBQ.
 // Consumables is a separate Yes/No question in the app (Yes opens the Process Street order form).
 window.PHH_CHECKLIST = {
-  version: "2026-10-29-v13",
+  version: "2026-11-23-v14",
   consumablesUrl: "https://app.process.st/workflows/Consumables-Ordering-uYciaTu565lWPqE3m1dEPg/run-link",
   // "Or log it in HomHero Cleaner yourself": the housekeeper's own HomHero Cleaner page for this clean ({res} = booking).
   // Empty = the link is hidden. (Was the staff portal, which housekeepers cannot log into. Fixed 19 Oct 2026.)
@@ -597,6 +597,7 @@ window.PHH_CHECKLIST = {
       { id: "out_cobwebs", text: "Remove cobwebs" },
       { id: "out_mop", text: "Mop deck/tiles if required", na: true },
       { id: "out_bbq", text: "Clean BBQ hotplates and wipe down the exterior (internal cleaning excluded)", bbq: true },
+      { id: "out_bbq_grease", text: "Check the BBQ grease tray and empty or clean it if needed", bbq: true },
       { id: "out_gas", text: "Check two BBQ gas bottles are present", bbq: true },
       { id: "out_gas_empty", text: "Take empty BBQ gas bottles to the office (N/A if none are empty)", na: true, bbq: true }
     ]},
@@ -612,8 +613,9 @@ window.PHH_CHECKLIST = {
       { id: "all_sills", text: "Dust window sills and wipe down door and window tracks" },
       { id: "all_screens", text: "Check window and door fly screens for holes and report via maintenance" }
     ]},
-    { id: "exit", title: "Upon exit", items: [
+    { id: "exit", title: "Security and exit", items: [
       { id: "exit_lock", text: "Close and lock all windows and doors" },
+      { id: "exit_blinds", text: "Close all blinds and curtains" },
       { id: "exit_aircon", text: "Switch off air conditioning, if applicable", na: true },
       { id: "exit_keys", text: "Return housekeeper keys to lockbox" }
     ]}

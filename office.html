@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261123014507"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261123045906"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -218,6 +218,16 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
 .aq-acts input{flex:1;min-width:180px;font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:4px}
 .aq-acts a{font-size:13px}
 .aq-done{font-size:13px;color:var(--ok-ink);margin-top:6px}
+.aq-auto[hidden]{display:none}
+.aq-auto{background:#eef7f6;border:1px solid #b9dcd8;border-radius:6px;padding:12px 14px;margin:0 0 12px;font-size:14px}
+.aq-auto h3{margin:0 0 6px;font-size:16px}
+.aq-auto .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.aq-auto details{margin-top:8px}
+.aq-auto summary{cursor:pointer;color:var(--teal-ink)}
+.aq-auto ul{list-style:none;padding:0;margin:6px 0 0;max-height:340px;overflow:auto;border-top:1px solid #d5e8e6}
+.aq-auto li{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #d5e8e6;font-size:13px}
+.aq-auto li b{font-weight:600}
+.aq-why{background:#eef7f6;border:1px solid #b9dcd8;border-radius:4px;padding:6px 10px;margin:8px 0 0;font-size:13px}
 @media (max-width:640px){.aq-flags{grid-template-columns:1fr 1fr}.aq-flag .tx{font-size:12px}}
 .sev-medium{color:var(--warn);font-weight:700}
 .sev-low{color:var(--muted);font-weight:700}
@@ -552,8 +562,11 @@ html,body{overflow-x:clip}
       <select id="aqDays" aria-label="How far back"><option value="3">Last 3 days</option><option value="7" selected>Last 7 days</option><option value="14">Last 14 days</option></select>
       <label class="aq-h"><input type="checkbox" id="aqDone"> Show handled</label>
       <button class="btn ghost small" type="button" id="aqDay">Day view</button>
+      <button class="btn small" type="button" id="aqAutoBtn" title="Sorts every open card and closes the ones that need nothing more, after you approve">Do this for me</button>
     </div>
+    <div class="aq-auto" id="aqAuto" hidden></div>
     <p class="msg" id="aqMsg">Loading...</p>
+
     <div id="aqList"></div>
   </section>
 
@@ -3845,13 +3858,20 @@ window.phhAssets = function(host, post, opts){
   var CODE = ""; try{ CODE = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
   var $ = function(id){ return document.getElementById(id); };
   if(!$("aqView")) return;
-  var S = { items: [], filter: "all", busy: false, loaded: 0 };
+  var S = { items: [], filter: "all", busy: false, loaded: 0, why: {} };
+  var AUTO = "https://rxhpnowszmetjxbwylil" + ".supabase.co/functions/v1/attn-auto";
+  function callAuto(route, body){
+    body.code = CODE;
+    return fetch(AUTO + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
+      .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
+  }
   function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined && text !== null) e.textContent = text; return e; }
   function call(route, body){
     body.code = CODE;
     return fetch(API + "/" + route, { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify(body) })
       .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.error || ("Error " + r.status)); return j; }); });
   }
+
   function day(d){ return d ? new Date(String(d).slice(0,10) + "T12:00:00Z").toLocaleDateString("en-AU", { weekday:"short", day:"numeric", month:"short", timeZone:"UTC" }) : ""; }
   function when(ts){ return ts ? new Date(ts).toLocaleString("en-AU", { weekday:"short", hour:"numeric", minute:"2-digit", timeZone:"Australia/Sydney" }) : ""; }
   function hhTime(s){ var m = /(\d{2}):(\d{2})/.exec(String(s || "").slice(10)); if(!m) return ""; var h = +m[1]; return (h % 12 || 12) + ":" + m[2] + (h < 12 ? " am" : " pm"); }
@@ -3891,6 +3911,8 @@ window.phhAssets = function(host, post, opts){
     if(it.kinds.indexOf("guests") >= 0) h.appendChild(el("span", "chip", "More guests"));
     c.appendChild(h);
     if(it.missedAt) c.appendChild(el("p", "aq-sub", "Marked done in HomHero at " + hhTime(it.missedAt) + " with no clean check."));
+    if(!it.handled && S.why[it.res]){ var wy = el("div", "aq-why"); wy.appendChild(el("b", "", S.why[it.res].action === "you" ? "Needs you: " : "Waiting: ")); wy.appendChild(document.createTextNode(S.why[it.res].reason)); c.appendChild(wy); }
+
     if(it.note){ var nb = el("div", "aq-note"); nb.appendChild(el("b", "", "From the housekeeper: ")); nb.appendChild(document.createTextNode(it.note)); c.appendChild(nb); }
     if(it.kinds.indexOf("guests") >= 0){ c.appendChild(el("div", "aq-note", "More guests stayed than booked" + (it.guestsNote ? ": " + it.guestsNote : "."))); }
     if(it.ai){
@@ -3934,6 +3956,13 @@ window.phhAssets = function(host, post, opts){
       var ok = el("button", "btn small", it.kinds.indexOf("missed") >= 0 ? "Chased, handled" : "Handled"); ok.type = "button"; ok.addEventListener("click", function(){ done(null); });
       acts.appendChild(ok);
     }
+    var cst = el("button", "btn ghost small", "Send to CST"); cst.type = "button"; cst.title = "Hands this card to the customer service team (CST inbox) and marks it handled. Add a note first if it helps.";
+    cst.addEventListener("click", function(){
+      acts.querySelectorAll("button").forEach(function(b){ b.disabled = true; }); msg.textContent = "Sending...";
+      callAuto("cst", { res: it.res, keys: it.keys, note: note.value }).then(function(){ it.handled = { by: "you", at: new Date().toISOString(), note: "Sent to CST" + (note.value ? ": " + note.value : "") }; render(); })
+        .catch(function(e){ msg.textContent = e.message; acts.querySelectorAll("button").forEach(function(b){ b.disabled = false; }); });
+    });
+    acts.appendChild(cst);
     if(it.submissionId){ var ap = el("a", "", "All photos"); ap.href = "view.html?id=" + encodeURIComponent(it.submissionId) + "&from=office"; acts.appendChild(ap); }
     var oc = el("a", "", "Open the clean"); oc.href = "?date=" + String(it.cleanDate || "").slice(0,10) + "&open=" + encodeURIComponent(it.res) + "&tab=cleans"; acts.appendChild(oc);
     if(it.portalUrl){ var hh = el("a", "", "HomHero"); hh.href = it.portalUrl; hh.target = "_blank"; hh.rel = "noopener"; acts.appendChild(hh); }
@@ -3952,6 +3981,52 @@ window.phhAssets = function(host, post, opts){
       .catch(function(e){ $("aqMsg").textContent = e.message; })
       .then(function(){ S.busy = false; });
   }
+  /* 23 Nov 2026 (Bella: "I really don't have time"): Do this for me. attn-auto sorts every open card (rules + an AI read of the
+     flags and notes), shows what it would close and why, and closes them only when you tap Close. Everything it closes is kept
+     under Show handled with an "Auto:" note and Undo. Never messages housekeepers, never changes HomHero. */
+  function autoPanel(){
+    var box = $("aqAuto"), btn = $("aqAutoBtn");
+    box.hidden = false; box.innerHTML = ""; btn.disabled = true;
+    box.appendChild(el("h3", "", "Sorting the list..."));
+    box.appendChild(el("p", "aq-sub", "Reading every open card, about 20 to 40 seconds. Nothing changes until you approve."));
+    callAuto("plan", { days: +$("aqDays").value }).then(function(j){
+      btn.disabled = false; box.innerHTML = "";
+      var items = j.items || [], close = items.filter(function(i){ return i.action === "close"; });
+      S.why = {}; items.forEach(function(i){ if(i.action !== "close") S.why[i.res] = { action: i.action, reason: i.reason }; });
+      box.appendChild(el("h3", "", close.length + " can be closed, " + j.summary.you + " need you" + (j.summary.wait ? ", " + j.summary.wait + " waiting" : "")));
+      box.appendChild(el("p", "aq-sub", "Closing = marked handled with the reason below (look under Show handled, Undo works). The ones that need you stay in the list with a line saying why." + (j.aiError ? " " + j.aiError + " Those stay with you." : "")));
+      if(!close.length){ var x0 = el("button", "btn ghost small", "Close this box"); x0.type = "button"; x0.addEventListener("click", function(){ box.hidden = true; }); var r0 = el("div", "row"); r0.appendChild(x0); box.appendChild(r0); render(); return; }
+      var det = el("details"); det.appendChild(el("summary", "", "See the " + close.length + " it would close (untick any to keep)"));
+      var ul = el("ul"), ticks = [];
+      close.forEach(function(i){
+        var li = el("li"); var cb = el("input"); cb.type = "checkbox"; cb.checked = true; ticks.push({ cb: cb, it: i });
+        var tx = el("div"); tx.appendChild(el("b", "", i.property)); tx.appendChild(document.createTextNode(" (" + day(i.cleanDate) + ", " + (i.housekeeper || "") + "): " + i.reason));
+        li.appendChild(cb); li.appendChild(tx); ul.appendChild(li);
+      });
+      det.appendChild(ul); box.appendChild(det);
+      var row = el("div", "row");
+      var go = el("button", "btn small", "Close " + close.length); go.type = "button";
+      var no = el("button", "btn ghost small", "Cancel"); no.type = "button";
+      var m = el("span", "aq-sub");
+      ticks.forEach(function(t){ t.cb.addEventListener("change", function(){ go.textContent = "Close " + ticks.filter(function(x){ return x.cb.checked; }).length; }); });
+      no.addEventListener("click", function(){ box.hidden = true; S.why = {}; render(); });
+      go.addEventListener("click", function(){
+        var pick = ticks.filter(function(t){ return t.cb.checked; }).map(function(t){ return { res: t.it.res, keys: t.it.keys, reason: t.it.reason }; });
+        if(!pick.length) return;
+        go.disabled = no.disabled = true; m.textContent = "Closing " + pick.length + "...";
+        callAuto("apply", { items: pick }).then(function(r){
+          box.innerHTML = ""; box.appendChild(el("h3", "", "Done: " + r.done + " closed."));
+          box.appendChild(el("p", "aq-sub", j.summary.you ? "What's left below needs you, each with a line saying why." : "Nothing left that needs you."));
+          var x = el("button", "btn ghost small", "Close this box"); x.type = "button"; x.addEventListener("click", function(){ box.hidden = true; });
+          var r1 = el("div", "row"); r1.appendChild(x); box.appendChild(r1);
+          load(true);
+        }).catch(function(e){ m.textContent = e.message; go.disabled = no.disabled = false; });
+      });
+      row.appendChild(go); row.appendChild(no); row.appendChild(m); box.appendChild(row);
+      render();
+    }).catch(function(e){ btn.disabled = false; box.innerHTML = ""; box.appendChild(el("p", "aq-sub", "Couldn't sort the list: " + e.message)); });
+  }
+  $("aqAutoBtn").addEventListener("click", autoPanel);
   window.aqLoad = function(){ load(false); };
   $("aqDays").addEventListener("change", function(){ load(true); });
   $("aqDone").addEventListener("change", function(){ load(true); });

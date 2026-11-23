@@ -37,6 +37,11 @@ CHECK = """<script>
   }catch(e){}
 })();
 </script>"""
+# Checklist guard (23 Nov 2026): refuse to stamp pages whose checklist the deployed clean-api would reject.
+import subprocess
+if subprocess.run([sys.executable, str(ROOT / "tools/check_checklist.py")]).returncode != 0:
+    sys.exit("bump_build stopped: fix the checklist mismatch above before committing pages.")
+
 for folder in ["", "staging/"]:
     for p in PAGES:
         f = ROOT / (folder + p)

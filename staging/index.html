@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261120031046"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261123014615"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -269,7 +269,11 @@ a.textlink{display:inline-block;margin-top:12px;color:var(--primary);font-weight
 #camov video{flex:1;min-height:0;width:100%;object-fit:contain;background:#000}
 #camov video::-webkit-media-controls,#camov video::-webkit-media-controls-start-playback-button,#camov video::-webkit-media-controls-overlay-play-button{display:none!important;-webkit-appearance:none}
 #camov .camwait{color:#fff;text-align:center;padding:8px 16px;font-size:.95rem}
-#camov .camtop{color:#fff;font-weight:700;padding:calc(12px + env(safe-area-inset-top)) 16px 10px;font-size:1rem}
+#camov .camtop{color:#fff;font-weight:700;padding:calc(12px + env(safe-area-inset-top)) 16px 10px;font-size:1rem;display:flex;align-items:center;gap:10px}
+#camov .camtop span{flex:1;min-width:0}
+#camov .camphone{font:inherit;font-size:.85rem;font-weight:700;color:#fff;background:rgba(255,255,255,.15);border:0;border-radius:18px;padding:8px 12px;min-height:36px;cursor:pointer;white-space:nowrap}
+#camov .camzoom{justify-self:end;font:inherit;font-weight:800;font-size:.95rem;color:#fff;background:rgba(255,255,255,.2);border:2px solid #fff;border-radius:50%;width:56px;height:56px;cursor:pointer}
+#camov .camzoom[aria-pressed="true"]{background:#ffd60a;color:#000;border-color:#ffd60a}
 #camov .cambar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:16px 16px calc(20px + env(safe-area-inset-bottom));gap:12px}
 #camov .camcancel{font:inherit;font-weight:700;color:#fff;background:none;border:0;padding:12px 4px;text-align:left;min-height:48px;cursor:pointer}
 #camov .shutter{width:76px;height:76px;border-radius:50%;border:5px solid #fff;background:rgba(255,255,255,.25);cursor:pointer}
@@ -1697,6 +1701,7 @@ window.PHH_CHECKLIST = {
     var inp = d.querySelector("input");
     inp.addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; if(f) addPhoto(s, f, d); e.target.value = ""; });
     d.addEventListener("click", function(e){
+      if(nativePicking) return; /* 23 Nov: our own input.click() (Phone camera, Retake) must not reopen our camera or viewer */
       var x = state.photos[s.key];
       if(x && (x.thumb || x.blob || x.path)){ e.preventDefault(); openViewer(s, d, inp, x); return; } /* 19 Nov (Sharon): check a photo before retaking */
       if(!useCam()) return; e.preventDefault(); openCam(s, d, inp);
@@ -1715,6 +1720,9 @@ window.PHH_CHECKLIST = {
   var IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || "") || (/Macintosh/.test(navigator.userAgent || "") && navigator.maxTouchPoints > 1);
   var CAM_PARAM = new URLSearchParams(location.search).get("cam");
   var camStream = null, camStopTimer = null, camTarget = null;
+  /* Open the phone's own camera for this photo box without our tile click handler taking over again. */
+  var nativePicking = false;
+  function nativePick(inp){ nativePicking = true; try{ inp.click(); } finally { nativePicking = false; } }
   function useCam(){
     if(CAM_PARAM === "0") return false;
     if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return false;
@@ -1724,11 +1732,14 @@ window.PHH_CHECKLIST = {
   function camEl(){
     var ov = $("camov"); if(ov) return ov;
     ov = document.createElement("div"); ov.id = "camov"; ov.hidden = true; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
-    ov.innerHTML = '<div class="camtop" id="camlabel"></div><video id="camvid" playsinline webkit-playsinline autoplay muted disablepictureinpicture></video><div class="camwait" id="camwait">Starting the camera...</div><div class="camerr" id="camerr" hidden></div>' +
-      '<div class="cambar"><button type="button" class="camcancel" id="camcancel">Cancel</button><button type="button" class="shutter" id="camshot" aria-label="Take photo"></button><span></span></div>';
+    ov.innerHTML = '<div class="camtop"><span id="camlabel"></span><button type="button" class="camphone" id="camphone">Phone camera</button></div><video id="camvid" playsinline webkit-playsinline autoplay muted disablepictureinpicture></video><div class="camwait" id="camwait">Starting the camera...</div><div class="camerr" id="camerr" hidden></div>' +
+      '<div class="cambar"><button type="button" class="camcancel" id="camcancel">Cancel</button><button type="button" class="shutter" id="camshot" aria-label="Take photo"></button><button type="button" class="camzoom" id="camzoom" hidden aria-pressed="false" aria-label="Wide view">0.5x</button></div>';
     document.body.appendChild(ov);
     $("camcancel").addEventListener("click", closeCam);
     $("camshot").addEventListener("click", camCapture);
+    /* 23 Nov (Bec): "you can't zoom out". Phone camera = the phone's own camera for this one photo (0.5x etc.). */
+    $("camphone").addEventListener("click", function(){ var t = camTarget; closeCam(); stopCam(); if(t) nativePick(t.input); });
+    $("camzoom").addEventListener("click", camToggleWide);
     return ov;
   }
   function stopCam(){ clearTimeout(camStopTimer); camStopTimer = null; if(camStream){ camStream.getTracks().forEach(function(t){ t.stop(); }); camStream = null; } var v = $("camvid"); if(v) v.srcObject = null; }
@@ -1740,6 +1751,39 @@ window.PHH_CHECKLIST = {
     clearTimeout(camStopTimer); if(IS_IOS) stopCam(); else camStopTimer = setTimeout(stopCam, 60000);
   }
   var camBlack = 0, camWatch = null;
+  /* Wide view (0.5x), 23 Nov (Bec). iPhones list the ultra-wide lens as its own camera ("Back Ultra Wide Camera");
+     some phones instead let the camera zoom below its normal setting. The button only shows when one of those exists,
+     and the choice is remembered on the phone. */
+  var camWideId = null, camDevChecked = false, camZoomCap = null, camAutoSwitched = false;
+  function camWantWide(){ try{ return localStorage.getItem("phh-cam-wide") === "1"; }catch(e){ return false; } }
+  function camVideo(){
+    var v = { width:{ ideal:1920 }, height:{ ideal:1440 } };
+    if(camWantWide() && camWideId) v.deviceId = { exact: camWideId }; else v.facingMode = { ideal:"environment" };
+    return { audio:false, video:v };
+  }
+  function camFindWide(){
+    if(camDevChecked || !navigator.mediaDevices.enumerateDevices) return Promise.resolve();
+    return navigator.mediaDevices.enumerateDevices().then(function(ds){
+      camDevChecked = true;
+      ds.forEach(function(d){ if(d.kind === "videoinput" && /ultra ?wide/i.test(d.label || "") && !/front/i.test(d.label || "")) camWideId = d.deviceId; });
+    }).catch(function(){ camDevChecked = true; });
+  }
+  function camShowZoom(){
+    var b = $("camzoom"), tr = camStream && camStream.getVideoTracks()[0], caps = null;
+    camZoomCap = null;
+    if(!camWideId){ try{ caps = tr && tr.getCapabilities ? tr.getCapabilities() : null; }catch(e){ caps = null; }
+      if(caps && caps.zoom && typeof caps.zoom.min === "number"){ var cur = (tr.getSettings() || {}).zoom; if(typeof cur === "number" && caps.zoom.min < cur) camZoomCap = { min: caps.zoom.min, normal: cur }; } }
+    b.hidden = !(camWideId || camZoomCap);
+    var on = camWantWide() && !b.hidden;
+    if(camZoomCap && on){ try{ tr.applyConstraints({ advanced:[{ zoom: camZoomCap.min }] }); }catch(e){} }
+    b.setAttribute("aria-pressed", on ? "true" : "false"); b.textContent = "0.5x"; b.setAttribute("aria-label", on ? "Wide view on, tap for normal view" : "Wide view");
+  }
+  function camToggleWide(){
+    var on = !camWantWide(); try{ localStorage.setItem("phh-cam-wide", on ? "1" : "0"); }catch(e){}
+    if(camZoomCap){ var tr = camStream && camStream.getVideoTracks()[0]; try{ tr.applyConstraints({ advanced:[{ zoom: on ? camZoomCap.min : camZoomCap.normal }] }); }catch(e){} camShowZoom(); return; }
+    var t = camTarget; if(!t) return;
+    camAutoSwitched = true; stopCam(); openCam(t.s, t.tile, t.input);
+  }
   function camLive(st){ try{ return !!st && st.active && st.getVideoTracks().some(function(t){ return t.readyState === "live" && !t.muted; }); }catch(e){ return false; } }
   /* Shutter only once real frames are showing; no frames after 6 seconds = offer the phone camera. */
   function camWaitFrames(){
@@ -1757,7 +1801,7 @@ window.PHH_CHECKLIST = {
     err.hidden = false; err.innerHTML = "";
     err.appendChild(document.createTextNode(why));
     var b = document.createElement("button"); b.type = "button"; b.textContent = "Use the phone camera instead";
-    b.addEventListener("click", function(){ try{ sessionStorage.setItem("phh-cam-off", "1"); }catch(e){} closeCam(); stopCam(); if(t) t.input.click(); });
+    b.addEventListener("click", function(){ try{ sessionStorage.setItem("phh-cam-off", "1"); }catch(e){} closeCam(); stopCam(); if(t) nativePick(t.input); });
     err.appendChild(b);
   }
   function openCam(s, tile, input){
@@ -1768,10 +1812,22 @@ window.PHH_CHECKLIST = {
     ov.hidden = false; document.body.style.overflow = "hidden";
     clearTimeout(camStopTimer);
     if(camStream && !camLive(camStream)) stopCam();
+    $("camzoom").hidden = true;
     var ready = camStream ? Promise.resolve(camStream) :
-      navigator.mediaDevices.getUserMedia({ audio:false, video:{ facingMode:{ ideal:"environment" }, width:{ ideal:1920 }, height:{ ideal:1440 } } });
+      navigator.mediaDevices.getUserMedia(camVideo()).catch(function(e){
+        /* The wide lens wouldn't open: forget it and use the normal camera. */
+        if(camWantWide() && camWideId){ camWideId = null; return navigator.mediaDevices.getUserMedia(camVideo()); }
+        throw e;
+      });
     ready.then(function(st){
       camStream = st; var v = $("camvid");
+      camFindWide().then(function(){
+        /* First time we learn there's a wide lens and the person already chose it: switch now. */
+        if(!camAutoSwitched && camWantWide() && camWideId && camStream === st && !(st.getVideoTracks()[0] && st.getVideoTracks()[0].getSettings && st.getVideoTracks()[0].getSettings().deviceId === camWideId)){
+          var t = camTarget; if(t){ camAutoSwitched = true; stopCam(); openCam(t.s, t.tile, t.input); return; }
+        }
+        camShowZoom();
+      });
       if(v.srcObject !== st) v.srcObject = st;
       v.controls = false;
       var p = v.play(); if(p && p.catch) p.catch(function(){});
@@ -1821,7 +1877,7 @@ window.PHH_CHECKLIST = {
         '<div class="pvbar"><button type="button" class="pvretake" id="pvretake">Retake</button><button type="button" class="pvkeep" id="pvkeep">Keep</button></div>';
       document.body.appendChild(ov);
       $("pvkeep").addEventListener("click", closeViewer);
-      $("pvretake").addEventListener("click", function(){ var t = pv; closeViewer(); if(!t) return; if(useCam()) openCam(t.s, t.tile, t.input); else t.input.click(); });
+      $("pvretake").addEventListener("click", function(){ var t = pv; closeViewer(); if(!t) return; if(useCam()) openCam(t.s, t.tile, t.input); else nativePick(t.input); });
       zoomable($("pvstage"), $("pvimg"));
     }
     var url = x.blob ? URL.createObjectURL(x.blob) : (x.thumb || "");

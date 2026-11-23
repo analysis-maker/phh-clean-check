@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261120002719"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261123014507"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -91,6 +91,13 @@ td.st{padding:0;width:118px}
 .strip .go:hover{background:var(--teal-soft)}
 .strip .go[aria-pressed="true"]{background:var(--teal-soft);box-shadow:inset 0 -3px 0 var(--teal)}
 .fbar[hidden]{display:none}
+.qother[hidden]{display:none}
+.qother{margin:12px 0;padding:10px 12px;border:1px solid #d6e2ea;background:#fff;border-radius:8px;font-size:14px}
+.qother h3{margin:0 0 8px;font-size:15px}
+.qother table{width:100%;border-collapse:collapse}
+.qother td{padding:6px 8px;border-top:1px solid #eef2f5;vertical-align:middle}
+.qother tr.now td{background:#f3f9f8}
+.qother .sub{color:#667;font-size:13px}
 .fbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0;padding:8px 12px;border:1px solid #e9c46a;background:#fff8e1;border-radius:8px;font-size:14px}
 .views{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0 0}
 .views .vchip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;background:#fff;padding:3px 4px 3px 10px;font-size:13px}
@@ -559,7 +566,7 @@ html,body{overflow-x:clip}
         <button class="ibtn" id="next" type="button" aria-label="Next day">&rsaquo;</button>
         <button class="btn ghost small" id="today" type="button">Today</button>
       </div>
-      <input type="search" id="q" placeholder="Search property" aria-label="Search property" autocomplete="off">
+      <input type="search" id="q" list="qProps" placeholder="Search property (finds other days too)" aria-label="Search property" autocomplete="off"><datalist id="qProps"></datalist>
       <select id="status" aria-label="Status">
         <option value="">All statuses</option>
         <option value="checked">Checked</option>
@@ -590,6 +597,7 @@ html,body{overflow-x:clip}
       </table>
     </div>
     <p class="msg" id="msg">Loading...</p>
+    <div class="qother" id="qOther" hidden></div>
   </section>
 
   <!-- Spring cleans (5 Nov 2026, Craig): book with owner approval, CST asked by HelpScout to add the HomHero block, staff mark it blocked, housekeeper does it in the app -->
@@ -1367,7 +1375,7 @@ html,body{overflow-x:clip}
     $("dayTableWrap").hidden = !rows.length;
     $("msg").className = "msg";
     $("msg").textContent = rows.length ? (rows.length + " shown. Tap a row for the AI review, photos and HomHero link. Owner cleans and cancelled bookings are hidden.")
-      : (state.tab === "attention" ? "Nothing needs attention for this day." : (state.rows.length ? "Nothing matches these filters." : "No cleans for this date."));
+      : (state.tab === "attention" ? "Nothing needs attention for this day." : (state.rows.length ? (state.q && state.q.length > 1 ? "Nothing matches on this day. Other days are listed below." : "Nothing matches these filters.") : "No cleans for this date."));
     /* 18 Nov 2026 (Ian): filters never hide a day's cleans without saying so. Any filter on = a bar with Show everything. */
     var on = filterNames();
     var fb = $("fbar"); if(!fb){ fb = el("div", "fbar"); fb.id = "fbar"; $("msg").parentNode.insertBefore(fb, $("msg")); }
@@ -1376,7 +1384,61 @@ html,body{overflow-x:clip}
       fb.appendChild(el("span", "", "Showing " + rows.length + " of " + state.rows.length + " cleans. Filter on: " + on.join(", ") + "."));
       var all = el("button", "btn small", "Show everything"); all.type = "button"; all.addEventListener("click", clearFilters); fb.appendChild(all);
     }
+    qsLoad();
   }
+  /* 23 Nov 2026 (Bella): searching a property also lists its cleans on other days (30 days back, 14 ahead), with a button to open each.
+     Cleans sit on their departure (clean due) date, so a check sent the next morning is still on the day before. Rpc qa_clean_search. */
+  var QS = { t: null, q: "", rows: null };
+  function qsRpc(q){
+    return fetch("https://rxhpnowszmetjxbwylil" + ".supabase.co/rest/v1/rpc/qa_clean_search", { method:"POST",
+      headers:{ "content-type":"application/json", "apikey":"sb_publishable_JaFEZTFufkk0hrminCZdXQ_fQFJ0kLb" }, body: JSON.stringify({ p_code: CODE, p_q: q }) })
+      .then(function(r){ return r.json(); });
+  }
+  function qsDay(d){ return new Date(d + "T12:00:00+10:00").toLocaleDateString("en-AU", { weekday:"short", day:"numeric", month:"short", timeZone:"Australia/Sydney" }); }
+  function qsStatus(r){
+    if(r.sid) return "Clean check sent" + (r.submittedAt ? " " + qsDay(new Date(r.submittedAt).toLocaleDateString("en-CA", { timeZone:TZ })) + " " + time(r.submittedAt) : "") + (r.score !== null && r.score !== undefined ? ", AI " + (+r.score) : "");
+    if(r.hhCleanedAt) return "Done in HomHero, no clean check";
+    return r.date > sydToday() ? "Coming up" : (r.date === sydToday() ? "Not done yet" : "No clean check");
+  }
+  function qsRender(){
+    var box = $("qOther"); if(!box) return;
+    var q = state.q || "";
+    if(state.tab !== "cleans" || q.length < 2){ box.hidden = true; return; }
+    box.hidden = false; box.innerHTML = "";
+    box.appendChild(el("h3", "", "\u201c" + q + "\u201d on other days"));
+    if(QS.q !== q || !QS.rows){ box.appendChild(el("p", "sub", "Looking...")); return; }
+    var rows = QS.rows.filter(function(r){ return !(r.date === state.date && state.rows.some(function(x){ return String(x.res) === String(r.res); })); });
+    if(!rows.length){ box.appendChild(el("p", "sub", "Nothing else in the last 30 days or next 14.")); return; }
+    var t = el("table");
+    rows.forEach(function(r){
+      var tr = el("tr", r.date === state.date ? "now" : "");
+      var td1 = el("td"); td1.appendChild(el("div", "", qsDay(r.date))); td1.appendChild(el("div", "sub", "Booking " + r.res));
+      var td2 = el("td"); td2.appendChild(el("div", "", r.property || "")); td2.appendChild(el("div", "sub", r.cleaner || "No housekeeper"));
+      var td3 = el("td", "", qsStatus(r));
+      var td4 = el("td"); var b = el("button", "btn small", "Open"); b.type = "button";
+      b.addEventListener("click", function(){ state.date = r.date; state.open = {}; state.open[r.res] = true; dayChanged(); loadDay(); window.scrollTo(0, 0); });
+      td4.appendChild(b);
+      [td1, td2, td3, td4].forEach(function(x){ tr.appendChild(x); }); t.appendChild(tr);
+    });
+    box.appendChild(t);
+    if(QS.rows.length >= 40) box.appendChild(el("p", "sub", "Showing the 40 most recent. Type more of the name to narrow it down."));
+  }
+  function qsLoad(){
+    var q = state.q || "";
+    clearTimeout(QS.t);
+    if(q.length < 2 || state.tab !== "cleans"){ qsRender(); return; }
+    if(QS.q === q && QS.rows){ qsRender(); return; }
+    QS.q = q; QS.rows = null; qsRender();
+    QS.t = setTimeout(function(){
+      qsRpc(q).then(function(j){ if(QS.q !== q) return; QS.rows = (j && j.rows) || []; qsRender(); })
+        .catch(function(){ if(QS.q !== q) return; QS.rows = []; qsRender(); });
+    }, 350);
+  }
+  function qsProps(){
+    qsRpc("").then(function(j){ var dl = $("qProps"); if(!dl || !j || !j.properties) return; dl.innerHTML = "";
+      j.properties.forEach(function(p){ var o = document.createElement("option"); o.value = p; dl.appendChild(o); }); }).catch(function(){});
+  }
+
   function filterNames(){
     var out = [];
     if(state.q) out.push('"' + state.q + '"');
@@ -1409,6 +1471,7 @@ html,body{overflow-x:clip}
       if(my !== loading) return;
       $("mename").textContent = j.name; $("me").hidden = false;
       state.rows = j.rows || []; fillWho(j.cleaners || []);
+      if(!QS.props){ QS.props = true; qsProps(); }
       renderStrip(); renderRows();
       if(LINK.open){ var or = $("r-" + LINK.open.replace(/[^A-Za-z0-9-]/g, "")); if(or) or.scrollIntoView({ block:"center" }); LINK.open = ""; }
       loadAbsent(state.date, my); loadGuestLeft(state.date, my); loadThreads(state.date, my);

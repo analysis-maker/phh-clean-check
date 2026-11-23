@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261123044503"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261123052950"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -235,6 +235,19 @@ tr.d td{background:#fbfdfd;padding:0 0 4px}
 .aq-auto ul{list-style:none;padding:0;margin:6px 0 0;max-height:340px;overflow:auto;border-top:1px solid #d5e8e6}
 .aq-auto li{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #d5e8e6;font-size:13px}
 .aq-auto li b{font-weight:600}
+.fb-card{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--pend);border-radius:6px;padding:12px 14px;margin:0 0 12px}
+.fb-card.praise{border-left-color:var(--ok)}
+.fb-card textarea{width:100%;box-sizing:border-box;font:inherit;font-size:14px;line-height:1.4;padding:8px;border:1px solid var(--line);border-radius:4px;min-height:84px;margin:8px 0 4px}
+.fb-int{font-size:12px;color:var(--muted);background:#f4f6f7;border-radius:4px;padding:5px 8px;margin:6px 0 0}
+.fb-how{font-size:13px;color:var(--muted)}
+.fb-sent{font-size:13px;border-top:1px solid var(--line-2);padding:8px 0}
+.fb-sent b{font-weight:600}
+.srq[hidden]{display:none}
+.srq{background:#fff8e1;border:1px solid #f3e1a6;border-radius:6px;padding:10px 14px;margin:0 0 14px}
+.srq h3{margin:0 0 6px;font-size:16px}
+.srq .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0;border-top:1px solid #f0dfa8;font-size:14px}
+.srq .row .tx{flex:1;min-width:220px}
+.srq .done{opacity:.6}
 .aq-why{background:#eef7f6;border:1px solid #b9dcd8;border-radius:4px;padding:6px 10px;margin:8px 0 0;font-size:13px}
 @media (max-width:640px){.aq-flags{grid-template-columns:1fr 1fr}.aq-flag .tx{font-size:12px}}
 .sev-medium{color:var(--warn);font-weight:700}
@@ -551,6 +564,7 @@ html,body{overflow-x:clip}
   <button class="tab" role="tab" data-tab="spring" aria-selected="false">Spring cleans<span class="n" id="springN" hidden></span></button>
   <button class="tab" role="tab" data-tab="cons" aria-selected="false">Consumables<span class="n" id="consN" hidden></span></button>
   <button class="tab" role="tab" data-tab="reviews" aria-selected="false">Reviews<span class="n" id="rvN" hidden></span></button>
+  <button class="tab" role="tab" data-tab="fb" aria-selected="false">Feedback<span class="n" id="fbN" hidden></span></button>
   <button class="tab" role="tab" data-tab="scores" aria-selected="false">Scores</button>
   <button class="tab" role="tab" data-tab="warn" aria-selected="false">Warnings</button>
   <button class="tab" role="tab" data-tab="cover" aria-selected="false">Cover<span class="n" id="cvN" hidden></span></button>
@@ -620,8 +634,21 @@ html,body{overflow-x:clip}
     <div class="qother" id="qOther" hidden></div>
   </section>
 
+  <!-- Housekeeper feedback (23 Nov 2026, Bella): the weekly review sweep's drafts (Process Street "Housekeeping Feedback") reviewed and
+       sent from here as an in-app message with a phone ping (email if they're not on Clean Check yet). Rpcs qa_fb_*. -->
+  <section id="fbView" hidden>
+    <div class="aq-bar">
+      <div class="aq-chips" id="fbChips"></div>
+      <button class="btn ghost small" type="button" id="fbPraiseAll" hidden></button>
+    </div>
+    <p class="msg" id="fbMsg">Loading...</p>
+    <div id="fbList"></div>
+    <details id="fbSentBox" hidden><summary id="fbSentSum"></summary><div id="fbSent"></div></details>
+  </section>
+
   <!-- Spring cleans (5 Nov 2026, Craig): book with owner approval, CST asked by HelpScout to add the HomHero block, staff mark it blocked, housekeeper does it in the app -->
   <section id="springView" hidden>
+    <div class="srq" id="srqBox" hidden></div>
     <form class="spgrid" id="spForm" autocomplete="off">
       <h2 class="full">Book a spring clean</h2>
       <div class="wide">
@@ -1146,7 +1173,7 @@ html,body{overflow-x:clip}
   if(!/^\d{4}-\d{2}-\d{2}$/.test(state.date)) state.date = sydToday();
   /* Deep links (Ask PHH): ?tab=cleans|attention|hk|props &status= &who= &q= &open=<booking> */
   var LINK = { tab: params.get("tab") || "", open: params.get("open") || "" };
-  if(["cleans","attention","hk","props","spring","cons","reviews","scores","warn","cover","insp","sched"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
+  if(["cleans","attention","hk","props","spring","cons","reviews","scores","warn","cover","insp","sched","fb"].indexOf(LINK.tab) >= 0) state.tab = LINK.tab; else LINK.tab = "";
   if(["checked","missing","cleaned","waiting","inprog","notstarted"].indexOf(params.get("status") || "") >= 0) state.status = params.get("status");
   state.who = (params.get("who") || "").slice(0, 120); state.q = (params.get("q") || "").slice(0, 120);
   if(/^[A-Za-z0-9-]{3,40}$/.test(LINK.open)) state.open[LINK.open] = true; else LINK.open = "";
@@ -3286,15 +3313,15 @@ html,body{overflow-x:clip}
   if(CODE) setTimeout(function(){ cvPost("board", {}).then(function(j){ CV.board = j; cvRender(); }).catch(function(){}); }, 1500);
   function cvTab(){ if(!$("cvDate").value){ $("cvDate").value = sydToday(); $("cvDate").min = sydToday(); cvLoadCleans(); } cvBoard(); }
 
-  var TITLES = { cover:"Cover shifts", cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables", reviews:"Reviews", scores:"Scores", warn:"Warnings", insp:"Inspections", sched:"Schedule" };
+  var TITLES = { fb:"Housekeeper feedback", cover:"Cover shifts", cleans:"Cleaning", attention:"Needs attention", hk:"Housekeepers", props:"Properties", spring:"Spring cleans", cons:"Consumables", reviews:"Reviews", scores:"Scores", warn:"Warnings", insp:"Inspections", sched:"Schedule" };
   function setTab(t){
     state.tab = t;
     document.querySelectorAll(".tab").forEach(function(b){ b.setAttribute("aria-selected", String(b.getAttribute("data-tab") === t)); });
     $("sectionTitle").textContent = TITLES[t];
-    var day = t === "cleans" || t === "attention", spring = t === "spring", cons = t === "cons", rv = t === "reviews", insp = t === "insp", sched = t === "sched", scr = t === "scores", wn = t === "warn", cv = t === "cover";
+    var fbt = t === "fb"; var day = t === "cleans" || t === "attention", spring = t === "spring", cons = t === "cons", rv = t === "reviews", insp = t === "insp", sched = t === "sched", scr = t === "scores", wn = t === "warn", cv = t === "cover";
     var aq = t === "attention" && !window.aqDayMode;
     $("dayView").hidden = !day || aq; $("aqView").hidden = !aq; if(aq && window.aqLoad) window.aqLoad();
-$("insView").hidden = day || spring || cons || rv || insp || sched || scr || wn || cv; $("wnView").hidden = !wn; $("cvView").hidden = !cv; $("scView").hidden = !scr; $("springView").hidden = !spring; $("consView").hidden = !cons; $("rvView").hidden = !rv;
+$("insView").hidden = day || spring || cons || rv || insp || sched || scr || wn || cv || fbt; $("fbView").hidden = !fbt; if(fbt && window.fbLoad) window.fbLoad(); if(spring && window.srqLoad) window.srqLoad(); $("wnView").hidden = !wn; $("cvView").hidden = !cv; $("scView").hidden = !scr; $("springView").hidden = !spring; $("consView").hidden = !cons; $("rvView").hidden = !rv;
     $("b4InspView").hidden = !insp; $("b4SchedView").hidden = !sched;
     $("pcBox").hidden = t !== "props"; $("assetBox").hidden = t !== "props"; if(t === "props"){ pcInit(); assetsInit(); }
     if(insp){ inspLoad(); }
@@ -3304,7 +3331,7 @@ $("insView").hidden = day || spring || cons || rv || insp || sched || scr || wn 
     else if(cv){ cvTab(); }
     else if(rv){ if(RV.data) rvRender(); else rvLoad(); }
     else if(cons){ $("consMsg").className = "msg"; $("consMsg").textContent = "Loading..."; consLoad(true).catch(function(e){ $("consMsg").className = "msg err"; $("consMsg").textContent = e.message; }); }
-    else if(spring) spLoad(); else if(day){ if(state.rows.length) renderRows(); } else loadIns();
+    else if(spring) spLoad(); else if(fbt){} else if(day){ if(state.rows.length) renderRows(); } else loadIns();
   }
   document.querySelectorAll(".tab").forEach(function(b){ b.addEventListener("click", function(){ setTab(b.getAttribute("data-tab")); }); });
 
@@ -4060,5 +4087,148 @@ window.phhAssets = function(host, post, opts){
     b.addEventListener("click", function(){ ["phh-staff-code","phh-staff-view","phh-owner-code"].forEach(function(k){ try{ localStorage.removeItem(k); }catch(x){} }); location.replace("./"); });
     document.body.appendChild(b); }
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", add); else add(); }catch(e){} })();
+</script>
+<script>
+/* Housekeeper feedback (23 Nov 2026, Bella: "filter the feedback Process Street into Clean Check ... sent as a notification ...
+   so that I just have one place to do it all"). Drafts come from the weekly review sweep's Process Street runs (n8n
+   J91hPHXxMkVFpJNS, every 15 min). Send = one in-app message with a phone ping from "Professional Holiday Homes" through
+   the Admin Messages system (within 5 minutes); not on Clean Check yet = email. Rpcs qa_fb_office / qa_fb_send / qa_fb_dismiss. */
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  if(!$("fbView")) return;
+  var CODE = ""; try{ CODE = localStorage.getItem("phh-staff-code") || ""; }catch(e){}
+  var RPC = "https://rxhpnowszmetjxbwylil" + ".supabase.co/rest/v1/rpc/";
+  var KEY = "sb_publishable_JaFEZTFufkk0hrminCZdXQ_fQFJ0kLb";
+  function rpc(fn, body){
+    return fetch(RPC + fn, { method:"POST", headers:{ "content-type":"application/json", "apikey":KEY }, body: JSON.stringify(body) })
+      .then(function(r){ return r.json(); }).then(function(j){ if(j && j.error) throw new Error(j.error); if(j && j.message && j.code) throw new Error("Could not do that. Try again."); return j; });
+  }
+  function el(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined && text !== null) e.textContent = text; return e; }
+  function day(d){ return d ? new Date(String(d).slice(0,10) + "T12:00:00Z").toLocaleDateString("en-AU", { weekday:"short", day:"numeric", month:"short", timeZone:"UTC" }) : ""; }
+  function when(ts){ return ts ? new Date(ts).toLocaleString("en-AU", { weekday:"short", day:"numeric", month:"short", hour:"numeric", minute:"2-digit", timeZone:"Australia/Sydney" }) : ""; }
+  var F = { items: [], filter: "all", busy: false, armed: false };
+  function isPraise(it){ return /^praise/i.test(it.type || ""); }
+  function how(it){
+    if(it.test) return "Test: in the tester's app only.";
+    if(it.live && it.phones > 0) return "Goes to " + it.first + "'s phone as a notification from Professional Holiday Homes, and stays in their app.";
+    if(it.live) return it.first + " has notifications off, so it goes in their app and by email.";
+    return it.hasEmail ? it.first + " isn't on Clean Check yet, so it goes by email." : it.first + " isn't on Clean Check and has no email in HomHero. Send it from Process Street.";
+  }
+  function canSend(it){ return it.test || it.live || it.hasEmail; }
+  function render(){
+    var drafts = F.items.filter(function(i){ return i.status === "draft"; });
+    var n = $("fbN"); if(n){ n.hidden = !drafts.length; n.textContent = String(drafts.length); }
+    var chips = $("fbChips"); chips.innerHTML = "";
+    [["all","All"],["imp","To improve"],["praise","Praise"]].forEach(function(f){
+      var c = drafts.filter(function(i){ return f[0] === "all" || (f[0] === "praise") === isPraise(i); }).length;
+      var b = el("button", "aq-chip", f[1] + " (" + c + ")"); b.type = "button"; b.setAttribute("aria-pressed", String(F.filter === f[0]));
+      b.addEventListener("click", function(){ F.filter = f[0]; F.armed = false; render(); }); chips.appendChild(b);
+    });
+    var praise = drafts.filter(function(i){ return isPraise(i) && canSend(i); });
+    var pa = $("fbPraiseAll"); pa.hidden = !praise.length; pa.disabled = F.busy;
+    pa.textContent = F.armed ? "Tap again to send all " + praise.length + " praise as written" : "Send all praise as written (" + praise.length + ")";
+    var list = $("fbList"); list.innerHTML = "";
+    var show = drafts.filter(function(i){ return F.filter === "all" || (F.filter === "praise") === isPraise(i); });
+    $("fbMsg").textContent = drafts.length ? drafts.length + " to send. Read it, change anything you like, then Send. Praise can all go in one tap." : "All sent. New feedback from the weekly review shows here by itself.";
+    show.forEach(function(it){ list.appendChild(card(it)); });
+    var sent = F.items.filter(function(i){ return i.status !== "draft"; });
+    $("fbSentBox").hidden = !sent.length; $("fbSentSum").textContent = "Sent and closed in the last 3 weeks (" + sent.length + ")";
+    var sb = $("fbSent"); sb.innerHTML = "";
+    sent.forEach(function(it){
+      var r = el("div", "fb-sent");
+      r.appendChild(el("b", "", it.property + " | " + (it.housekeeper || "")));
+      var st = it.status === "dismissed" ? "Not sent (" + it.sentBy + ", " + when(it.sentAt) + ")" : it.status === "done_in_ps" ? "Sent from Process Street" :
+        "Sent by " + it.sentBy + ", " + when(it.sentAt) + (it.channel === "email" ? " by email" + (it.emailedAt ? ", emailed" : it.emailError ? ", email failed: " + it.emailError : ", emailing...") :
+          it.openedAt ? ". Opened " + when(it.openedAt) : it.deliveredAt ? ". On their phone, not opened yet" : ". In their app, not opened yet");
+      r.appendChild(el("div", "aq-sub", st));
+      if(it.sentText) r.appendChild(el("div", "", it.sentText));
+      if(it.status === "dismissed"){ var u = el("button", "btn ghost small", "Undo"); u.type = "button"; u.addEventListener("click", function(){ u.disabled = true; rpc("qa_fb_dismiss", { p_code: CODE, p_id: it.id, p_undo: true }).then(load).catch(function(e){ u.disabled = false; $("fbMsg").textContent = e.message; }); }); r.appendChild(u); }
+      sb.appendChild(r);
+    });
+  }
+  function card(it){
+    var c = el("div", "fb-card" + (isPraise(it) ? " praise" : ""));
+    var h = el("div", "aq-head");
+    h.appendChild(el("h3", "", it.property || "Property"));
+    h.appendChild(el("span", "aq-sub", [day(it.cleanDate), it.housekeeper].filter(Boolean).join(" | ")));
+    h.appendChild(el("span", "chip" + (isPraise(it) ? "" : " warn"), isPraise(it) ? "Praise" : (it.type || "To improve")));
+    if(it.source) h.appendChild(el("span", "chip", it.source));
+    if(it.test) h.appendChild(el("span", "chip", "TEST"));
+    c.appendChild(h);
+    var ta = el("textarea"); ta.value = it.draft || ""; ta.maxLength = 600; ta.setAttribute("aria-label", "Feedback to send to " + (it.first || "the housekeeper")); c.appendChild(ta);
+    c.appendChild(el("div", "fb-how", how(it)));
+    if(it.internal) c.appendChild(el("div", "fb-int", "Office only, not sent: " + it.internal));
+    var acts = el("div", "aq-acts"), msg = el("span", "aq-sub");
+    var go = el("button", "btn small", "Send to " + (it.first || "housekeeper")); go.type = "button"; go.disabled = !canSend(it);
+    var no = el("button", "btn ghost small", "Don't send"); no.type = "button"; no.title = "Closes it without sending (Undo under Sent and closed)";
+    go.addEventListener("click", function(){
+      go.disabled = no.disabled = true; msg.textContent = "Sending...";
+      rpc("qa_fb_send", { p_code: CODE, p_id: it.id, p_text: ta.value }).then(function(j){
+        it.status = "sent"; it.sentText = ta.value; it.sentBy = "you"; it.sentAt = new Date().toISOString(); it.channel = j.channel; render();
+      }).catch(function(e){ msg.textContent = e.message; go.disabled = no.disabled = false; });
+    });
+    no.addEventListener("click", function(){
+      go.disabled = no.disabled = true;
+      rpc("qa_fb_dismiss", { p_code: CODE, p_id: it.id }).then(function(){ it.status = "dismissed"; it.sentBy = "you"; it.sentAt = new Date().toISOString(); render(); })
+        .catch(function(e){ msg.textContent = e.message; go.disabled = no.disabled = false; });
+    });
+    acts.appendChild(go); acts.appendChild(no); acts.appendChild(msg); c.appendChild(acts);
+    return c;
+  }
+  $("fbPraiseAll").addEventListener("click", function(){
+    if(!F.armed){ F.armed = true; render(); return; }
+    var todo = F.items.filter(function(i){ return i.status === "draft" && isPraise(i) && canSend(i); });
+    F.busy = true; F.armed = false; render(); $("fbMsg").textContent = "Sending " + todo.length + "...";
+    var i = 0, ok = 0;
+    (function next(){
+      if(i >= todo.length){ F.busy = false; load(); $("fbMsg").textContent = "Sent " + ok + " of " + todo.length + "."; return; }
+      var it = todo[i++];
+      rpc("qa_fb_send", { p_code: CODE, p_id: it.id, p_text: it.draft }).then(function(){ ok++; }).catch(function(){}).then(next);
+    })();
+  });
+  function load(){
+    rpc("qa_fb_office", { p_code: CODE }).then(function(j){ F.items = j.items || []; render(); })
+      .catch(function(e){ $("fbMsg").textContent = e.message; });
+  }
+  window.fbLoad = load;
+  if(CODE) rpc("qa_fb_office", { p_code: CODE }).then(function(j){ F.items = j.items || []; var n = $("fbN"), d = F.items.filter(function(i){ return i.status === "draft"; }).length; if(n){ n.hidden = !d; n.textContent = String(d); } }).catch(function(){});
+
+  /* Spring clean requests from housekeepers (23 Nov 2026, Bella): "a little tick box on the housekeeper end ... then I get a
+     notification to chase". Shown at the top of the Spring cleans tab. Book it fills in the form below. */
+  var SR = { items: [] };
+  function srRender(){
+    var box = $("srqBox"); if(!box) return;
+    var open = SR.items.filter(function(i){ return !i.handledAt; });
+    box.hidden = !SR.items.length; box.innerHTML = "";
+    box.appendChild(el("h3", "", open.length ? "Housekeepers asking for a spring clean (" + open.length + ")" : "Housekeepers asking for a spring clean"));
+    if(!open.length) box.appendChild(el("p", "aq-sub", "Nothing waiting."));
+    SR.items.forEach(function(it){
+      var r = el("div", "row" + (it.handledAt ? " done" : ""));
+      var tx = el("div", "tx"); tx.appendChild(el("b", "", it.property || "Property"));
+      tx.appendChild(document.createTextNode(" | " + (it.housekeeper || "") + ", " + when(it.at) + (it.test ? " (TEST)" : "")));
+      if(it.note) tx.appendChild(el("div", "aq-sub", "“" + it.note + "”"));
+      if(it.handledAt) tx.appendChild(el("div", "aq-sub", "Done by " + it.handledBy + ", " + when(it.handledAt) + (it.handledNote ? ": " + it.handledNote : "")));
+      r.appendChild(tx);
+      if(!it.handledAt){
+        var bk = el("button", "btn small", "Book it"); bk.type = "button";
+        bk.addEventListener("click", function(){
+          var q = $("spPropQ"), sel = $("spProp"); if(!q || !sel) return;
+          q.value = it.property || ""; q.dispatchEvent(new Event("input"));
+          if(it.propertyId && sel.querySelector('option[value="' + it.propertyId + '"]')){ sel.value = it.propertyId; sel.dispatchEvent(new Event("change")); }
+          var f = $("spForm"); if(f) f.scrollIntoView({ behavior:"smooth", block:"start" });
+        });
+        var dn = el("button", "btn ghost small", "Done"); dn.type = "button"; dn.title = "Booked or chased";
+        dn.addEventListener("click", function(){ dn.disabled = true; rpc("qa_spring_requests_office", { p_code: CODE, p_id: it.id }).then(function(j){ SR.items = j.items || []; srRender(); }).catch(function(){ dn.disabled = false; }); });
+        r.appendChild(bk); r.appendChild(dn);
+      } else {
+        var u = el("button", "btn ghost small", "Undo"); u.type = "button";
+        u.addEventListener("click", function(){ u.disabled = true; rpc("qa_spring_requests_office", { p_code: CODE, p_id: it.id, p_undo: true }).then(function(j){ SR.items = j.items || []; srRender(); }).catch(function(){ u.disabled = false; }); });
+        r.appendChild(u);
+      }
+      box.appendChild(r);
+    });
+  }
+  window.srqLoad = function(){ rpc("qa_spring_requests_office", { p_code: CODE }).then(function(j){ SR.items = j.items || []; srRender(); }).catch(function(){}); };
+})();
 </script>
 </body></html>

@@ -10,14 +10,14 @@
 // LIVE spring-api v3 (10 Nov, Ian: go live): accepts the PHH web address as well as github.io.
 // 24 Nov 2026: checklist v2 (48 items, new Laundry section) lives in checklist.ts. Same source deploys to spring-api-staging
 // and spring-api. /spring-review shows only the items a spring clean was ticked against, so an older submission isn't
-// counted against items it never had.
+// counted against items it never had. A draft started before v2 went live (V2_FROM) keeps the 31-item list until it is sent.
 // Routes (all POST, JSON):
 //   housekeeper {code}:        /spring-today -> {ok, springCleans[]}   today or tomorrow, once blocked (test rows straight away)
 //   housekeeper {code, id}:    /spring-open, /spring-upload-url {kind,n}, /spring-save-photo {kind,n,path,stampedAt}, /spring-submit {checklist, note}
 //   staff (not maintenance) or office code: /spring-properties, /spring-create, /spring-list, /spring-cancel, /spring-review, /spring-decide, /spring-mark-blocked
 //   n8n (x-sync-key):          /spring-pending, /spring-update
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { SPRING_CHECKLIST_RAW } from "./checklist.ts";
+import { SPRING_CHECKLIST_RAW, V1_IDS, V2_FROM } from "./checklist.ts";
 
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const ORIGINS = [Deno.env.get("ALLOWED_ORIGIN") ?? "https://analysis-maker.github.io", "https://analysis-maker.github.io", "https://professionalholidayhomes.com.au", "https://www.professionalholidayhomes.com.au"];
@@ -44,7 +44,9 @@ const memberLabel = (member: string, lead: string) => `${member}, for ${String(l
 
 // PHH spring clean checklist (checklist.ts). Every item ticked or N/A ("as applicable").
 const SPRING_CHECKLIST = SPRING_CHECKLIST_RAW.map((s) => ({ id: s.id, title: s.title, items: s.items.map(([id, text]) => ({ id, text })) }));
-const SPRING_ITEMS = SPRING_CHECKLIST.flatMap((s) => s.items);
+const SPRING_CHECKLIST_V1 = SPRING_CHECKLIST.map((s) => ({ ...s, items: s.items.filter((it) => V1_IDS.has(it.id)) })).filter((s) => s.items.length);
+// A draft started before v2 went live keeps the 31-item list until it is sent.
+const listFor = (ex: any) => (ex && ex.created_at && new Date(ex.created_at) < new Date(V2_FROM) ? SPRING_CHECKLIST_V1 : SPRING_CHECKLIST);
 // The checklist a saved spring clean was ticked against (older submissions have fewer items).
 const sectionsFor = (saved: Record<string, string> | null) => {
   const keys = saved ? Object.keys(saved) : [];
@@ -99,7 +101,7 @@ Deno.serve(async (req) => {
     const byName = who.team_of ? memberLabel(String(who.member_name ?? who.cleaner_name), String(sc.cleaner_name ?? "")) : String(who.cleaner_name);
     const info = () => ({
       id: sc.id, property: sc.property_name, from: sc.date_from, to: sc.date_to, notes: sc.notes ?? null, open: openNow,
-      checklist: SPRING_CHECKLIST, extra: ex ? { id: ex.id, status: ex.status, note: ex.note, officeNote: ex.office_note, checklist: ex.checklist ?? {}, submittedAt: ex.submitted_at } : null,
+      checklist: listFor(ex), extra: ex ? { id: ex.id, status: ex.status, note: ex.note, officeNote: ex.office_note, checklist: ex.checklist ?? {}, submittedAt: ex.submitted_at } : null,
     });
     if (route === "spring-open") {
       if (ex && ex.status === "draft") {
@@ -149,9 +151,10 @@ Deno.serve(async (req) => {
     if (!ph.some((p) => p.kind === "before")) return fail("Take at least one before photo.");
     if (!ph.some((p) => p.kind === "after")) return fail("Take at least one after photo.");
     const ticks = body.checklist && typeof body.checklist === "object" ? body.checklist : {};
+    const items = listFor(ex).flatMap((s) => s.items);
     const list: Record<string, string> = {};
-    for (const it of SPRING_ITEMS) { const v = ticks[it.id]; if (v === "done" || v === "na") list[it.id] = v; }
-    const left = SPRING_ITEMS.filter((it) => !list[it.id]).length;
+    for (const it of items) { const v = ticks[it.id]; if (v === "done" || v === "na") list[it.id] = v; }
+    const left = items.filter((it) => !list[it.id]).length;
     if (left) return fail(left + " checklist item" + (left > 1 ? "s" : "") + " still to tick (or mark N/A).");
     const note = String(body.note ?? "").trim().slice(0, 1000);
     const { error } = await sb.from("qa_extras").update({ status: "submitted", note: note || "Spring clean checklist done.", checklist: list, cleaner_name: byName, submitted_at: new Date().toISOString() }).eq("id", ex.id).eq("status", "draft");

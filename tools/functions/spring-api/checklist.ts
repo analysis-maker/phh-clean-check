@@ -34,3 +34,9 @@ export const SPRING_CHECKLIST_RAW: { id: string; title: string; items: [string, 
     ["sc_flyscreens", "Clean fly screens"], ["sc_eaves", "Remove cobwebs from eaves and outdoor lights"],
     ["sc_hose", "Hose exterior walls, windows, decks and pergolas as needed to remove webs and bugs"]] },
 ];
+// v1 item ids (31). A spring clean started before v2 went live keeps the v1 list, so nobody gets new items mid-clean.
+export const V2_FROM = "2026-11-24T06:10:00Z";
+export const V1_IDS = new Set(["sc_skirting", "sc_grout", "sc_walls", "sc_blinds", "sc_lamps", "sc_fans", "sc_aircon", "sc_lights",
+  "sc_furniture", "sc_couch", "sc_cushions", "sc_tv", "sc_fireplace", "sc_empty", "sc_cupboards", "sc_stove", "sc_behind", "sc_fridge",
+  "sc_beds", "sc_wardrobes", "sc_bedfurn", "sc_protectors", "sc_shower", "sc_screens", "sc_curtains", "sc_corners", "sc_vanity",
+  "sc_decks", "sc_outdoor", "sc_bbq", "sc_hose"]);

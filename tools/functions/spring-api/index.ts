@@ -11,6 +11,7 @@
 // 24 Nov 2026: checklist v2 (48 items, new Laundry section) lives in checklist.ts. Same source deploys to spring-api-staging
 // and spring-api. /spring-review shows only the items a spring clean was ticked against, so an older submission isn't
 // counted against items it never had. A draft started before v2 went live (V2_FROM) keeps the 31-item list until it is sent.
+// 25 Nov 2026: properties being onboarded (no HomHero cleans yet) can be booked from qa_spring_props (HomHero area id + name).
 // Routes (all POST, JSON):
 //   housekeeper {code}:        /spring-today -> {ok, springCleans[]}   today or tomorrow, once blocked (test rows straight away)
 //   housekeeper {code, id}:    /spring-open, /spring-upload-url {kind,n}, /spring-save-photo {kind,n,path,stampedAt}, /spring-submit {checklist, note}
@@ -214,6 +215,9 @@ Deno.serve(async (req) => {
         if (r.cleaner_id && !isOwnerClean(r.cleaner_name) && r.clean_date <= ymd(0) && p.recent.length < 5) p.recent.push(r);
         props.set(id, p);
       }
+      // 25 Nov 2026: onboarding properties with no HomHero cleans yet (qa_spring_props, HomHero area id), e.g. Saltbush.
+      const { data: extraProps } = await sb.from("qa_spring_props").select("property_id, property_name");
+      for (const x of extraProps ?? []) { const id = String(x.property_id); if (!props.has(id)) props.set(id, { id, name: String(x.property_name), recent: [] }); }
       const { data: last } = await sb.from("qa_property_spring").select("property_id, last_spring_clean");
       const lastOf = new Map((last ?? []).map((l: any) => [String(l.property_id), l.last_spring_clean]));
       const properties = [...props.values()].map((p: any) => {
@@ -229,7 +233,9 @@ Deno.serve(async (req) => {
     if (route === "spring-create") {
       const pid = String(body.propertyId ?? "").trim();
       if (!/^\d{1,12}$/.test(pid)) return fail("Pick the property from the list.");
-      const { data: p } = await sb.from("qa_cleans").select("property_name").eq("property_id", pid).not("res", "like", "TEST-%").order("clean_date", { ascending: false }).limit(1).maybeSingle();
+      const { data: p0 } = await sb.from("qa_cleans").select("property_name").eq("property_id", pid).not("res", "like", "TEST-%").order("clean_date", { ascending: false }).limit(1).maybeSingle();
+      let p: any = p0;
+      if (!p) { const { data: x } = await sb.from("qa_spring_props").select("property_name").eq("property_id", pid).maybeSingle(); p = x; }
       if (!p) return fail("Pick the property from the list.");
       if (body.ownerApproved !== true) return fail("The owner must approve the spring clean first. No reply is not a yes.");
       const approvedBy = String(body.approvedBy ?? "").replace(/\s+/g, " ").trim().slice(0, 80);

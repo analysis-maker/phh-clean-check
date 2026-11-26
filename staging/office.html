@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261124055903"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261126024336"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1264,7 +1264,8 @@ html,body{overflow-x:clip}
   function nextGuests(r){
     var m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/.exec(String(r.nextArrivalAt || ""));
     if(!m) return r.backToBack ? "Back to back" : "";
-    var day = m[1] === state.date ? "Today" : new Date(m[1] + "T12:00:00+10:00").toLocaleDateString("en-AU",{ timeZone:TZ, weekday:"short", day:"numeric", month:"short" });
+    /* 26 Nov 2026 (Bella, Summer): "Today" only when it really is today; on an older day the same date reads "Same day". */
+    var day = m[1] === state.date ? (m[1] === sydToday() ? "Today" : "Same day") : new Date(m[1] + "T12:00:00+10:00").toLocaleDateString("en-AU",{ timeZone:TZ, weekday:"short", day:"numeric", month:"short" });
     return (r.backToBack ? "B2B " : "") + day + " " + localTime(m[1] + " " + m[2] + ":" + m[3]);
   }
 

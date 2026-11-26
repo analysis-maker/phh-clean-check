@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261126034423"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261126041023"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -4101,7 +4101,8 @@ window.phhAssets = function(host, post, opts){
 /* Housekeeper feedback (23 Nov 2026, Bella: "filter the feedback Process Street into Clean Check ... sent as a notification ...
    so that I just have one place to do it all"). Drafts come from the weekly review sweep's Process Street runs (n8n
    J91hPHXxMkVFpJNS, every 15 min). Send = one in-app message with a phone ping from "Professional Holiday Homes" through
-   the Admin Messages system (within 5 minutes); not on Clean Check yet = email. Rpcs qa_fb_office / qa_fb_send / qa_fb_dismiss. */
+   the Admin Messages system (within 5 minutes); not on Clean Check yet = email. Rpcs qa_fb_office / qa_fb_send / qa_fb_dismiss.
+   26 Nov 2026 (Sharon got 6 pop-ups in 12 seconds): qa_fb_send2 = one feedback message a day per housekeeper, 7am to 7pm. */
 (function(){
   var $ = function(id){ return document.getElementById(id); };
   if(!$("fbView")) return;
@@ -4118,10 +4119,11 @@ window.phhAssets = function(host, post, opts){
   var F = { items: [], filter: "all", busy: false, armed: false };
   function isPraise(it){ return /^praise/i.test(it.type || ""); }
   function how(it){
-    if(it.test) return "Test: in the tester's app only.";
-    if(it.live && it.phones > 0) return "Goes to " + it.first + "'s phone as a notification from Professional Holiday Homes, and stays in their app.";
-    if(it.live) return it.first + " has notifications off, so it goes in their app and by email.";
-    return it.hasEmail ? it.first + " isn't on Clean Check yet, so it goes by email." : it.first + " isn't on Clean Check and has no email in HomHero. Send it from Process Street.";
+    if(it.test) return "Test: in the tester's app only (2 minutes).";
+    var once = " One message a day: anything else you send " + it.first + " today goes in the same message (7am to 7pm).";
+    if(it.live && it.phones > 0) return "Goes to " + it.first + "'s phone as a notification from Professional Holiday Homes, and stays in their app." + once;
+    if(it.live) return it.first + " has notifications off, so it goes in their app and by email." + once;
+    return it.hasEmail ? it.first + " isn't on Clean Check yet, so it goes by email." + once : it.first + " isn't on Clean Check and has no email in HomHero. Send it from Process Street.";
   }
   function canSend(it){ return it.test || it.live || it.hasEmail; }
   function render(){
@@ -4172,8 +4174,9 @@ window.phhAssets = function(host, post, opts){
     var no = el("button", "btn ghost small", "Don't send"); no.type = "button"; no.title = "Closes it without sending (Undo under Sent and closed)";
     go.addEventListener("click", function(){
       go.disabled = no.disabled = true; msg.textContent = "Sending...";
-      rpc("qa_fb_send", { p_code: CODE, p_id: it.id, p_text: ta.value }).then(function(j){
+      rpc("qa_fb_send2", { p_code: CODE, p_id: it.id, p_text: ta.value }).then(function(j){
         it.status = "sent"; it.sentText = ta.value; it.sentBy = "you"; it.sentAt = new Date().toISOString(); it.channel = j.channel; render();
+        $("fbMsg").textContent = "Queued for " + (it.first || "the housekeeper") + ": arrives " + when(j.sendAt) + (j.bundled > 1 ? " with " + (j.bundled - 1) + " other note" + (j.bundled > 2 ? "s" : "") + " in one message." : ".");
       }).catch(function(e){ msg.textContent = e.message; go.disabled = no.disabled = false; });
     });
     no.addEventListener("click", function(){
@@ -4190,9 +4193,9 @@ window.phhAssets = function(host, post, opts){
     F.busy = true; F.armed = false; render(); $("fbMsg").textContent = "Sending " + todo.length + "...";
     var i = 0, ok = 0;
     (function next(){
-      if(i >= todo.length){ F.busy = false; load(); $("fbMsg").textContent = "Sent " + ok + " of " + todo.length + "."; return; }
+      if(i >= todo.length){ F.busy = false; load(); $("fbMsg").textContent = "Queued " + ok + " of " + todo.length + ". Each housekeeper gets one message with all their notes."; return; }
       var it = todo[i++];
-      rpc("qa_fb_send", { p_code: CODE, p_id: it.id, p_text: it.draft }).then(function(){ ok++; }).catch(function(){}).then(next);
+      rpc("qa_fb_send2", { p_code: CODE, p_id: it.id, p_text: it.draft }).then(function(){ ok++; }).catch(function(){}).then(next);
     })();
   });
   function load(){

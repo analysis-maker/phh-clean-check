@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261126024457"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="phh-build" content="20261126035245"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1163,7 +1163,9 @@ html,body{overflow-x:clip}
     document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible") count(); });
   })();
 
-  var state = { tab:"cleans", date: params.get("date") || sydToday(), rows: [], q:"", status:"", who:"", extra:"", open:{} };
+  /* 26 Nov 2026 (Bella): a refresh or back/forward starts on today. A link to a day (Ask PHH, report links) keeps its ?date=. */
+  var navType = ""; try{ var ne = performance.getEntriesByType("navigation")[0]; navType = ne ? ne.type : ""; }catch(e){}
+  var state = { tab:"cleans", date: (navType === "reload" || navType === "back_forward" ? "" : params.get("date")) || sydToday(), rows: [], q:"", status:"", who:"", extra:"", open:{} };
   if(!/^\d{4}-\d{2}-\d{2}$/.test(state.date)) state.date = sydToday();
   /* Deep links (Ask PHH): ?tab=cleans|attention|hk|props &status= &who= &q= &open=<booking> */
   var LINK = { tab: params.get("tab") || "", open: params.get("open") || "" };
@@ -3323,7 +3325,12 @@ $("insView").hidden = day || spring || cons || rv || insp || sched || scr || wn 
     else if(cons){ $("consMsg").className = "msg"; $("consMsg").textContent = "Loading..."; consLoad(true).catch(function(e){ $("consMsg").className = "msg err"; $("consMsg").textContent = e.message; }); }
     else if(spring) spLoad(); else if(fbt){} else if(day){ if(state.rows.length) renderRows(); } else loadIns();
   }
-  document.querySelectorAll(".tab").forEach(function(b){ b.addEventListener("click", function(){ setTab(b.getAttribute("data-tab")); }); });
+  /* 26 Nov 2026 (Bella): tapping the Cleans tab always goes back to today. Other tabs keep the day you were on. */
+  document.querySelectorAll(".tab").forEach(function(b){ b.addEventListener("click", function(){
+    var t = b.getAttribute("data-tab");
+    if(t === "cleans" && state.date !== sydToday()){ state.date = sydToday(); state.open = {}; state.rows = []; dayChanged(); setTab(t); loadDay(); return; }
+    setTab(t);
+  }); });
 
   $("prev").addEventListener("click", function(){ state.date = shift(state.date, -1); state.open = {}; dayChanged(); loadDay(); });
   $("next").addEventListener("click", function(){ state.date = shift(state.date, 1); state.open = {}; dayChanged(); loadDay(); });

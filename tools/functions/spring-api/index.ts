@@ -76,10 +76,13 @@ Deno.serve(async (req) => {
     const lead = who.team_of ? String(who.team_of) : String(who.cleaner_id);
     const ymd = (o: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" }).format(new Date(Date.now() + o * 86400000));
     const { data: sp } = await sb.from("qa_spring_cleans").select("id, property_name, date_from, date_to, status, test")
-      .eq("cleaner_id", lead).neq("status", "cancelled").lte("date_from", ymd(1)).gte("date_to", ymd(0)).order("date_from");
-    const vis = (sp ?? []).filter(springVisible);
-    const { data: exs } = vis.length ? await sb.from("qa_extras").select("spring_clean_id, status").in("spring_clean_id", vis.map((s: any) => s.id)) : { data: [] as any[] };
+      .eq("cleaner_id", lead).neq("status", "cancelled").lte("date_from", ymd(1)).gte("date_to", ymd(-3)).order("date_from");
+    const vis0 = (sp ?? []).filter(springVisible);
+    const { data: exs } = vis0.length ? await sb.from("qa_extras").select("spring_clean_id, status").in("spring_clean_id", vis0.map((s: any) => s.id)) : { data: [] as any[] };
     const exOf = new Map((exs ?? []).map((e: any) => [e.spring_clean_id, e.status]));
+    // 26 Nov 2026 (Cassie, Mulberry): a spring clean stays in the list after its last day until it is sent,
+    // for the same 3 days the screen stays open. Sent ones drop off after the last day as before.
+    const vis = vis0.filter((s: any) => s.date_to >= ymd(0) || !exOf.get(s.id) || exOf.get(s.id) === "draft");
     return json({ ok: true, springCleans: vis.map((s: any) => ({ id: s.id, property: s.property_name, from: s.date_from, to: s.date_to, state: exOf.get(s.id) ?? "new" })) });
   }
 

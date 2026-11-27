@@ -7,7 +7,7 @@
   var f = location.pathname.replace(/^\/checkcleaning-staging\/?/, "") || "index.html";
   location.replace("https://analysis-maker" + ".github.io/phh-clean-check/staging/" + f + location.search + location.hash); } }catch(e){} })();
 </script>
-<meta name="phh-build" content="20261123052950"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="phh-build" content="20261127051511"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
@@ -865,6 +865,8 @@ window.PHH_CHECKLIST = {
         entryPhotos(e).forEach(function(ph){ if(ph.path && !ph.sent) ph.path = null; });
         saveEntry(e); return;
       }
+      // 27 Nov: the server can't take these photos any more (check gone, or the clean link has expired). Retrying won't help, so stop.
+      if(err && err.server && /Not found|expired|Error 404/i.test(err.message || "")){ finishLocal(e); return; }
       if(deferRejected(err)) return;
       throw err;
     });
